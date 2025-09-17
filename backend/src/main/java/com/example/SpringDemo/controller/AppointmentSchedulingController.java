@@ -1,0 +1,144 @@
+package com.example.SpringDemo.controller;
+
+import com.example.SpringDemo.dto.ApiResponse;
+import com.example.SpringDemo.entity.DoctorSlot;
+import com.example.SpringDemo.entity.Specialization;
+import com.example.SpringDemo.service.AppointmentService;
+import com.example.SpringDemo.service.DoctorSlotService;
+import com.example.SpringDemo.service.DoctorService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/appointments")
+@CrossOrigin(origins = "http://localhost:4200")
+public class AppointmentSchedulingController {
+    
+    @Autowired
+    private DoctorSlotService doctorSlotService;
+    
+    @Autowired
+    private DoctorService doctorService;
+    
+    @Autowired
+    private AppointmentService appointmentService;
+    
+    @GetMapping("/specializations")
+    public ResponseEntity<ApiResponse<List<Specialization>>> getSpecializations() {
+        try {
+            List<Specialization> specializations = doctorService.getSpecializations();
+            return ResponseEntity.ok(ApiResponse.success(specializations));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/available-slots")
+    public ResponseEntity<ApiResponse<List<DoctorSlot>>> getAvailableSlots(
+            @RequestParam(required = false) Long specializationId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            List<DoctorSlot> slots;
+            if (specializationId != null) {
+                slots = doctorSlotService.getAvailableSlotsBySpecializationAndDate(specializationId, date);
+            } else {
+                slots = doctorSlotService.getAvailableSlotsByDate(date);
+            }
+            return ResponseEntity.ok(ApiResponse.success(slots));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/doctors/{doctorId}/slots")
+    public ResponseEntity<ApiResponse<List<DoctorSlot>>> getDoctorSlots(
+            @PathVariable Long doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            List<DoctorSlot> slots = doctorSlotService.getAvailableSlotsByDoctorAndDate(doctorId, date);
+            return ResponseEntity.ok(ApiResponse.success(slots));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/book")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> bookAppointment(@RequestBody Map<String, Object> bookingData) {
+        try {
+            System.out.println("Received booking data: " + bookingData);
+            
+            // Validate required fields
+            if (!bookingData.containsKey("slotId")) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("slotId is required"));
+            }
+            if (!bookingData.containsKey("patientId")) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("patientId is required"));
+            }
+            if (!bookingData.containsKey("symptoms")) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("symptoms is required"));
+            }
+            
+            Long slotId = Long.valueOf(bookingData.get("slotId").toString());
+            Long patientId = Long.valueOf(bookingData.get("patientId").toString());
+            String symptoms = bookingData.get("symptoms").toString();
+            String notes = bookingData.get("notes") != null ? bookingData.get("notes").toString() : "";
+            
+            System.out.println("Parsed data - slotId: " + slotId + ", patientId: " + patientId + ", symptoms: " + symptoms);
+            
+            // Book the slot
+            DoctorSlot slot = doctorSlotService.bookSlot(slotId);
+            
+            // Create appointment
+            Map<String, Object> appointment = appointmentService.createAppointmentFromSlot(slot, patientId, symptoms, notes);
+            
+            return ResponseEntity.ok(ApiResponse.success(appointment));
+        } catch (NumberFormatException e) {
+            System.err.println("Number format error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid number format: " + e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Booking error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/generate-slots")
+    public ResponseEntity<ApiResponse<String>> generateSlots() {
+        try {
+            doctorSlotService.generateSlotsForNextMonth();
+            return ResponseEntity.ok(ApiResponse.success("Slots generated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/debug/slots")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> debugSlots() {
+        try {
+            List<DoctorSlot> slots = doctorSlotService.getAllSlots();
+            List<Map<String, Object>> slotData = slots.stream()
+                .map(slot -> {
+                    Map<String, Object> data = new java.util.HashMap<>();
+                    data.put("slotId", slot.getSlotId());
+                    data.put("doctorId", slot.getDoctor().getDoctorId());
+                    data.put("doctorName", slot.getDoctor().getUser().getName());
+                    data.put("specialization", slot.getDoctor().getSpecialization().getName());
+                    data.put("slotDate", slot.getSlotDate());
+                    data.put("startTime", slot.getStartTime());
+                    data.put("endTime", slot.getEndTime());
+                    data.put("status", slot.getStatus());
+                    return data;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(slotData));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+}

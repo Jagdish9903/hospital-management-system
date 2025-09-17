@@ -1,0 +1,405 @@
+<div class="doctors-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Doctor Management</h1>
+      <p class="page-subtitle">Manage hospital doctors and their specializations</p>
+    </div>
+    <button class="add-doctor-btn" (click)="addDoctor()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add Doctor
+    </button>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="search-filters-section">
+    <div class="search-bar">
+      <div class="search-input-container">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Search doctors by name, specialization, or license..."
+          class="search-input"
+          (input)="onSearch($event)"
+        />
+      </div>
+      <button class="filter-btn" (click)="toggleFilters()" [class.active]="showFilters">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3"/>
+        </svg>
+        Filters
+      </button>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel" [class.show]="showFilters">
+      <form [formGroup]="filterForm" class="filter-form">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label class="filter-label">Specialization</label>
+            <select formControlName="specialization" class="filter-select">
+              <option *ngFor="let spec of specializations" [value]="spec.value">{{ spec.label }}</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <select formControlName="status" class="filter-select">
+              <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button type="button" class="apply-filters-btn" (click)="applyFilters()">
+            Apply Filters
+          </button>
+          <button type="button" class="clear-filters-btn" (click)="clearFilters()">
+            Clear All
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-container">
+    <div class="table-header">
+      <div class="table-info">
+        <span class="total-count">{{ totalElements }} doctors found</span>
+        <div class="page-size-selector">
+          <label>Show:</label>
+          <select (change)="onPageSizeChange($event)" [value]="pageSize">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="isLoading">
+      <div class="loading-spinner"></div>
+      <p>Loading doctors...</p>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper" *ngIf="!isLoading">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th *ngFor="let column of columns" 
+                [class.sortable]="column.sortable"
+                (click)="column.sortable ? onSort(column.key) : null">
+              <div class="th-content">
+                <span>{{ column.label }}</span>
+                <svg *ngIf="column.sortable" 
+                     class="sort-icon" 
+                     [class.active]="sortBy === column.key"
+                     viewBox="0 0 24 24" 
+                     fill="none" 
+                     stroke="currentColor" 
+                     stroke-width="2">
+                  <ng-container [ngSwitch]="getSortIcon(column.key)">
+                    <g *ngSwitchCase="'sort'">
+                      <path d="M3 6h18M3 12h18M3 18h18"/>
+                    </g>
+                    <g *ngSwitchCase="'sort-up'">
+                      <path d="M3 6h18M3 12h18M3 18h18"/>
+                      <path d="M7 6l5 5 5-5"/>
+                    </g>
+                    <g *ngSwitchCase="'sort-down'">
+                      <path d="M3 6h18M3 12h18M3 18h18"/>
+                      <path d="M7 18l5-5 5 5"/>
+                    </g>
+                  </ng-container>
+                </svg>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let doctor of doctors" class="table-row">
+            <td class="doctor-id">{{ doctor.doctorId }}</td>
+            <td class="doctor-name">
+              <div class="doctor-info">
+                <div class="doctor-avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="doctor-details">
+                  <div class="doctor-name-text">{{ doctor.user.name }}</div>
+                  <div class="doctor-email">{{ doctor.user.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="doctor-specialization">
+              <span class="specialization-badge">{{ doctor.specialization.name }}</span>
+            </td>
+            <td class="doctor-license">{{ doctor.licenseNumber }}</td>
+            <td class="doctor-qualification">{{ doctor.qualification }}</td>
+            <td class="doctor-fee">{{ formatCurrency(doctor.consultationFee) }}</td>
+            <td class="doctor-status">
+              <span class="badge" [class]="getStatusBadgeClass(doctor.status || '')">
+                {{ doctor.status || 'Unknown' }}
+              </span>
+            </td>
+            <td class="doctor-actions">
+              <div class="action-buttons">
+                <button class="action-btn edit-btn" (click)="editDoctor(doctor)" title="Edit Doctor">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="action-btn delete-btn" (click)="deleteDoctor(doctor)" title="Delete Doctor">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="doctors.length === 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22,4 12,14.01 9,11.01"/>
+        </svg>
+        <h3>No doctors found</h3>
+        <p>Try adjusting your search or filter criteria</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="!isLoading && doctors.length > 0">
+      <div class="pagination-info">
+        <span>
+          Showing {{ (currentPage * pageSize) + 1 }} to {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} doctors
+        </span>
+      </div>
+      <div class="pagination-controls">
+        <button class="pagination-btn" 
+                [disabled]="currentPage === 0"
+                (click)="onPageChange(currentPage - 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
+          Previous
+        </button>
+        
+        <div class="page-numbers">
+          <button *ngFor="let page of getPageNumbers()" 
+                  class="page-number" 
+                  [class.active]="page === currentPage"
+                  (click)="onPageChange(page)">
+            {{ page + 1 }}
+          </button>
+        </div>
+        
+        <button class="pagination-btn" 
+                [disabled]="currentPage >= totalPages - 1"
+                (click)="onPageChange(currentPage + 1)">
+          Next
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Edit Doctor Modal -->
+<div *ngIf="showEditModal" class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Doctor</h3>
+        <button class="modal-close" (click)="closeEditModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="editForm" class="edit-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">License Number *</label>
+              <input type="text" formControlName="licenseNumber" class="form-input" placeholder="Enter license number">
+              <div class="form-error" *ngIf="editForm.get('licenseNumber')?.invalid && editForm.get('licenseNumber')?.touched">
+                License number is required
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Qualification *</label>
+              <input type="text" formControlName="qualification" class="form-input" placeholder="Enter qualification">
+              <div class="form-error" *ngIf="editForm.get('qualification')?.invalid && editForm.get('qualification')?.touched">
+                Qualification is required
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Consultation Fee *</label>
+              <input type="number" formControlName="consultationFee" class="form-input" placeholder="Enter consultation fee" min="0" step="0.01">
+              <div class="form-error" *ngIf="editForm.get('consultationFee')?.invalid && editForm.get('consultationFee')?.touched">
+                Consultation fee is required and must be positive
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Years of Experience *</label>
+              <input type="number" formControlName="yearsOfExp" class="form-input" placeholder="Enter years of experience" min="0">
+              <div class="form-error" *ngIf="editForm.get('yearsOfExp')?.invalid && editForm.get('yearsOfExp')?.touched">
+                Years of experience is required and must be positive
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea formControlName="bio" class="form-textarea" placeholder="Enter doctor bio" rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status *</label>
+            <select formControlName="status" class="form-select">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="updateDoctor()" [disabled]="editForm.invalid || isSubmitting">
+          <span *ngIf="isSubmitting" class="btn-spinner"></span>
+          {{ isSubmitting ? 'Updating...' : 'Update Doctor' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Delete Doctor Modal -->
+<div *ngIf="showDeleteModal" class="modal-overlay" (click)="closeDeleteModal()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Doctor</h3>
+        <button class="modal-close" (click)="closeDeleteModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-warning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <h4>Are you sure you want to delete this doctor?</h4>
+          <p>This action cannot be undone. All data associated with this doctor will be permanently removed.</p>
+          <div class="doctor-info" *ngIf="selectedDoctor">
+            <strong>{{ selectedDoctor.user.name }}</strong> - {{ selectedDoctor.specialization.name }}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="isSubmitting">
+          <span *ngIf="isSubmitting" class="btn-spinner"></span>
+          {{ isSubmitting ? 'Deleting...' : 'Delete Doctor' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+<!-- Add Doctor Modal -->
+<div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Add New Doctor</h3>
+      <button class="modal-close" (click)="closeAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="addForm" class="add-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Select Patient *</label>
+            <select formControlName="userId" class="form-select">
+              <option value="">Choose a patient...</option>
+              <option *ngFor="let patient of patients" [value]="patient.id">
+                {{ patient.name }} ({{ patient.email }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Specialization *</label>
+            <select formControlName="specializationId" class="form-select">
+              <option value="">Choose specialization...</option>
+              <option *ngFor="let spec of specializations" [value]="spec.specializationId">
+                {{ spec.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">License Number *</label>
+            <input type="text" formControlName="licenseNumber" class="form-input" placeholder="Enter license number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Qualification *</label>
+            <input type="text" formControlName="qualification" class="form-input" placeholder="Enter qualification">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Joining Date *</label>
+            <input type="date" formControlName="joiningDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea formControlName="bio" class="form-textarea" rows="3" placeholder="Enter doctor bio (optional)"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Years of Experience *</label>
+            <input type="number" formControlName="yearsOfExp" class="form-input" placeholder="Enter years of experience" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consultation Fee *</label>
+            <input type="number" formControlName="consultationFee" class="form-input" placeholder="Enter consultation fee" min="0" step="0.01">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="createDoctor()" [disabled]="!addForm.valid || isSubmitting">
+        {{ isSubmitting ? 'Creating...' : 'Create Doctor' }}
+      </button>
+    </div>
+  </div>
+</div>

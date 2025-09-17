@@ -1,0 +1,76 @@
+# =========================
+# Angular Frontend
+# Path: frontend/hospital-management-frontend
+# =========================
+# compiled output
+frontend/hospital-management-frontend/dist/
+frontend/hospital-management-frontend/tmp/
+frontend/hospital-management-frontend/out-tsc/
+
+# dependencies
+frontend/hospital-management-frontend/node_modules/
+
+# Angular test coverage
+frontend/hospital-management-frontend/coverage/
+
+# environment files (do not commit sensitive configs)
+frontend/hospital-management-frontend/src/environments/environment*.ts
+
+# editor / misc
+frontend/hospital-management-frontend/.vscode/
+frontend/hospital-management-frontend/.idea/
+frontend/hospital-management-frontend/.DS_Store
+frontend/hospital-management-frontend/Thumbs.db
+
+# =========================
+# Spring Boot Backend
+# Path: backend
+# =========================
+# Maven
+backend/target/
+backend/pom.xml.tag
+backend/pom.xml.releaseBackup
+backend/pom.xml.versionsBackup
+backend/pom.xml.next
+backend/release.properties
+
+# Gradle
+backend/.gradle/
+backend/build/
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# logs
+backend/*.log
+
+# IntelliJ
+backend/*.iml
+backend/*.ipr
+backend/*.iws
+backend/.idea/
+
+# Eclipse
+backend/.project
+backend/.classpath
+backend/.settings/
+backend/bin/
+
+# =========================
+# Common System / IDE
+# =========================
+# OS generated
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Backup / swap files
+*.bak
+*.swp
+*~.nib
+
+# IDE folders
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws

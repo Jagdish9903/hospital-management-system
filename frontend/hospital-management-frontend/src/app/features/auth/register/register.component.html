@@ -1,0 +1,507 @@
+<div class="register-container">
+  <div class="register-wrapper">
+    <!-- Header Section -->
+    <div class="register-header">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <path d="M6 21v-2a4 4 0 0 1 4-4h.5"/>
+          </svg>
+        </div>
+        <h1 class="logo-text">MediCare</h1>
+      </div>
+      <p class="register-subtitle">Create your account to get started</p>
+    </div>
+
+    <!-- Main Registration Card -->
+    <mat-card class="register-card">
+      <mat-card-header class="card-header">
+        <mat-card-title class="card-title">Create Account</mat-card-title>
+        <mat-card-subtitle class="card-subtitle">Fill in your information to register</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content class="card-content">
+        <!-- Registration Form -->
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+          <!-- Personal Information Section -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Personal Information
+            </h3>
+            
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('firstname')" [class.has-success]="isFieldValid('firstname')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>First Name</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="firstname"
+                    placeholder="Enter your first name"
+                    [class.error]="isFieldInvalid('firstname')"
+                    [class.success]="isFieldValid('firstname')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('firstname')">{{ getFieldError('firstname') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('lastname')" [class.has-success]="isFieldValid('lastname')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Last Name</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="lastname"
+                    placeholder="Enter your last name"
+                    [class.error]="isFieldInvalid('lastname')"
+                    [class.success]="isFieldValid('lastname')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('lastname')">{{ getFieldError('lastname') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('email')" [class.has-success]="isFieldValid('email')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Email Address</mat-label>
+                  <input 
+                    matInput 
+                    type="email" 
+                    formControlName="email"
+                    placeholder="Enter your email address"
+                    [class.error]="isFieldInvalid('email')"
+                    [class.success]="isFieldValid('email')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('email')">{{ getFieldError('email') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('username')" [class.has-success]="isFieldValid('username')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Username</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="username"
+                    placeholder="Choose a username"
+                    [class.error]="isFieldInvalid('username')"
+                    [class.success]="isFieldValid('username')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('username')">{{ getFieldError('username') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('password')" [class.has-success]="isFieldValid('password')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Password</mat-label>
+                  <input 
+                    matInput 
+                    [type]="showPassword ? 'text' : 'password'"
+                    formControlName="password"
+                    placeholder="Create a strong password"
+                    [class.error]="isFieldInvalid('password')"
+                    [class.success]="isFieldValid('password')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <circle cx="12" cy="16" r="1"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                  <button 
+                    mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="togglePasswordVisibility()"
+                    [attr.aria-label]="'Hide password'"
+                    [attr.aria-pressed]="showPassword">
+                    <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                  <mat-error *ngIf="getFieldError('password')">{{ getFieldError('password') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('confirmPassword')" [class.has-success]="isFieldValid('confirmPassword')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Confirm Password</mat-label>
+                  <input 
+                    matInput 
+                    [type]="showConfirmPassword ? 'text' : 'password'"
+                    formControlName="confirmPassword"
+                    placeholder="Confirm your password"
+                    [class.error]="isFieldInvalid('confirmPassword')"
+                    [class.success]="isFieldValid('confirmPassword')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <circle cx="12" cy="16" r="1"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
+                  <button 
+                    mat-icon-button 
+                    matSuffix 
+                    type="button"
+                    (click)="toggleConfirmPasswordVisibility()"
+                    [attr.aria-label]="'Hide password'"
+                    [attr.aria-pressed]="showConfirmPassword">
+                    <svg *ngIf="!showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg *ngIf="showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                  <mat-error *ngIf="getFieldError('confirmPassword')">{{ getFieldError('confirmPassword') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Details Section -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              Personal Details
+            </h3>
+            
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('gender')" [class.has-success]="isFieldValid('gender')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Gender</mat-label>
+                  <mat-select formControlName="gender">
+                    <mat-option *ngFor="let option of genderOptions" [value]="option.value">
+                      {{ option.label }}
+                    </mat-option>
+                  </mat-select>
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('gender')">{{ getFieldError('gender') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('birthdate')" [class.has-success]="isFieldValid('birthdate')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Birth Date</mat-label>
+                  <input 
+                    matInput 
+                    [matDatepicker]="picker"
+                    formControlName="birthdate"
+                    placeholder="Select your birth date"
+                    [class.error]="isFieldInvalid('birthdate')"
+                    [class.success]="isFieldValid('birthdate')">
+                  <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('birthdate')">{{ getFieldError('birthdate') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-group" [class.has-error]="isFieldInvalid('bloodGroup')" [class.has-success]="isFieldValid('bloodGroup')">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Blood Group</mat-label>
+                <mat-select formControlName="bloodGroup">
+                  <mat-option *ngFor="let option of bloodGroupOptions" [value]="option.value">
+                    {{ option.label }}
+                  </mat-option>
+                </mat-select>
+                <div matPrefix class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <mat-error *ngIf="getFieldError('bloodGroup')">{{ getFieldError('bloodGroup') }}</mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Contact Information Section -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              Contact Information
+            </h3>
+            
+            <div class="form-group" [class.has-error]="isFieldInvalid('contact')" [class.has-success]="isFieldValid('contact')">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Contact Number</mat-label>
+                <input 
+                  matInput 
+                  formControlName="contact"
+                  placeholder="Enter your phone number"
+                  [class.error]="isFieldInvalid('contact')"
+                  [class.success]="isFieldValid('contact')">
+                <mat-icon matPrefix class="input-icon">phone</mat-icon>
+                <mat-error *ngIf="getFieldError('contact')">{{ getFieldError('contact') }}</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="form-group" [class.has-error]="isFieldInvalid('address')" [class.has-success]="isFieldValid('address')">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Address</mat-label>
+                <textarea 
+                  matInput 
+                  formControlName="address"
+                  placeholder="Enter your full address"
+                  rows="3"
+                  [class.error]="isFieldInvalid('address')"
+                  [class.success]="isFieldValid('address')"></textarea>
+                <div matPrefix class="input-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                  </svg>
+                </div>
+                <mat-error *ngIf="getFieldError('address')">{{ getFieldError('address') }}</mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('city')" [class.has-success]="isFieldValid('city')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>City</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="city"
+                    placeholder="Enter your city"
+                    [class.error]="isFieldInvalid('city')"
+                    [class.success]="isFieldValid('city')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('city')">{{ getFieldError('city') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('state')" [class.has-success]="isFieldValid('state')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>State</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="state"
+                    placeholder="Enter your state"
+                    [class.error]="isFieldInvalid('state')"
+                    [class.success]="isFieldValid('state')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('state')">{{ getFieldError('state') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('country')" [class.has-success]="isFieldValid('country')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Country</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="country"
+                    placeholder="Enter your country"
+                    [class.error]="isFieldInvalid('country')"
+                    [class.success]="isFieldValid('country')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="2" y1="12" x2="22" y2="12"/>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('country')">{{ getFieldError('country') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('postalCode')" [class.has-success]="isFieldValid('postalCode')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Postal Code</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="postalCode"
+                    placeholder="Enter postal code"
+                    [class.error]="isFieldInvalid('postalCode')"
+                    [class.success]="isFieldValid('postalCode')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('postalCode')">{{ getFieldError('postalCode') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergency Contact Section -->
+          <div class="form-section">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              Emergency Contact
+            </h3>
+            
+            <div class="form-row">
+              <div class="form-group" [class.has-error]="isFieldInvalid('emergencyContactName')" [class.has-success]="isFieldValid('emergencyContactName')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Emergency Contact Name</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="emergencyContactName"
+                    placeholder="Enter emergency contact name"
+                    [class.error]="isFieldInvalid('emergencyContactName')"
+                    [class.success]="isFieldValid('emergencyContactName')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('emergencyContactName')">{{ getFieldError('emergencyContactName') }}</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-group" [class.has-error]="isFieldInvalid('emergencyContactNum')" [class.has-success]="isFieldValid('emergencyContactNum')">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Emergency Contact Number</mat-label>
+                  <input 
+                    matInput 
+                    formControlName="emergencyContactNum"
+                    placeholder="Enter emergency contact number"
+                    [class.error]="isFieldInvalid('emergencyContactNum')"
+                    [class.success]="isFieldValid('emergencyContactNum')">
+                  <div matPrefix class="input-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  </div>
+                  <mat-error *ngIf="getFieldError('emergencyContactNum')">{{ getFieldError('emergencyContactNum') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms and Conditions -->
+          <div class="form-section">
+            <div class="terms-section">
+              <mat-checkbox formControlName="acceptTerms" class="terms-checkbox">
+                I agree to the <a href="#" class="terms-link">Terms and Conditions</a> and <a href="#" class="terms-link">Privacy Policy</a>
+              </mat-checkbox>
+              <div class="terms-error" *ngIf="isFieldInvalid('acceptTerms') && formSubmitted">
+                <mat-icon>error</mat-icon>
+                <span>You must accept the terms and conditions</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div class="error-message" *ngIf="errorMessage">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            mat-raised-button 
+            color="primary" 
+            type="submit"
+            class="register-button"
+            [disabled]="isLoading || registerForm.invalid">
+            <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+            <mat-icon *ngIf="!isLoading">person_add</mat-icon>
+            <span>{{ isLoading ? 'Creating Account...' : 'Create Account' }}</span>
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="divider">
+          <span class="divider-text">or</span>
+        </div>
+
+        <!-- Login Link -->
+        <div class="login-section">
+          <p class="login-text">Already have an account?</p>
+          <button 
+            mat-button 
+            color="primary" 
+            (click)="goToLogin()"
+            class="login-button">
+            <mat-icon>login</mat-icon>
+            <span>Sign In</span>
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Footer -->
+    <div class="register-footer">
+      <p class="footer-text">
+        © 2024 MediCare Hospital Management System. All rights reserved.
+      </p>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
+        <a href="#" class="footer-link">Support</a>
+      </div>
+    </div>
+  </div>
+</div>

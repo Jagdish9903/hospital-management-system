@@ -1,0 +1,155 @@
+<div class="complaint-details-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <button class="back-btn" (click)="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        Back to Complaints
+      </button>
+      <h1 class="page-title">Complaint Details</h1>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading complaint details...</p>
+  </div>
+
+  <!-- Complaint Details -->
+  <div *ngIf="complaint && !isLoading" class="complaint-content">
+    <!-- Complaint Info Card -->
+    <div class="complaint-card">
+      <div class="card-header">
+        <h2 class="complaint-title">{{ complaint.title }}</h2>
+        <div class="complaint-badges">
+          <span class="badge" [ngClass]="getStatusBadgeClass(complaint.status)">
+            {{ complaint.status }}
+          </span>
+          <span class="badge" [ngClass]="getPriorityBadgeClass(complaint.priority)">
+            {{ complaint.priority }}
+          </span>
+        </div>
+      </div>
+      
+      <div class="complaint-info">
+        <div class="info-row">
+          <div class="info-item">
+            <label>Complaint ID:</label>
+            <span>#{{ complaint.complaintId }}</span>
+          </div>
+          <div class="info-item">
+            <label>Category:</label>
+            <span>{{ complaint.category }}</span>
+          </div>
+          <div class="info-item">
+            <label>Created:</label>
+            <span>{{ complaint.createdAt | date:'medium' }}</span>
+          </div>
+        </div>
+        
+        <div class="info-row">
+          <div class="info-item">
+            <label>Patient:</label>
+            <span>{{ complaint.patient?.name }} ({{ complaint.patient?.email }})</span>
+          </div>
+          <div class="info-item">
+            <label>Assigned To:</label>
+            <span>{{ complaint.assignedTo?.name || 'Unassigned' }}</span>
+          </div>
+          <div class="info-item">
+            <label>Last Updated:</label>
+            <span>{{ complaint.updatedAt | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="complaint-description">
+        <h3>Description</h3>
+        <p>{{ complaint.description }}</p>
+      </div>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="action-cards">
+      <!-- Assignment Card -->
+      <div class="action-card">
+        <h3>Assign Complaint</h3>
+        <form [formGroup]="assignmentForm" (ngSubmit)="assignComplaint()">
+          <div class="form-group">
+            <label class="form-label">Assign to Admin *</label>
+            <select formControlName="assignedTo" class="form-select">
+              <option value="">Select an admin...</option>
+              <option *ngFor="let admin of admins" [value]="admin.id">
+                {{ admin.name }} ({{ admin.email }})
+              </option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" [disabled]="!assignmentForm.valid || isSubmitting">
+            {{ isSubmitting ? 'Assigning...' : 'Assign Complaint' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Resolution Card -->
+      <div class="action-card">
+        <h3>Update Resolution</h3>
+        <form [formGroup]="resolutionForm" (ngSubmit)="updateResolution()">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Status *</label>
+              <select formControlName="status" class="form-select">
+                <option value="">Select status...</option>
+                <option *ngFor="let status of statusOptions" [value]="status.value">
+                  {{ status.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority *</label>
+              <select formControlName="priority" class="form-select">
+                <option value="">Select priority...</option>
+                <option *ngFor="let priority of priorityOptions" [value]="priority.value">
+                  {{ priority.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Resolution *</label>
+            <textarea formControlName="resolution" class="form-textarea" 
+                      placeholder="Enter resolution details..." rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" [disabled]="!resolutionForm.valid || isSubmitting">
+            {{ isSubmitting ? 'Updating...' : 'Update Resolution' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Notes Card -->
+      <div class="action-card">
+        <h3>Add Note</h3>
+        <form [formGroup]="notesForm" (ngSubmit)="addNote()">
+          <div class="form-group">
+            <label class="form-label">Note *</label>
+            <textarea formControlName="note" class="form-textarea" 
+                      placeholder="Enter a note..." rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary" [disabled]="!notesForm.valid || isSubmitting">
+            {{ isSubmitting ? 'Adding...' : 'Add Note' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Notes History -->
+    <div *ngIf="complaint.resolution" class="notes-section">
+      <h3>Resolution & Notes</h3>
+      <div class="resolution-content">
+        <pre>{{ complaint.resolution }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
