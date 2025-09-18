@@ -139,17 +139,35 @@ export class ScheduleAppointmentComponent implements OnInit {
     if (this.bookingForm.valid && this.selectedSlot && this.currentUser && this.selectedDoctor) {
       this.isBooking = true;
 
+      // Parse time strings to time objects as expected by backend
+      const parseTimeString = (timeStr: string) => {
+        const [hours, minutes, seconds = 0] = timeStr.split(':').map(Number);
+        return {
+          hour: hours,
+          minute: minutes,
+          second: seconds,
+          nano: 0
+        };
+      };
+
       const bookingData = {
         patientId: this.currentUser.id,
         doctorId: this.selectedDoctor.doctorId,
         appointmentDate: this.searchForm.value.appointmentDate,
-        appointmentTime: this.selectedSlot.startTime, // Send as string directly
-        endTime: this.selectedSlot.endTime, // Send as string directly
+        appointmentTime: parseTimeString(this.selectedSlot.startTime),
+        endTime: parseTimeString(this.selectedSlot.endTime),
         appointmentType: 'CONSULTATION',
         consultationFee: this.selectedDoctor.consultationFee,
         symptoms: this.bookingForm.value.symptoms,
         notes: this.bookingForm.value.notes || ''
       };
+
+      console.log('=== BOOKING DATA DEBUG ===');
+      console.log('Selected slot start time:', this.selectedSlot.startTime);
+      console.log('Selected slot end time:', this.selectedSlot.endTime);
+      console.log('Parsed appointment time:', parseTimeString(this.selectedSlot.startTime));
+      console.log('Parsed end time:', parseTimeString(this.selectedSlot.endTime));
+      console.log('Full booking data:', bookingData);
       
       this.adminService.bookAppointment(bookingData).subscribe({
         next: (response) => {

@@ -1,5 +1,7 @@
 package com.example.SpringDemo.dto;
 
+import com.example.SpringDemo.util.CustomLocalTimeDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -20,9 +22,11 @@ public class AppointmentRequest {
     private LocalDate appointmentDate;
     
     @NotNull(message = "Appointment time is required")
+    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime appointmentTime;
     
     @NotNull(message = "End time is required")
+    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime endTime;
     
     @NotNull(message = "Appointment type is required")

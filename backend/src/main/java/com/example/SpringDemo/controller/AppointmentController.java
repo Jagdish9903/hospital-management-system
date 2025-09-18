@@ -35,6 +35,34 @@ public class AppointmentController {
             System.out.println("Doctor ID: " + request.getDoctorId());
             System.out.println("Appointment Date: " + request.getAppointmentDate());
             System.out.println("Appointment Time: " + request.getAppointmentTime());
+            System.out.println("End Time: " + request.getEndTime());
+            System.out.println("Appointment Type: " + request.getAppointmentType());
+            System.out.println("Consultation Fee: " + request.getConsultationFee());
+            System.out.println("Symptoms: " + request.getSymptoms());
+            System.out.println("Notes: " + request.getNotes());
+            
+            // Validate required fields
+            if (request.getPatientId() == null) {
+                throw new RuntimeException("Patient ID is required");
+            }
+            if (request.getDoctorId() == null) {
+                throw new RuntimeException("Doctor ID is required");
+            }
+            if (request.getAppointmentDate() == null) {
+                throw new RuntimeException("Appointment date is required");
+            }
+            if (request.getAppointmentTime() == null) {
+                throw new RuntimeException("Appointment time is required");
+            }
+            if (request.getEndTime() == null) {
+                throw new RuntimeException("End time is required");
+            }
+            if (request.getAppointmentType() == null || request.getAppointmentType().trim().isEmpty()) {
+                throw new RuntimeException("Appointment type is required");
+            }
+            if (request.getConsultationFee() == null) {
+                throw new RuntimeException("Consultation fee is required");
+            }
             
             Appointment appointment = appointmentService.createAppointment(request);
             System.out.println("Appointment created successfully with ID: " + appointment.getId());
@@ -43,7 +71,7 @@ public class AppointmentController {
         } catch (Exception e) {
             System.err.println("Error creating appointment: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error creating appointment: " + e.getMessage()));
         }
     }
     
