@@ -7,6 +7,7 @@ import com.example.SpringDemo.entity.DoctorSlot;
 import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.repository.AppointmentRepository;
 import com.example.SpringDemo.repository.DoctorRepository;
+import com.example.SpringDemo.repository.DoctorSlotRepository;
 import com.example.SpringDemo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,9 @@ public class AppointmentService {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private DoctorSlotRepository doctorSlotRepository;
+    
     public Appointment createAppointment(AppointmentRequest request) {
         User patient = userRepository.findById(request.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
@@ -44,6 +49,23 @@ public class AppointmentService {
             throw new RuntimeException("Appointment date cannot be in the past");
         }
         
+        // Find available slot for the doctor at the specified time
+        List<DoctorSlot> availableSlots = doctorSlotRepository.findAvailableSlotsByDoctorAndDate(
+            request.getDoctorId(), request.getAppointmentDate());
+        
+        DoctorSlot selectedSlot = null;
+        for (DoctorSlot slot : availableSlots) {
+            if (slot.getStartTime().equals(request.getAppointmentTime()) && 
+                slot.getEndTime().equals(request.getEndTime())) {
+                selectedSlot = slot;
+                break;
+            }
+        }
+        
+        if (selectedSlot == null) {
+            throw new RuntimeException("No available slot found for the selected time");
+        }
+        
         // Check for conflicts
         List<Appointment> conflictingAppointments = appointmentRepository.findByDoctorAndDateTime(
             doctor, request.getAppointmentDate(), request.getAppointmentTime());
@@ -52,9 +74,14 @@ public class AppointmentService {
             throw new RuntimeException("Doctor is not available at the selected time");
         }
         
+        // Book the slot
+        selectedSlot.setStatus(DoctorSlot.SlotStatus.BOOKED);
+        doctorSlotRepository.save(selectedSlot);
+        
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
+        appointment.setDoctorSlot(selectedSlot);
         appointment.setAppointmentDate(request.getAppointmentDate());
         appointment.setAppointmentTime(request.getAppointmentTime());
         appointment.setEndTime(request.getEndTime());
@@ -122,6 +149,13 @@ public class AppointmentService {
             throw new RuntimeException("Appointment is already cancelled");
         }
         
+        // Free up the slot
+        if (appointment.getDoctorSlot() != null) {
+            DoctorSlot slot = appointment.getDoctorSlot();
+            slot.setStatus(DoctorSlot.SlotStatus.AVAILABLE);
+            doctorSlotRepository.save(slot);
+        }
+        
         appointment.setStatus(Appointment.Status.CANCELLED);
         appointment.setCancellationReason(reason);
         appointment.setCancelledAt(LocalDateTime.now());
@@ -130,7 +164,103 @@ public class AppointmentService {
     }
     
     public List<Appointment> getUpcomingAppointmentsByPatient(Long patientId) {
-        return appointmentRepository.findUpcomingAppointmentsByPatient(patientId, LocalDate.now());
+        try {
+            List<Appointment> appointments = appointmentRepository.findUpcomingAppointmentsByPatient(patientId, LocalDate.now());
+            return appointments;
+        } catch (Exception e) {
+            System.err.println("ERROR in getUpcomingAppointmentsByPatient: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to retrieve upcoming appointments: " + e.getMessage(), e);
+        }
+    }
+    
+    public List<Appointment> getPastAppointmentsByPatient(Long patientId) {
+        try {
+            List<Appointment> appointments = appointmentRepository.findPastAppointmentsByPatient(patientId, LocalDate.now());
+            return appointments;
+        } catch (Exception e) {
+            System.err.println("ERROR in getPastAppointmentsByPatient: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to retrieve past appointments: " + e.getMessage(), e);
+        }
+    }
+    
+    public Map<String, Object> getAllAppointmentsByPatient(Long patientId) {
+        try {
+            List<Appointment> upcoming = getUpcomingAppointmentsByPatient(patientId);
+            List<Appointment> past = getPastAppointmentsByPatient(patientId);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("upcoming", upcoming);
+            result.put("past", past);
+            result.put("totalUpcoming", upcoming.size());
+            result.put("totalPast", past.size());
+            
+            return result;
+        } catch (Exception e) { 
+            System.err.println("ERROR in getAllAppointmentsByPatient: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to retrieve appointments: " + e.getMessage(), e);
+        }
+    }
+    
+    public Appointment rescheduleAppointment(Long id, LocalDate newDate, LocalTime newTime, LocalTime newEndTime) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        if (appointment.getStatus() == Appointment.Status.CANCELLED) {
+            throw new RuntimeException("Cannot reschedule a cancelled appointment");
+        }
+        
+        if (newDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("Cannot reschedule to a past date");
+        }
+        
+        // Free up the current slot
+        if (appointment.getDoctorSlot() != null) {
+            DoctorSlot currentSlot = appointment.getDoctorSlot();
+            currentSlot.setStatus(DoctorSlot.SlotStatus.AVAILABLE);
+            doctorSlotRepository.save(currentSlot);
+        }
+        
+        // Find new available slot
+        List<DoctorSlot> availableSlots = doctorSlotRepository.findAvailableSlotsByDoctorAndDate(
+            appointment.getDoctor().getDoctorId(), newDate);
+        
+        DoctorSlot newSlot = null;
+        for (DoctorSlot slot : availableSlots) {
+            if (slot.getStartTime().equals(newTime) && slot.getEndTime().equals(newEndTime)) {
+                newSlot = slot;
+                break;
+            }
+        }
+        
+        if (newSlot == null) {
+            throw new RuntimeException("No available slot found for the selected time");
+        }
+        
+        // Check for conflicts with new time
+        List<Appointment> conflictingAppointments = appointmentRepository.findByDoctorAndDateTime(
+            appointment.getDoctor(), newDate, newTime);
+        
+        // Remove current appointment from conflict check
+        conflictingAppointments.removeIf(conflict -> conflict.getId().equals(id));
+        
+        if (!conflictingAppointments.isEmpty()) {
+            throw new RuntimeException("Doctor is not available at the selected time");
+        }
+        
+        // Book the new slot
+        newSlot.setStatus(DoctorSlot.SlotStatus.BOOKED);
+        doctorSlotRepository.save(newSlot);
+        
+        appointment.setDoctorSlot(newSlot);
+        appointment.setAppointmentDate(newDate);
+        appointment.setAppointmentTime(newTime);
+        appointment.setEndTime(newEndTime);
+        appointment.setStatus(Appointment.Status.SCHEDULED); // Reset to scheduled
+        
+        return appointmentRepository.save(appointment);
     }
     
     public Page<Appointment> getAllAppointments(Pageable pageable) {

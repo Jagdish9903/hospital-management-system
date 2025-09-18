@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface User {
@@ -24,6 +25,7 @@ export interface User {
 }
 
 export interface Doctor {
+  id: number;
   doctorId: number;
   user: User;
   specialization: {
@@ -48,12 +50,14 @@ export interface Appointment {
   doctor: Doctor;
   appointmentDate: string;
   appointmentTime: string;
+  endTime: string;
   status: string;
-  reason: string;
   notes?: string;
   appointmentType?: string;
   symptoms?: string;
   consultationFee?: number;
+  cancellationReason?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,6 +85,25 @@ export interface ComplaintNote {
   content: string;
   createdAt: string;
   createdBy?: User;
+}
+
+export interface Payment {
+  id: number;
+  paymentId: string;
+  appointment: Appointment;
+  patient: User;
+  amount: number;
+  method: string;
+  status: string;
+  transactionId?: string;
+  paymentDate: string;
+  cardholderName?: string;
+  cardNumber?: string;
+  expiryDate?: string;
+  cvv?: string;
+  billingAddress?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DoctorSlot {
@@ -258,6 +281,33 @@ export class AdminService {
     return this.http.delete(`${this.apiUrl}/api/admin/appointments/${id}`);
   }
 
+  // User appointment methods
+  getUserAppointments(userId: number): Observable<{upcoming: Appointment[], past: Appointment[], totalUpcoming: number, totalPast: number}> {
+    return this.http.get<ApiResponse<{upcoming: Appointment[], past: Appointment[], totalUpcoming: number, totalPast: number}>>(`${this.apiUrl}/api/appointments/patient/${userId}/all`)
+      .pipe(map(response => response.data));
+  }
+
+  getUpcomingAppointments(userId: number): Observable<Appointment[]> {
+    return this.http.get<ApiResponse<Appointment[]>>(`${this.apiUrl}/api/appointments/patient/${userId}/upcoming`)
+      .pipe(map(response => response.data));
+  }
+
+  getPastAppointments(userId: number): Observable<Appointment[]> {
+    return this.http.get<ApiResponse<Appointment[]>>(`${this.apiUrl}/api/appointments/patient/${userId}/past`)
+      .pipe(map(response => response.data));
+  }
+
+  cancelAppointment(appointmentId: number, reason: string): Observable<Appointment> {
+    return this.http.put<ApiResponse<Appointment>>(`${this.apiUrl}/api/appointments/${appointmentId}/cancel`, null, {
+      params: new HttpParams().set('reason', reason)
+    }).pipe(map(response => response.data));
+  }
+
+  rescheduleAppointment(appointmentId: number, appointmentData: any): Observable<Appointment> {
+    return this.http.put<ApiResponse<Appointment>>(`${this.apiUrl}/api/appointments/${appointmentId}/reschedule`, appointmentData)
+      .pipe(map(response => response.data));
+  }
+
   // Complaints management
   getComplaints(filters: SearchFilters): Observable<ApiResponse<PaginatedResponse<Complaint>>> {
     let params: any = { 
@@ -357,5 +407,33 @@ export class AdminService {
 
   generateSlots(): Observable<any> {
     return this.http.post(`${this.apiUrl}/api/appointments/generate-slots`, {});
+  }
+
+  // Payment methods
+  createPayment(paymentData: any): Observable<ApiResponse<Payment>> {
+    return this.http.post<ApiResponse<Payment>>(`${this.apiUrl}/api/payments`, paymentData);
+  }
+
+  getPaymentById(paymentId: string): Observable<Payment> {
+    return this.http.get<ApiResponse<Payment>>(`${this.apiUrl}/api/payments/payment-id/${paymentId}`)
+      .pipe(map(response => response.data));
+  }
+
+  getPaymentsByPatient(patientId: number): Observable<Payment[]> {
+    return this.http.get<ApiResponse<Payment[]>>(`${this.apiUrl}/api/payments/patient/${patientId}`)
+      .pipe(map(response => response.data));
+  }
+
+  linkPaymentToAppointment(paymentId: string, appointmentId: number): Observable<ApiResponse<Payment>> {
+    return this.http.post<ApiResponse<Payment>>(`${this.apiUrl}/api/payments/${paymentId}/link-appointment/${appointmentId}`, {});
+  }
+
+  // New payment-first flow methods
+  createPaymentWithAppointment(paymentData: any): Observable<ApiResponse<Payment>> {
+    return this.http.post<ApiResponse<Payment>>(`${this.apiUrl}/api/payments/with-appointment`, paymentData);
+  }
+
+  confirmPaymentAndCreateAppointment(paymentId: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/api/payments/${paymentId}/confirm`, {});
   }
 }

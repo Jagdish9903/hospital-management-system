@@ -36,34 +36,34 @@ export class HomeComponent implements OnInit {
 
   // Quick actions for patients
   patientActions = [
-    {
-      title: 'Book Appointment',
-      description: 'Schedule a new appointment with a doctor',
-      icon: 'event',
-      route: '/appointments/book',
-      color: 'primary'
-    },
+    // {
+    //   title: 'Book Appointment',
+    //   description: 'Schedule a new appointment with a doctor',
+    //   icon: 'event',
+    //   route: '/appointments/book',
+    //   color: 'primary'
+    // },
     {
       title: 'My Appointments',
       description: 'Check your upcoming and past appointments',
       icon: 'schedule',
-      route: '/my-appointments',
+      route: '/appointments/my-appointments',
       color: 'accent'
     },
     {
       title: 'Schedule Appointment',
       description: 'Book a new appointment with our doctors',
       icon: 'add_circle',
-      route: '/schedule-appointment',
+      route: 'appointments/schedule',
       color: 'primary'
     },
-    {
-      title: 'Make Payment',
-      description: 'Pay for your appointments and services',
-      icon: 'payment',
-      route: '/payments',
-      color: 'warn'
-    },
+    // {
+    //   title: 'Make Payment',
+    //   description: 'Pay for your appointments and services',
+    //   icon: 'payment',
+    //   route: '/payments',
+    //   color: 'warn'
+    // },
     {
       title: 'Register Complaint',
       description: 'Submit feedback or complaints',

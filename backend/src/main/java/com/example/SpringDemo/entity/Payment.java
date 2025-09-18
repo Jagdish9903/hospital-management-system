@@ -27,7 +27,7 @@ public class Payment {
     private String paymentId;
     
     @ManyToOne
-    @JoinColumn(name = "appointment_id", nullable = false)
+    @JoinColumn(name = "appointment_id")
     private Appointment appointment;
     
     @ManyToOne
@@ -50,6 +50,54 @@ public class Payment {
     
     @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;
+    
+    // Card payment fields
+    @Column(name = "cardholder_name")
+    private String cardholderName;
+    
+    @Column(name = "card_number")
+    private String cardNumber;
+    
+    @Column(name = "expiry_date")
+    private String expiryDate;
+    
+    @Column(name = "cvv")
+    private String cvv;
+    
+    @Column(name = "billing_address")
+    private String billingAddress;
+    
+    // UPI payment fields
+    @Column(name = "upi_id")
+    private String upiId;
+    
+    @Column(name = "mobile_number")
+    private String mobileNumber;
+    
+    // Temporary appointment data fields (for payment-first flow)
+    @Column(name = "temp_doctor_id")
+    private Long tempDoctorId;
+    
+    @Column(name = "temp_appointment_date")
+    private java.time.LocalDate tempAppointmentDate;
+    
+    @Column(name = "temp_appointment_time")
+    private java.time.LocalTime tempAppointmentTime;
+    
+    @Column(name = "temp_end_time")
+    private java.time.LocalTime tempEndTime;
+    
+    @Column(name = "temp_appointment_type")
+    private String tempAppointmentType;
+    
+    @Column(name = "temp_symptoms")
+    private String tempSymptoms;
+    
+    @Column(name = "temp_notes")
+    private String tempNotes;
+    
+    @Column(name = "temp_slot_id")
+    private Long tempSlotId;
     
     // Audit fields
     @CreatedDate

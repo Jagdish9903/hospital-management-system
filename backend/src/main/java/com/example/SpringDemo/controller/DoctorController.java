@@ -11,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -27,7 +26,6 @@ public class DoctorController {
     private DoctorService doctorService;
     
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Doctor>> createDoctor(@Valid @RequestBody DoctorRequest request) {
         try {
             Doctor doctor = doctorService.createDoctor(request);
@@ -97,7 +95,6 @@ public class DoctorController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Doctor>> updateDoctor(@PathVariable Long id, 
                                                            @Valid @RequestBody DoctorRequest request) {
         try {
@@ -109,7 +106,6 @@ public class DoctorController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteDoctor(@PathVariable Long id) {
         try {
             doctorService.deleteDoctor(id);

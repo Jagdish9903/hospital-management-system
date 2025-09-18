@@ -41,6 +41,10 @@ public class DoctorService {
             throw new RuntimeException("License number already exists");
         }
         
+        // Update user role to DOCTOR when creating a doctor record
+        user.setRole(User.Role.DOCTOR);
+        userRepository.save(user);
+        
         Doctor doctor = new Doctor();
         doctor.setUser(user);
         doctor.setSpecialization(specialization);

@@ -49,8 +49,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.doctor = :doctor AND a.appointmentDate = :date AND a.status = 'CONFIRMED' AND a.deletedAt IS NULL")
     Long countConfirmedAppointmentsByDoctorAndDate(@Param("doctor") Doctor doctor, @Param("date") LocalDate date);
     
-    @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND a.status = 'CONFIRMED' AND a.appointmentDate >= :fromDate AND a.deletedAt IS NULL")
+    @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND a.status != 'CANCELLED' AND a.appointmentDate >= :fromDate AND a.deletedAt IS NULL ORDER BY a.appointmentDate ASC, a.appointmentTime ASC")
     List<Appointment> findUpcomingAppointmentsByPatient(@Param("patientId") Long patientId, @Param("fromDate") LocalDate fromDate);
+    
+    @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND a.status != 'CANCELLED' AND a.appointmentDate < :toDate AND a.deletedAt IS NULL ORDER BY a.appointmentDate DESC, a.appointmentTime DESC")
+    List<Appointment> findPastAppointmentsByPatient(@Param("patientId") Long patientId, @Param("toDate") LocalDate toDate);
+    
+    // Debug query to get ALL appointments for a patient
+    @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND a.deletedAt IS NULL ORDER BY a.appointmentDate DESC, a.appointmentTime DESC")
+    List<Appointment> findAllAppointmentsByPatient(@Param("patientId") Long patientId);
     
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.status = :status AND a.deletedAt IS NULL")
     Long countByStatus(@Param("status") Appointment.Status status);

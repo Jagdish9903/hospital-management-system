@@ -38,12 +38,6 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   formSubmitted = false;
 
-  // Test credentials for demo
-  testCredentials = [
-    { role: 'Admin', email: 'admin@hospital.com', password: 'password123' },
-    { role: 'Patient', email: 'alice.wilson@email.com', password: 'password123' },
-    { role: 'Doctor', email: 'dr.john@hospital.com', password: 'password123' }
-  ];
 
   constructor(
     private fb: FormBuilder,
@@ -52,8 +46,9 @@ export class LoginComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email, this.emailDomainValidator]],
-      password: ['', [Validators.required, Validators.minLength(6), this.passwordStrengthValidator]]
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      rememberMe: [false]
     });
   }
 
@@ -118,17 +113,26 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  togglePasswordVisibility() {
+  togglePassword() {
     this.showPassword = !this.showPassword;
   }
 
-  fillTestCredentials(credential: any) {
-    this.loginForm.patchValue({
-      email: credential.email,
-      password: credential.password
-    });
-    this.formSubmitted = false;
-    this.errorMessage = '';
+  fillDemoCredentials(role: string) {
+    const credentials = {
+      admin: { email: 'admin@hospital.com', password: 'password123' },
+      doctor: { email: 'doctor@hospital.com', password: 'password123' },
+      patient: { email: 'patient@hospital.com', password: 'password123' }
+    };
+    
+    const credential = credentials[role as keyof typeof credentials];
+    if (credential) {
+      this.loginForm.patchValue({
+        email: credential.email,
+        password: credential.password
+      });
+      this.formSubmitted = false;
+      this.errorMessage = '';
+    }
   }
 
   goToRegister(): void {
@@ -142,39 +146,6 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  // Custom validators
-  private emailDomainValidator(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
-    
-    const email = control.value;
-    const validDomains = ['hospital.com', 'email.com', 'gmail.com', 'outlook.com'];
-    const domain = email.split('@')[1];
-    
-    if (domain && !validDomains.includes(domain)) {
-      return { invalidDomain: true };
-    }
-    return null;
-  }
-
-  private passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
-    
-    const password = control.value;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    if (password.length < 6) {
-      return { minlength: true };
-    }
-    
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-      return { weakPassword: true };
-    }
-    
-    return null;
-  }
 
   // Getter methods for template
   get email() { return this.loginForm.get('email'); }

@@ -2,6 +2,8 @@ package com.example.SpringDemo.controller;
 
 import com.example.SpringDemo.dto.ApiResponse;
 import com.example.SpringDemo.dto.PaymentRequest;
+import com.example.SpringDemo.dto.PaymentWithAppointmentRequest;
+import com.example.SpringDemo.entity.Appointment;
 import com.example.SpringDemo.entity.Payment;
 import com.example.SpringDemo.service.PaymentService;
 import jakarta.validation.Valid;
@@ -31,6 +33,38 @@ public class PaymentController {
         try {
             Payment payment = paymentService.createPayment(request);
             return ResponseEntity.ok(ApiResponse.success("Payment created successfully", payment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/with-appointment")
+    public ResponseEntity<ApiResponse<Payment>> createPaymentWithAppointment(@Valid @RequestBody PaymentWithAppointmentRequest request) {
+        try {
+            Payment payment = paymentService.createPaymentWithAppointment(request);
+            return ResponseEntity.ok(ApiResponse.success("Payment created successfully. Complete payment to confirm appointment.", payment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{paymentId}/confirm")
+    public ResponseEntity<ApiResponse<Appointment>> confirmPaymentAndCreateAppointment(@PathVariable String paymentId) {
+        try {
+            Appointment appointment = paymentService.confirmPaymentAndCreateAppointment(paymentId);
+            return ResponseEntity.ok(ApiResponse.success("Payment confirmed and appointment created successfully", appointment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/{paymentId}/link-appointment/{appointmentId}")
+    public ResponseEntity<ApiResponse<Payment>> linkPaymentToAppointment(
+            @PathVariable String paymentId, 
+            @PathVariable Long appointmentId) {
+        try {
+            Payment payment = paymentService.linkPaymentToAppointment(paymentId, appointmentId);
+            return ResponseEntity.ok(ApiResponse.success("Payment linked to appointment successfully", payment));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

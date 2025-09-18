@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +76,14 @@ public class UserService {
         return userRepository.findByIdAndDeletedAtIsNull(id);
     }
     
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsernameAndDeletedAtIsNull(username);
+    }
+    
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+    
     public User updateUser(Long id, User userDetails) {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -108,8 +117,36 @@ public class UserService {
         
         // Update fields from Map
         if (userDetails.containsKey("name")) user.setName((String) userDetails.get("name"));
-        if (userDetails.containsKey("email")) user.setEmail((String) userDetails.get("email"));
+        if (userDetails.containsKey("firstname")) user.setFirstname((String) userDetails.get("firstname"));
+        if (userDetails.containsKey("lastname")) user.setLastname((String) userDetails.get("lastname"));
+        if (userDetails.containsKey("birthdate")) {
+            Object birthdateObj = userDetails.get("birthdate");
+            if (birthdateObj instanceof LocalDate) {
+                user.setBirthdate((LocalDate) birthdateObj);
+            } else if (birthdateObj instanceof String) {
+                try {
+                    LocalDate birthdate = LocalDate.parse((String) birthdateObj);
+                    user.setBirthdate(birthdate);
+                } catch (Exception e) {
+                    System.out.println("Invalid birthdate format: " + birthdateObj);
+                }
+            }
+        }
         if (userDetails.containsKey("contact")) user.setContact((String) userDetails.get("contact"));
+        if (userDetails.containsKey("countryCode")) user.setCountryCode((String) userDetails.get("countryCode"));
+        if (userDetails.containsKey("gender")) {
+            Object genderObj = userDetails.get("gender");
+            if (genderObj instanceof String) {
+                try {
+                    User.Gender gender = User.Gender.valueOf(((String) genderObj).toUpperCase());
+                    user.setGender(gender);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Invalid gender value: " + genderObj);
+                }
+            } else if (genderObj instanceof User.Gender) {
+                user.setGender((User.Gender) genderObj);
+            }
+        }
         if (userDetails.containsKey("address")) user.setAddress((String) userDetails.get("address"));
         if (userDetails.containsKey("city")) user.setCity((String) userDetails.get("city"));
         if (userDetails.containsKey("state")) user.setState((String) userDetails.get("state"));
@@ -118,6 +155,7 @@ public class UserService {
         if (userDetails.containsKey("bloodGroup")) user.setBloodGroup((String) userDetails.get("bloodGroup"));
         if (userDetails.containsKey("emergencyContactName")) user.setEmergencyContactName((String) userDetails.get("emergencyContactName"));
         if (userDetails.containsKey("emergencyContactNum")) user.setEmergencyContactNum((String) userDetails.get("emergencyContactNum"));
+        if (userDetails.containsKey("profileUrl")) user.setProfileUrl((String) userDetails.get("profileUrl"));
         
         user.setUpdatedAt(LocalDateTime.now());
         user.setUpdatedBy(user.getId());

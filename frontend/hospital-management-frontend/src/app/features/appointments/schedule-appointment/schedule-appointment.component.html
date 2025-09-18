@@ -195,16 +195,17 @@
             <button type="button" class="btn btn-secondary" (click)="cancelBooking()">
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary" 
-                    [disabled]="!bookingForm.valid || !selectedSlot || isBooking">
+            <button type="button" class="btn btn-primary" 
+                    [disabled]="!bookingForm.valid || !selectedSlot || isBooking"
+                    (click)="proceedToPayment()">
               <svg *ngIf="isBooking" class="loading-spinner" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="31.416" stroke-dashoffset="31.416">
                   <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
                   <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
                 </circle>
               </svg>
-              <span *ngIf="!isBooking">Book Appointment</span>
-              <span *ngIf="isBooking">Booking...</span>
+              <span *ngIf="!isBooking">Proceed to Payment</span>
+              <span *ngIf="isBooking">Processing...</span>
             </button>
           </div>
         </form>

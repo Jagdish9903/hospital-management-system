@@ -18,17 +18,12 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   { 
-    path: 'my-appointments', 
+    path: 'appointments/my-appointments', 
     loadComponent: () => import('./features/appointments/my-appointments/my-appointments.component').then(m => m.MyAppointmentsComponent),
     canActivate: [authGuard]
   },
   { 
-    path: 'book-appointment', 
-    loadComponent: () => import('./features/appointments/book-appointment/book-appointment.component').then(m => m.BookAppointmentComponent),
-    canActivate: [authGuard]
-  },
-  { 
-    path: 'schedule-appointment', 
+    path: 'appointments/schedule', 
     loadComponent: () => import('./features/appointments/schedule-appointment/schedule-appointment.component').then(m => m.ScheduleAppointmentComponent),
     canActivate: [authGuard]
   },
@@ -38,8 +33,28 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   { 
+    path: 'payments/select', 
+    loadComponent: () => import('./features/payments/payment-select/payment-select.component').then(m => m.PaymentSelectComponent),
+    canActivate: [authGuard]
+  },
+  { 
+    path: 'payments/form', 
+    loadComponent: () => import('./features/payments/payment-form/payment-form.component').then(m => m.PaymentFormComponent),
+    canActivate: [authGuard]
+  },
+  { 
+    path: 'payments/success', 
+    loadComponent: () => import('./features/payments/payment-success/payment-success.component').then(m => m.PaymentSuccessComponent),
+    canActivate: [authGuard]
+  },
+  { 
     path: 'complaints', 
     loadComponent: () => import('./features/complaints/complaints.component').then(m => m.ComplaintsComponent),
+    canActivate: [authGuard]
+  },
+  { 
+    path: 'complaints/tracking', 
+    loadComponent: () => import('./features/complaints/complaint-tracking/complaint-tracking.component').then(m => m.ComplaintTrackingComponent),
     canActivate: [authGuard]
   },
   { 

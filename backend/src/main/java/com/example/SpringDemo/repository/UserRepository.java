@@ -55,6 +55,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.deletedAt IS NULL")
     Optional<User> findByIdAndDeletedAtIsNull(@Param("id") Long id);
     
+    @Query("SELECT u FROM User u WHERE u.username = :username AND u.deletedAt IS NULL")
+    Optional<User> findByUsernameAndDeletedAtIsNull(@Param("username") String username);
+    
     @Query("SELECT COUNT(u) FROM User u WHERE u.deletedAt IS NULL")
     Long countByDeletedAtIsNull();
     

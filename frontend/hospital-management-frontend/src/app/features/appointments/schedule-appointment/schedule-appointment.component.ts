@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AdminService, Specialization, DoctorSlot } from '../../../core/services/admin.service';
 import { User } from '../../../core/models/user.model';
+import { ToastService, ToastAction } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-schedule-appointment',
@@ -40,7 +41,8 @@ export class ScheduleAppointmentComponent implements OnInit {
     private fb: FormBuilder,
     private router: Router,
     private authService: AuthService,
-    private adminService: AdminService
+    private adminService: AdminService,
+    private toastService: ToastService
   ) {
     this.searchForm = this.fb.group({
       specializationId: ['', [Validators.required]],
@@ -126,6 +128,31 @@ export class ScheduleAppointmentComponent implements OnInit {
     this.bookingForm.reset();
   }
 
+  proceedToPayment(): void {
+    if (this.bookingForm.valid && this.selectedSlot && this.currentUser && this.selectedDoctor) {
+      // Store appointment data in session storage for payment flow
+      const appointmentData = {
+        slotId: this.selectedSlot.slotId,
+        patientId: this.currentUser.id,
+        doctorId: this.selectedDoctor.doctorId,
+        appointmentDate: this.searchForm.value.appointmentDate,
+        appointmentTime: this.selectedSlot.startTime,
+        endTime: this.selectedSlot.endTime,
+        appointmentType: 'CONSULTATION',
+        consultationFee: this.selectedDoctor.consultationFee,
+        symptoms: this.bookingForm.value.symptoms,
+        notes: this.bookingForm.value.notes || '',
+        doctorName: this.selectedDoctor.user.name,
+        specialization: this.selectedDoctor.specialization.name
+      };
+      
+      sessionStorage.setItem('pendingAppointment', JSON.stringify(appointmentData));
+      
+      // Redirect to payment selection
+      this.router.navigate(['/payments/select']);
+    }
+  }
+
   selectSlot(slot: DoctorSlot): void {
     this.selectedSlot = slot;
     // Find the doctor for this slot
@@ -172,14 +199,39 @@ export class ScheduleAppointmentComponent implements OnInit {
       this.adminService.bookAppointment(bookingData).subscribe({
         next: (response) => {
           if (response.success) {
-            alert('Appointment booked successfully!');
-            this.router.navigate(['/appointments/my-appointments']);
+            // Show success toast with navigation options
+            const actions: ToastAction[] = [
+              {
+                label: 'Go to Home',
+                action: () => this.router.navigate(['/home']),
+                style: 'primary'
+              },
+              {
+                label: 'View My Appointments',
+                action: () => this.router.navigate(['/appointments/my-appointments']),
+                style: 'secondary'
+              }
+            ];
+            
+            this.toastService.showSuccess(
+              'Appointment booked successfully! You can view your appointments or return to home.',
+              actions,
+              8000
+            );
+            
+            // Reset form and hide booking form
+            this.showBookingForm = false;
+            this.selectedDoctor = null;
+            this.selectedSlot = null;
+            this.bookingForm.reset();
+            this.searchForm.reset();
+            this.availableSlots = [];
           }
           this.isBooking = false;
         },
         error: (error) => {
           console.error('Error booking appointment:', error);
-          alert('Error booking appointment. Please try again.');
+          this.toastService.showError('Error booking appointment. Please try again.');
           this.isBooking = false;
         }
       });

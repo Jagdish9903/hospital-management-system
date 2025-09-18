@@ -1,5 +1,6 @@
 package com.example.SpringDemo.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,6 +44,7 @@ public class DoctorSlot {
     private SlotStatus status = SlotStatus.AVAILABLE;
     
     @OneToOne(mappedBy = "doctorSlot", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Appointment appointment;
     
     // Audit fields

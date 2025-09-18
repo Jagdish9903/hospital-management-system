@@ -15,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -27,42 +29,67 @@ public class AppointmentController {
     private AppointmentService appointmentService;
     
     @PostMapping
-    public ResponseEntity<ApiResponse<Appointment>> createAppointment(@Valid @RequestBody AppointmentRequest request) {
+    public ResponseEntity<ApiResponse<Appointment>> createAppointment(@RequestBody Map<String, Object> requestData) {
         try {
             System.out.println("=== APPOINTMENT CREATION DEBUG ===");
-            System.out.println("Received appointment request: " + request);
-            System.out.println("Patient ID: " + request.getPatientId());
-            System.out.println("Doctor ID: " + request.getDoctorId());
-            System.out.println("Appointment Date: " + request.getAppointmentDate());
-            System.out.println("Appointment Time: " + request.getAppointmentTime());
-            System.out.println("End Time: " + request.getEndTime());
-            System.out.println("Appointment Type: " + request.getAppointmentType());
-            System.out.println("Consultation Fee: " + request.getConsultationFee());
-            System.out.println("Symptoms: " + request.getSymptoms());
-            System.out.println("Notes: " + request.getNotes());
+            System.out.println("Received appointment request: " + requestData);
+            
+            // Extract and validate required fields
+            Long patientId = extractLong(requestData, "patientId");
+            Long doctorId = extractLong(requestData, "doctorId");
+            String appointmentDateStr = extractString(requestData, "appointmentDate");
+            Map<String, Object> appointmentTimeObj = extractTimeObject(requestData, "appointmentTime");
+            Map<String, Object> endTimeObj = extractTimeObject(requestData, "endTime");
+            String appointmentType = extractString(requestData, "appointmentType");
+            Object consultationFeeObj = requestData.get("consultationFee");
+            String symptoms = extractString(requestData, "symptoms");
+            String notes = extractString(requestData, "notes");
+            
+            System.out.println("Extracted data:");
+            System.out.println("Patient ID: " + patientId);
+            System.out.println("Doctor ID: " + doctorId);
+            System.out.println("Appointment Date: " + appointmentDateStr);
+            System.out.println("Appointment Time: " + appointmentTimeObj);
+            System.out.println("End Time: " + endTimeObj);
+            System.out.println("Appointment Type: " + appointmentType);
+            System.out.println("Consultation Fee: " + consultationFeeObj);
+            System.out.println("Symptoms: " + symptoms);
+            System.out.println("Notes: " + notes);
             
             // Validate required fields
-            if (request.getPatientId() == null) {
+            if (patientId == null) {
                 throw new RuntimeException("Patient ID is required");
             }
-            if (request.getDoctorId() == null) {
+            if (doctorId == null) {
                 throw new RuntimeException("Doctor ID is required");
             }
-            if (request.getAppointmentDate() == null) {
+            if (appointmentDateStr == null) {
                 throw new RuntimeException("Appointment date is required");
             }
-            if (request.getAppointmentTime() == null) {
+            if (appointmentTimeObj == null) {
                 throw new RuntimeException("Appointment time is required");
             }
-            if (request.getEndTime() == null) {
+            if (endTimeObj == null) {
                 throw new RuntimeException("End time is required");
             }
-            if (request.getAppointmentType() == null || request.getAppointmentType().trim().isEmpty()) {
+            if (appointmentType == null || appointmentType.trim().isEmpty()) {
                 throw new RuntimeException("Appointment type is required");
             }
-            if (request.getConsultationFee() == null) {
+            if (consultationFeeObj == null) {
                 throw new RuntimeException("Consultation fee is required");
             }
+            
+            // Create AppointmentRequest object
+            AppointmentRequest request = new AppointmentRequest();
+            request.setPatientId(patientId);
+            request.setDoctorId(doctorId);
+            request.setAppointmentDate(java.time.LocalDate.parse(appointmentDateStr));
+            request.setAppointmentTime(parseTimeFromObject(appointmentTimeObj));
+            request.setEndTime(parseTimeFromObject(endTimeObj));
+            request.setAppointmentType(appointmentType);
+            request.setConsultationFee(new java.math.BigDecimal(consultationFeeObj.toString()));
+            request.setSymptoms(symptoms);
+            request.setNotes(notes);
             
             Appointment appointment = appointmentService.createAppointment(request);
             System.out.println("Appointment created successfully with ID: " + appointment.getId());
@@ -73,6 +100,41 @@ public class AppointmentController {
             e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error("Error creating appointment: " + e.getMessage()));
         }
+    }
+    
+    // Helper methods
+    private Long extractLong(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return Long.valueOf(value.toString());
+    }
+    
+    private String extractString(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        return value != null ? value.toString() : null;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractTimeObject(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        if (value instanceof Map) {
+            return (Map<String, Object>) value;
+        }
+        return null;
+    }
+    
+    private java.time.LocalTime parseTimeFromObject(Map<String, Object> timeObj) {
+        if (timeObj == null) return null;
+        
+        int hour = ((Number) timeObj.get("hour")).intValue();
+        int minute = ((Number) timeObj.get("minute")).intValue();
+        int second = timeObj.containsKey("second") ? ((Number) timeObj.get("second")).intValue() : 0;
+        int nano = timeObj.containsKey("nano") ? ((Number) timeObj.get("nano")).intValue() : 0;
+        
+        return java.time.LocalTime.of(hour, minute, second, nano);
     }
     
     @GetMapping("/patient/{patientId}")
@@ -165,5 +227,32 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<List<Appointment>>> getUpcomingAppointmentsByPatient(@PathVariable Long patientId) {
         List<Appointment> appointments = appointmentService.getUpcomingAppointmentsByPatient(patientId);
         return ResponseEntity.ok(ApiResponse.success(appointments));
+    }
+    
+    @GetMapping("/patient/{patientId}/past")
+    public ResponseEntity<ApiResponse<List<Appointment>>> getPastAppointmentsByPatient(@PathVariable Long patientId) {
+        List<Appointment> appointments = appointmentService.getPastAppointmentsByPatient(patientId);
+        return ResponseEntity.ok(ApiResponse.success(appointments));
+    }
+    
+    @GetMapping("/patient/{patientId}/all")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllAppointmentsByPatient(@PathVariable Long patientId) {
+        Map<String, Object> appointments = appointmentService.getAllAppointmentsByPatient(patientId);
+        return ResponseEntity.ok(ApiResponse.success(appointments));
+    }
+    
+    @PutMapping("/{id}/reschedule")
+    public ResponseEntity<ApiResponse<Appointment>> rescheduleAppointment(@PathVariable Long id, 
+                                                                          @RequestBody Map<String, Object> requestData) {
+        try {
+            LocalDate newDate = LocalDate.parse(requestData.get("appointmentDate").toString());
+            LocalTime newTime = parseTimeFromObject(extractTimeObject(requestData, "appointmentTime"));
+            LocalTime newEndTime = parseTimeFromObject(extractTimeObject(requestData, "endTime"));
+            
+            Appointment appointment = appointmentService.rescheduleAppointment(id, newDate, newTime, newEndTime);
+            return ResponseEntity.ok(ApiResponse.success("Appointment rescheduled successfully", appointment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 }

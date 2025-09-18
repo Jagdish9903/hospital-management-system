@@ -185,4 +185,13 @@ public class ComplaintService {
         
         complaintRepository.save(complaint);
     }
+    
+    public Complaint updateComplaintFeedback(Long complaintId, String customerFeedback) {
+        Complaint complaint = getComplaintById(complaintId);
+        
+        complaint.setCustomerFeedback(customerFeedback);
+        complaint.setUpdatedAt(LocalDateTime.now());
+        
+        return complaintRepository.save(complaint);
+    }
 }

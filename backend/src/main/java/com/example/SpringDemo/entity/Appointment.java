@@ -1,5 +1,6 @@
 package com.example.SpringDemo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -35,6 +36,7 @@ public class Appointment {
     
     @OneToOne
     @JoinColumn(name = "doctor_slot_id")
+    @JsonBackReference
     private DoctorSlot doctorSlot;
     
     @Column(name = "appointment_date", nullable = false)

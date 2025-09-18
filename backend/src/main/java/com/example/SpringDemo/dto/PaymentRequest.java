@@ -25,22 +25,18 @@ public class PaymentRequest {
     
     private String transactionId;
     
-    @NotBlank(message = "Cardholder name is required")
-    @Size(min = 3, max = 50, message = "Cardholder name must be between 3 and 50 characters")
-    @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "Cardholder name must contain only letters and spaces")
     private String cardholderName;
     
-    @NotBlank(message = "Card number is required")
-    @Pattern(regexp = "^\\d{16}$", message = "Invalid card number")
     private String cardNumber;
     
-    @NotBlank(message = "Expiry date is required")
-    @Pattern(regexp = "^(0[1-9]|1[0-2])/([0-9]{2})$", message = "Expiry date must be in MM/YY format")
     private String expiryDate;
     
-    @NotBlank(message = "CVV is required")
-    @Pattern(regexp = "^\\d{3,4}$", message = "Invalid CVV")
     private String cvv;
     
     private String billingAddress;
+    
+    // UPI fields
+    private String upiId;
+    
+    private String mobileNumber;
 }
