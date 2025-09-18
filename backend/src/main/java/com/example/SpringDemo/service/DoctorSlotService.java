@@ -255,4 +255,8 @@ public class DoctorSlotService {
         
         return stats;
     }
+    
+    public List<DoctorSlot> getAllSlots() {
+        return doctorSlotRepository.findAll();
+    }
 }

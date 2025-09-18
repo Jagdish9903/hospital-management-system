@@ -29,9 +29,20 @@ public class AppointmentController {
     @PostMapping
     public ResponseEntity<ApiResponse<Appointment>> createAppointment(@Valid @RequestBody AppointmentRequest request) {
         try {
+            System.out.println("=== APPOINTMENT CREATION DEBUG ===");
+            System.out.println("Received appointment request: " + request);
+            System.out.println("Patient ID: " + request.getPatientId());
+            System.out.println("Doctor ID: " + request.getDoctorId());
+            System.out.println("Appointment Date: " + request.getAppointmentDate());
+            System.out.println("Appointment Time: " + request.getAppointmentTime());
+            
             Appointment appointment = appointmentService.createAppointment(request);
+            System.out.println("Appointment created successfully with ID: " + appointment.getId());
+            
             return ResponseEntity.ok(ApiResponse.success("Appointment created successfully", appointment));
         } catch (Exception e) {
+            System.err.println("Error creating appointment: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

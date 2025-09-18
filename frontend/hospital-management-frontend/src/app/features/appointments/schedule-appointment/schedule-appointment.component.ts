@@ -128,15 +128,25 @@ export class ScheduleAppointmentComponent implements OnInit {
 
   selectSlot(slot: DoctorSlot): void {
     this.selectedSlot = slot;
+    // Find the doctor for this slot
+    const slotWithDoctor = this.availableSlots.find(s => s.slotId === slot.slotId);
+    if (slotWithDoctor && slotWithDoctor.doctor) {
+      this.selectedDoctor = slotWithDoctor.doctor;
+    }
   }
 
   bookAppointment(): void {
-    if (this.bookingForm.valid && this.selectedSlot && this.currentUser) {
+    if (this.bookingForm.valid && this.selectedSlot && this.currentUser && this.selectedDoctor) {
       this.isBooking = true;
-      
+
       const bookingData = {
-        slotId: this.selectedSlot.slotId,
         patientId: this.currentUser.id,
+        doctorId: this.selectedDoctor.doctorId,
+        appointmentDate: this.searchForm.value.appointmentDate,
+        appointmentTime: this.selectedSlot.startTime, // Send as string directly
+        endTime: this.selectedSlot.endTime, // Send as string directly
+        appointmentType: 'CONSULTATION',
+        consultationFee: this.selectedDoctor.consultationFee,
         symptoms: this.bookingForm.value.symptoms,
         notes: this.bookingForm.value.notes || ''
       };

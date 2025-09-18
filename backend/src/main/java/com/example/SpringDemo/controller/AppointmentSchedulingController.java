@@ -71,17 +71,42 @@ public class AppointmentSchedulingController {
     @PostMapping("/book")
     public ResponseEntity<ApiResponse<Map<String, Object>>> bookAppointment(@RequestBody Map<String, Object> bookingData) {
         try {
+            System.out.println("=== BOOKING REQUEST DEBUG ===");
             System.out.println("Received booking data: " + bookingData);
+            System.out.println("Data type: " + bookingData.getClass().getName());
+            System.out.println("Data size: " + bookingData.size());
+            
+            // Log each key-value pair
+            for (Map.Entry<String, Object> entry : bookingData.entrySet()) {
+                System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue() + ", Type: " + (entry.getValue() != null ? entry.getValue().getClass().getName() : "null"));
+            }
             
             // Validate required fields
             if (!bookingData.containsKey("slotId")) {
+                System.err.println("ERROR: slotId is missing");
                 return ResponseEntity.badRequest().body(ApiResponse.error("slotId is required"));
             }
             if (!bookingData.containsKey("patientId")) {
+                System.err.println("ERROR: patientId is missing");
                 return ResponseEntity.badRequest().body(ApiResponse.error("patientId is required"));
             }
             if (!bookingData.containsKey("symptoms")) {
+                System.err.println("ERROR: symptoms is missing");
                 return ResponseEntity.badRequest().body(ApiResponse.error("symptoms is required"));
+            }
+            
+            // Check for null values
+            if (bookingData.get("slotId") == null) {
+                System.err.println("ERROR: slotId is null");
+                return ResponseEntity.badRequest().body(ApiResponse.error("slotId cannot be null"));
+            }
+            if (bookingData.get("patientId") == null) {
+                System.err.println("ERROR: patientId is null");
+                return ResponseEntity.badRequest().body(ApiResponse.error("patientId cannot be null"));
+            }
+            if (bookingData.get("symptoms") == null) {
+                System.err.println("ERROR: symptoms is null");
+                return ResponseEntity.badRequest().body(ApiResponse.error("symptoms cannot be null"));
             }
             
             Long slotId = Long.valueOf(bookingData.get("slotId").toString());
@@ -93,13 +118,16 @@ public class AppointmentSchedulingController {
             
             // Book the slot
             DoctorSlot slot = doctorSlotService.bookSlot(slotId);
+            System.out.println("Slot booked successfully: " + slot.getSlotId());
             
             // Create appointment
             Map<String, Object> appointment = appointmentService.createAppointmentFromSlot(slot, patientId, symptoms, notes);
+            System.out.println("Appointment created successfully: " + appointment.get("appointmentId"));
             
             return ResponseEntity.ok(ApiResponse.success(appointment));
         } catch (NumberFormatException e) {
             System.err.println("Number format error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid number format: " + e.getMessage()));
         } catch (Exception e) {
             System.err.println("Booking error: " + e.getMessage());

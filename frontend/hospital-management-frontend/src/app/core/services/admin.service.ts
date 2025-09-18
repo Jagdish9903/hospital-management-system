@@ -352,7 +352,7 @@ export class AdminService {
   }
 
   bookAppointment(bookingData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/appointments/book`, bookingData);
+    return this.http.post(`${this.apiUrl}/api/appointments`, bookingData);
   }
 
   generateSlots(): Observable<any> {
