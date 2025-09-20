@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService, User, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -41,11 +42,13 @@ export class AdminUsersComponent implements OnInit {
   selectedGender = '';
   selectedStatus = '';
   
-  // Edit/Delete
+  // Edit/Delete/Add
   selectedUser: User | null = null;
   showEditModal = false;
   showDeleteModal = false;
+  showAddModal = false;
   editForm: FormGroup;
+  addForm: FormGroup;
   isSubmitting = false;
   
   // Table columns
@@ -67,6 +70,10 @@ export class AdminUsersComponent implements OnInit {
     { value: 'PATIENT', label: 'Patient' }
   ];
 
+  availableRoles = [
+    { value: 'PATIENT', label: 'Patient' }
+  ];
+
   genders = [
     { value: '', label: 'All Genders' },
     { value: 'MALE', label: 'Male' },
@@ -76,6 +83,7 @@ export class AdminUsersComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private authService: AuthService,
     private fb: FormBuilder
   ) {
     this.filterForm = this.fb.group({
@@ -88,6 +96,27 @@ export class AdminUsersComponent implements OnInit {
       name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       contact: [''],
+      address: [''],
+      city: [''],
+      state: [''],
+      country: [''],
+      postalCode: [''],
+      bloodGroup: [''],
+      emergencyContactName: [''],
+      emergencyContactNum: ['']
+    });
+
+    this.addForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      firstname: ['', [Validators.required, Validators.minLength(2)]],
+      lastname: ['', [Validators.required, Validators.minLength(2)]],
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      role: ['', [Validators.required]],
+      contact: [''],
+      gender: [''],
+      birthdate: [''],
       address: [''],
       city: [''],
       state: [''],
@@ -111,6 +140,23 @@ export class AdminUsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+    this.setAvailableRoles();
+  }
+
+  setAvailableRoles(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      if (currentUser.role === 'SUPERADMIN') {
+        this.availableRoles = [
+          { value: 'PATIENT', label: 'Patient' },
+          { value: 'ADMIN', label: 'Admin' }
+        ];
+      } else if (currentUser.role === 'ADMIN') {
+        this.availableRoles = [
+          { value: 'PATIENT', label: 'Patient' }
+        ];
+      }
+    }
   }
 
   loadUsers(): void {
@@ -123,21 +169,26 @@ export class AdminUsersComponent implements OnInit {
       name: this.searchTerm || undefined,
       email: this.searchTerm || undefined,
       role: this.selectedRole || undefined,
-      gender: this.selectedGender || undefined
+      gender: this.selectedGender || undefined,
+      status: this.selectedStatus || undefined
     };
 
     this.adminService.getUsers(filters).subscribe({
       next: (response) => {
+        console.log('Users response:', response);
         if (response.success) {
           this.paginatedResponse = response.data;
           this.users = response.data.content;
           this.totalElements = response.data.totalElements;
           this.totalPages = response.data.totalPages;
+        } else {
+          console.error('API returned error:', response.message);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading users:', error);
+        console.error('Error details:', error.error);
         this.isLoading = false;
       }
     });
@@ -194,6 +245,9 @@ export class AdminUsersComponent implements OnInit {
   }
 
   editUser(user: User): void {
+    if (user.deletedAt) {
+      return; // Don't allow editing deleted users
+    }
     this.selectedUser = user;
     this.showEditModal = true;
     this.editForm.patchValue({
@@ -233,6 +287,9 @@ export class AdminUsersComponent implements OnInit {
   }
 
   deleteUser(user: User): void {
+    if (user.deletedAt) {
+      return; // Don't allow deleting already deleted users
+    }
     this.selectedUser = user;
     this.showDeleteModal = true;
   }
@@ -265,6 +322,37 @@ export class AdminUsersComponent implements OnInit {
   closeDeleteModal(): void {
     this.selectedUser = null;
     this.showDeleteModal = false;
+  }
+
+  addUser(): void {
+    this.showAddModal = true;
+    this.addForm.reset();
+  }
+
+  createUser(): void {
+    if (this.addForm.valid) {
+      this.isSubmitting = true;
+      const userData = this.addForm.value;
+      
+      this.adminService.createUser(userData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadUsers();
+            this.closeAddModal();
+          }
+          this.isSubmitting = false;
+        },
+        error: (error) => {
+          console.error('Error creating user:', error);
+          this.isSubmitting = false;
+        }
+      });
+    }
+  }
+
+  closeAddModal(): void {
+    this.showAddModal = false;
+    this.addForm.reset();
   }
 
   getRoleBadgeClass(role: string): string {

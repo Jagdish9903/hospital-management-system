@@ -4,7 +4,6 @@ import com.example.SpringDemo.dto.ApiResponse;
 import com.example.SpringDemo.dto.AppointmentRequest;
 import com.example.SpringDemo.entity.Appointment;
 import com.example.SpringDemo.service.AppointmentService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -203,9 +202,9 @@ public class AppointmentController {
     
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Appointment>> updateAppointment(@PathVariable Long id, 
-                                                                     @Valid @RequestBody AppointmentRequest request) {
+                                                                     @RequestBody Map<String, Object> updateData) {
         try {
-            Appointment appointment = appointmentService.updateAppointment(id, request);
+            Appointment appointment = appointmentService.updateAppointment(id, updateData);
             return ResponseEntity.ok(ApiResponse.success("Appointment updated successfully", appointment));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -239,6 +238,36 @@ public class AppointmentController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAllAppointmentsByPatient(@PathVariable Long patientId) {
         Map<String, Object> appointments = appointmentService.getAllAppointmentsByPatient(patientId);
         return ResponseEntity.ok(ApiResponse.success(appointments));
+    }
+    
+    @GetMapping("/patient/{patientId}/paginated")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAppointmentsByPatientPaginated(
+            @PathVariable Long patientId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "appointmentDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type) {
+        try {
+            System.out.println("Getting paginated appointments for patient: " + patientId + " page: " + page + " size: " + size + " status: " + status + " type: " + type);
+            
+            // Create Pageable object
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                page, 
+                size, 
+                sortDir.equalsIgnoreCase("desc") ? 
+                    org.springframework.data.domain.Sort.by(sortBy).descending() : 
+                    org.springframework.data.domain.Sort.by(sortBy).ascending()
+            );
+            
+            Map<String, Object> appointments = appointmentService.getAppointmentsByPatientPaginatedWithDateFilter(patientId, status, type, pageable);
+            return ResponseEntity.ok(ApiResponse.success(appointments));
+        } catch (Exception e) {
+            System.out.println("Error getting paginated appointments: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
     
     @PutMapping("/{id}/reschedule")

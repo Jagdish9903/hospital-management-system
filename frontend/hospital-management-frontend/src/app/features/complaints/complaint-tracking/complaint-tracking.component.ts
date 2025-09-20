@@ -75,7 +75,7 @@ interface Complaint {
       <!-- Complaints List -->
       <div *ngIf="!isLoading && complaints.length > 0" class="complaints-list">
         <div class="complaints-header">
-          <h2>Your Complaints ({{ complaints.length }})</h2>
+          <h2>Your Complaints ({{ totalElements }})</h2>
           <div class="filter-controls">
             <select [(ngModel)]="statusFilter" (change)="filterComplaints()" class="filter-select">
               <option value="">All Statuses</option>
@@ -85,56 +85,148 @@ interface Complaint {
               <option value="CLOSED">Closed</option>
               <option value="REOPENED">Reopened</option>
             </select>
+            <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)" class="filter-select">
+              <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} per page</option>
+            </select>
           </div>
         </div>
 
-        <div class="complaints-grid">
-          <div 
-            *ngFor="let complaint of filteredComplaints" 
-            class="complaint-card"
-            (click)="openComplaintDetail(complaint)"
-          >
-            <div class="complaint-card-header">
-              <div class="complaint-title">{{ complaint.title }}</div>
-              <div class="complaint-status" [class]="'status-' + complaint.status.toLowerCase().replace('_', '-')">
-                {{ formatEnum(complaint.status) }}
-              </div>
+        <!-- Table Container -->
+        <div class="table-container">
+          <table class="complaints-table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="onSortChange('title')">
+                  Title
+                  <span class="sort-indicator" *ngIf="sortBy === 'title'">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="sortable" (click)="onSortChange('category')">
+                  Category
+                  <span class="sort-indicator" *ngIf="sortBy === 'category'">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="sortable" (click)="onSortChange('priority')">
+                  Priority
+                  <span class="sort-indicator" *ngIf="sortBy === 'priority'">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="sortable" (click)="onSortChange('status')">
+                  Status
+                  <span class="sort-indicator" *ngIf="sortBy === 'status'">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th class="sortable" (click)="onSortChange('createdAt')">
+                  Created
+                  <span class="sort-indicator" *ngIf="sortBy === 'createdAt'">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let complaint of complaints" class="complaint-row">
+                <td class="complaint-title-cell">
+                  <div class="complaint-title">{{ complaint.title }}</div>
+                  <div class="complaint-description">{{ complaint.description.length > 100 ? complaint.description.substring(0, 100) + '...' : complaint.description }}</div>
+                </td>
+                <td class="complaint-category-cell">
+                  <span class="complaint-category">{{ formatEnum(complaint.category) }}</span>
+                </td>
+                <td class="complaint-priority-cell">
+                  <span class="complaint-priority priority-{{ complaint.priority.toLowerCase() }}">
+                    {{ formatEnum(complaint.priority) }}
+                  </span>
+                </td>
+                <td class="complaint-status-cell">
+                  <span class="complaint-status" [class]="'status-' + complaint.status.toLowerCase().replace('_', '-')">
+                    {{ formatEnum(complaint.status) }}
+                  </span>
+                </td>
+                <td class="complaint-date-cell">
+                  <div class="complaint-date">{{ formatDate(complaint.createdAt) }}</div>
+                  <div *ngIf="complaint.updatedAt !== complaint.createdAt" class="complaint-updated">
+                    Updated: {{ formatDate(complaint.updatedAt) }}
+                  </div>
+                </td>
+                <td class="complaint-actions-cell">
+                  <button class="btn-view-details" (click)="openComplaintDetail(complaint)" title="View Details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container">
+          <div class="pagination-info">
+            Showing {{ (currentPage * pageSize) + 1 }} to {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} complaints
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="pagination-btn" 
+              [disabled]="currentPage === 0" 
+              (click)="onPageChange(0)"
+              title="First Page"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="11 17 6 12 11 7"/>
+                <polyline points="18 17 13 12 18 7"/>
+              </svg>
+            </button>
+            <button 
+              class="pagination-btn" 
+              [disabled]="currentPage === 0" 
+              (click)="onPageChange(currentPage - 1)"
+              title="Previous Page"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            
+            <div class="page-numbers">
+              <button 
+                *ngFor="let page of getPageNumbers()" 
+                class="pagination-btn page-number"
+                [class.active]="page === currentPage"
+                (click)="onPageChange(page)"
+              >
+                {{ page + 1 }}
+              </button>
             </div>
-
-            <div class="complaint-card-body">
-              <div class="complaint-meta">
-                <span class="complaint-category">{{ formatEnum(complaint.category) }}</span>
-                <span class="complaint-priority priority-{{ complaint.priority.toLowerCase() }}">
-                  {{ formatEnum(complaint.priority) }}
-                </span>
-                <span class="complaint-date">{{ formatDate(complaint.createdAt) }}</span>
-              </div>
-
-              <div class="complaint-description">
-                {{ complaint.description.length > 150 ? complaint.description.substring(0, 150) + '...' : complaint.description }}
-              </div>
-
-              <div *ngIf="complaint.appointment" class="complaint-appointment">
-                <strong>Related Appointment:</strong> 
-                {{ formatAppointmentInfo(complaint.appointment) }}
-              </div>
-
-              <div *ngIf="complaint.assignedTo" class="complaint-assigned">
-                <strong>Assigned to:</strong> {{ complaint.assignedTo.name }}
-              </div>
-            </div>
-
-            <div class="complaint-card-footer">
-              <div class="complaint-actions">
-                <button class="btn-view-details" (click)="openComplaintDetail(complaint); $event.stopPropagation()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  View Details
-                </button>
-              </div>
-            </div>
+            
+            <button 
+              class="pagination-btn" 
+              [disabled]="currentPage >= totalPages - 1" 
+              (click)="onPageChange(currentPage + 1)"
+              title="Next Page"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+            <button 
+              class="pagination-btn" 
+              [disabled]="currentPage >= totalPages - 1" 
+              (click)="onPageChange(totalPages - 1)"
+              title="Last Page"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="13 17 18 12 13 7"/>
+                <polyline points="6 17 11 12 6 7"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -295,13 +387,21 @@ interface Complaint {
 })
 export class ComplaintTrackingComponent implements OnInit {
   complaints: Complaint[] = [];
-  filteredComplaints: Complaint[] = [];
   selectedComplaint: Complaint | null = null;
   isLoading = false;
   statusFilter = '';
   showFeedbackForm = false;
   feedbackText = '';
   isSubmittingFeedback = false;
+  
+  // Pagination properties
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+  pageSizeOptions = [5, 10, 20, 50];
+  sortBy = 'createdAt';
+  sortDir = 'desc';
 
   constructor(
     private http: HttpClient,
@@ -321,12 +421,30 @@ export class ComplaintTrackingComponent implements OnInit {
     }
 
     this.isLoading = true;
-    this.http.get<any>(`${environment.apiUrl}/api/simple-complaints/patient/${currentUser.id}`).subscribe({
+    const params = new URLSearchParams({
+      page: this.currentPage.toString(),
+      size: this.pageSize.toString(),
+      sortBy: this.sortBy,
+      sortDir: this.sortDir
+    });
+    
+    if (this.statusFilter) {
+      params.append('status', this.statusFilter);
+    }
+
+    this.http.get<any>(`${environment.apiUrl}/api/simple-complaints/patient/${currentUser.id}?${params}`).subscribe({
       next: (response) => {
-        this.complaints = response.data;
-        this.filteredComplaints = [...this.complaints];
+        this.complaints = response.data.complaints;
+        this.currentPage = response.data.currentPage;
+        this.totalPages = response.data.totalPages;
+        this.totalElements = response.data.totalElements;
         this.isLoading = false;
         console.log('Complaints loaded:', this.complaints);
+        console.log('Pagination info:', {
+          currentPage: this.currentPage,
+          totalPages: this.totalPages,
+          totalElements: this.totalElements
+        });
       },
       error: (error) => {
         this.isLoading = false;
@@ -337,14 +455,45 @@ export class ComplaintTrackingComponent implements OnInit {
   }
 
   filterComplaints(): void {
-    if (!this.statusFilter) {
-      this.filteredComplaints = [...this.complaints];
-    } else {
-      this.filteredComplaints = this.complaints.filter(complaint => 
-        complaint.status === this.statusFilter
-      );
-    }
+    this.currentPage = 0; // Reset to first page when filtering
+    this.loadComplaints();
   }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadComplaints();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0; // Reset to first page when changing page size
+    this.loadComplaints();
+  }
+
+  onSortChange(sortBy: string): void {
+    if (this.sortBy === sortBy) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = sortBy;
+      this.sortDir = 'desc';
+    }
+    this.currentPage = 0; // Reset to first page when sorting
+    this.loadComplaints();
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const startPage = Math.max(0, this.currentPage - 2);
+    const endPage = Math.min(this.totalPages - 1, this.currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  // Expose Math to template
+  Math = Math;
 
   openComplaintDetail(complaint: Complaint): void {
     this.selectedComplaint = complaint;

@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule, JsonPipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { AdminService, AuditLog, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -41,6 +42,7 @@ export class AdminAuditLogsComponent implements OnInit {
   selectedUser = '';
   selectedDateFrom = '';
   selectedDateTo = '';
+  selectedStatus = '';
   
   // View Details
   selectedAuditLog: AuditLog | null = null;
@@ -76,6 +78,7 @@ export class AdminAuditLogsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private authService: AuthService,
     private fb: FormBuilder
   ) {
     this.filterForm = this.fb.group({
@@ -83,7 +86,8 @@ export class AdminAuditLogsComponent implements OnInit {
       tableName: [''],
       userId: [''],
       dateFrom: [''],
-      dateTo: ['']
+      dateTo: [''],
+      status: ['']
     });
 
     // Setup search debounce
@@ -103,6 +107,17 @@ export class AdminAuditLogsComponent implements OnInit {
 
   loadAuditLogs(): void {
     this.isLoading = true;
+    
+    // Check authentication before making API call
+    if (!this.authService.isLoggedIn()) {
+      console.error('User not authenticated');
+      this.isLoading = false;
+      return;
+    }
+    
+    const token = this.authService.getToken();
+    console.log('Current token for audit logs:', token ? `${token.substring(0, 20)}...` : 'No token');
+    
     const filters: SearchFilters = {
       page: this.currentPage,
       size: this.pageSize,
@@ -112,21 +127,27 @@ export class AdminAuditLogsComponent implements OnInit {
       tableName: this.selectedTable || undefined,
       userId: this.selectedUser || undefined,
       fromDate: this.selectedDateFrom || undefined,
-      toDate: this.selectedDateTo || undefined
+      toDate: this.selectedDateTo || undefined,
+      status: this.selectedStatus || undefined
     };
 
+    console.log('Loading audit logs with filters:', filters);
     this.adminService.getAuditLogs(filters).subscribe({
       next: (response) => {
+        console.log('Audit logs response:', response);
         if (response.success) {
           this.paginatedResponse = response.data;
           this.auditLogs = response.data.content;
           this.totalElements = response.data.totalElements;
           this.totalPages = response.data.totalPages;
+        } else {
+          console.error('API returned error:', response.message);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading audit logs:', error);
+        console.error('Error details:', error.error);
         this.isLoading = false;
       }
     });
@@ -167,6 +188,7 @@ export class AdminAuditLogsComponent implements OnInit {
     this.selectedUser = this.filterForm.get('userId')?.value || '';
     this.selectedDateFrom = this.filterForm.get('dateFrom')?.value || '';
     this.selectedDateTo = this.filterForm.get('dateTo')?.value || '';
+    this.selectedStatus = this.filterForm.get('status')?.value || '';
     this.currentPage = 0;
     this.loadAuditLogs();
   }
@@ -178,6 +200,7 @@ export class AdminAuditLogsComponent implements OnInit {
     this.selectedUser = '';
     this.selectedDateFrom = '';
     this.selectedDateTo = '';
+    this.selectedStatus = '';
     this.currentPage = 0;
     this.loadAuditLogs();
   }

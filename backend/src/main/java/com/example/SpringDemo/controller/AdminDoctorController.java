@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/doctors")
@@ -36,11 +37,18 @@ public class AdminDoctorController {
             @RequestParam(required = false) String specialization,
             @RequestParam(required = false) String status) {
         
+        System.out.println("=== ADMIN DOCTORS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - Name: " + name + ", Email: " + email + ", Specialization: " + specialization + ", Status: " + status);
+        
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<Doctor> doctors = doctorService.getAllDoctors(name, email, specialization, status, pageable);
+        System.out.println("Found " + doctors.getTotalElements() + " doctors");
+        
         return ResponseEntity.ok(ApiResponse.success(doctors));
     }
     
@@ -57,9 +65,9 @@ public class AdminDoctorController {
     
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<ApiResponse<Doctor>> updateDoctor(@PathVariable Long id, @RequestBody Doctor doctorData) {
+    public ResponseEntity<ApiResponse<Doctor>> updateDoctor(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
         try {
-            Doctor updatedDoctor = doctorService.updateDoctor(id, doctorData);
+            Doctor updatedDoctor = doctorService.updateDoctor(id, updateData);
             return ResponseEntity.ok(ApiResponse.success("Doctor updated successfully", updatedDoctor));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

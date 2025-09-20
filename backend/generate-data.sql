@@ -210,11 +210,8 @@ INSERT INTO doctor_slots (slot_id, doctor_id, slot_date, start_time, end_time, s
 -- Note: This is a sample for Dr. John Smith. In a real implementation, you would generate slots for all 12 doctors
 -- For brevity, I'm showing the pattern. You can extend this for all doctors.
 
--- Add some sample appointments to show the system working
-INSERT INTO appointments (id, patient_id, doctor_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
-(6, 5, 1, CURRENT_DATE + 1, '09:00:00', '09:30:00', 'CONSULTATION', 'SCHEDULED', 'Regular checkup', 'Annual health checkup', 150.00, CURRENT_TIMESTAMP, 1),
-(7, 6, 2, CURRENT_DATE + 2, '10:00:00', '10:45:00', 'CONSULTATION', 'CONFIRMED', 'Headache consultation', 'Follow-up for migraine treatment', 200.00, CURRENT_TIMESTAMP, 1),
-(8, 7, 3, CURRENT_DATE + 3, '08:00:00', '09:00:00', 'CONSULTATION', 'SCHEDULED', 'Knee pain evaluation', 'Post-surgery follow-up', 180.00, CURRENT_TIMESTAMP, 1);
+-- Note: Sample appointments are already created in data.sql with proper slot management
+-- This file focuses on generating additional test data without conflicting with existing appointments
 
 -- Add more patients for testing
 INSERT INTO users (id, name, firstname, lastname, email, username, password_hash, role, gender, birthdate, contact, address, city, state, country, postal_code, blood_group, emergency_contact_name, emergency_contact_num, profile_url, created_at, created_by) VALUES
@@ -222,5 +219,4 @@ INSERT INTO users (id, name, firstname, lastname, email, username, password_hash
 (19, 'Patient Mary Smith', 'Mary', 'Smith', 'mary.smith@email.com', 'mary.smith', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'PATIENT', 'FEMALE', '1988-07-22', '+1234567826', '456 Oak Ave', 'Patient City', 'Patient State', 'Patient Country', '12346', 'A+', 'Bob Smith', '+1234567827', 'https://example.com/mary.jpg', CURRENT_TIMESTAMP, 1),
 (20, 'Patient Tom Wilson', 'Tom', 'Wilson', 'tom.wilson@email.com', 'tom.wilson', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'PATIENT', 'MALE', '1995-11-08', '+1234567828', '789 Pine Rd', 'Patient City', 'Patient State', 'Patient Country', '12347', 'B+', 'Lisa Wilson', '+1234567829', 'https://example.com/tom.jpg', CURRENT_TIMESTAMP, 1);
 
--- Book some sample appointments
-UPDATE doctor_slots SET status = 'BOOKED' WHERE slot_id IN (100, 116, 132, 148, 164);
+-- Note: Slot booking is handled in data.sql to avoid conflicts

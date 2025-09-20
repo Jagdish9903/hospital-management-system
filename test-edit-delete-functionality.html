@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit/Delete Functionality Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Edit/Delete Functionality Test</h1>
+    
+    <div class="test-section">
+        <h3>Test All Admin Pages with Status Filtering</h3>
+        <button onclick="testAll()">Test All Pages</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+
+        function log(message, type = 'info') {
+            const element = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.className = `result ${type}`;
+        }
+
+        async function testAll() {
+            document.getElementById('result').innerHTML = '';
+            
+            // Login
+            log('🔐 Testing login...');
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@hospital.com', password: 'admin123' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    log('✅ Login successful!', 'success');
+                } else {
+                    log('❌ Login failed', 'error');
+                    return;
+                }
+            } catch (error) {
+                log('❌ Login error: ' + error.message, 'error');
+                return;
+            }
+
+            // Test Users with status filtering
+            log('👥 Testing users with status filtering...');
+            await testUsersFiltering();
+
+            // Test Doctors with status filtering
+            log('👨‍⚕️ Testing doctors with status filtering...');
+            await testDoctorsFiltering();
+
+            // Test Appointments with status filtering
+            log('📅 Testing appointments with status filtering...');
+            await testAppointmentsFiltering();
+
+            // Test Complaints with status filtering
+            log('📝 Testing complaints with status filtering...');
+            await testComplaintsFiltering();
+
+            // Test Audit Logs with status filtering
+            log('📊 Testing audit logs with status filtering...');
+            await testAuditLogsFiltering();
+
+            log('🎉 All tests completed!', 'success');
+        }
+
+        async function testUsersFiltering() {
+            try {
+                // Test active users
+                const activeResponse = await fetch(`${API_BASE}/api/admin/users?page=0&size=5&status=active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const activeData = await activeResponse.json();
+                log(activeData.success ? `✅ Active users: ${activeData.data.totalElements} found` : '❌ Active users failed', activeData.success ? 'success' : 'error');
+
+                // Test inactive users
+                const inactiveResponse = await fetch(`${API_BASE}/api/admin/users?page=0&size=5&status=inactive`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const inactiveData = await inactiveResponse.json();
+                log(inactiveData.success ? `✅ Inactive users: ${inactiveData.data.totalElements} found` : '❌ Inactive users failed', inactiveData.success ? 'success' : 'error');
+
+                // Test all users
+                const allResponse = await fetch(`${API_BASE}/api/admin/users?page=0&size=5`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const allData = await allResponse.json();
+                log(allData.success ? `✅ All users: ${allData.data.totalElements} found` : '❌ All users failed', allData.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('❌ Users filtering error: ' + error.message, 'error');
+            }
+        }
+
+        async function testDoctorsFiltering() {
+            try {
+                // Test active doctors
+                const activeResponse = await fetch(`${API_BASE}/api/admin/doctors?page=0&size=5&status=active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const activeData = await activeResponse.json();
+                log(activeData.success ? `✅ Active doctors: ${activeData.data.totalElements} found` : '❌ Active doctors failed', activeData.success ? 'success' : 'error');
+
+                // Test inactive doctors
+                const inactiveResponse = await fetch(`${API_BASE}/api/admin/doctors?page=0&size=5&status=inactive`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const inactiveData = await inactiveResponse.json();
+                log(inactiveData.success ? `✅ Inactive doctors: ${inactiveData.data.totalElements} found` : '❌ Inactive doctors failed', inactiveData.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('❌ Doctors filtering error: ' + error.message, 'error');
+            }
+        }
+
+        async function testAppointmentsFiltering() {
+            try {
+                // Test appointments with status filter
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=5&status=CONFIRMED`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Appointments filtered: ${data.data.totalElements} found` : '❌ Appointments failed', data.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('❌ Appointments filtering error: ' + error.message, 'error');
+            }
+        }
+
+        async function testComplaintsFiltering() {
+            try {
+                // Test complaints with status filter
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=5&status=OPEN`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Complaints filtered: ${data.data.totalElements} found` : '❌ Complaints failed', data.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('❌ Complaints filtering error: ' + error.message, 'error');
+            }
+        }
+
+        async function testAuditLogsFiltering() {
+            try {
+                // Test audit logs with status filter
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=5&status=active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Audit logs filtered: ${data.data.totalElements} found` : '❌ Audit logs failed', data.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('❌ Audit logs filtering error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

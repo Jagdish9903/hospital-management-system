@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
+import jsPDF from 'jspdf';
 
 @Component({
   selector: 'app-payment-success',
@@ -16,13 +20,13 @@ import { ToastService } from '../../../core/services/toast.service';
           </svg>
         </div>
         <h1 class="success-title">Payment Successful!</h1>
-        <p class="success-subtitle">Your appointment has been confirmed</p>
+        <p class="success-subtitle">Your appointment has been scheduled</p>
       </div>
 
       <div class="appointment-card">
         <div class="card-header">
-          <h3>Appointment Confirmed</h3>
-          <div class="status-badge confirmed">Confirmed</div>
+          <h3>Appointment Scheduled</h3>
+          <div class="status-badge scheduled">Scheduled</div>
         </div>
         
         <div class="appointment-details">
@@ -115,8 +119,8 @@ import { ToastService } from '../../../core/services/toast.service';
               </svg>
             </div>
             <div class="step-content">
-              <h4>Appointment Confirmed</h4>
-              <p>Your appointment has been successfully booked and confirmed.</p>
+              <h4>Appointment Scheduled</h4>
+              <p>Your appointment has been successfully booked and scheduled.</p>
             </div>
           </div>
           
@@ -153,14 +157,18 @@ export class PaymentSuccessComponent implements OnInit {
   appointmentData: any = null;
   paymentData: any = null;
   appointment: any = null;
+  userProfile: any = null;
 
   constructor(
     private router: Router,
+    private http: HttpClient,
+    private authService: AuthService,
     private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
     this.loadSuccessData();
+    this.loadUserProfile();
   }
 
   loadSuccessData(): void {
@@ -175,98 +183,134 @@ export class PaymentSuccessComponent implements OnInit {
     }
   }
 
-  downloadReceipt(): void {
-    // Generate receipt content
-    const receiptContent = this.generateReceiptContent();
-    
-    // Create and download PDF (simplified version)
-    const blob = new Blob([receiptContent], { type: 'text/html' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `appointment-receipt-${this.paymentData?.paymentId}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    this.toastService.showSuccess('Receipt downloaded successfully!');
+  loadUserProfile(): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser?.id) {
+      this.http.get<any>(`${environment.apiUrl}/api/simple-profile/user/${currentUser.id}`).subscribe({
+        next: (response) => {
+          this.userProfile = response.data;
+        },
+        error: (error) => {
+          console.error('Error loading user profile:', error);
+          // Fallback to basic user data
+          this.userProfile = currentUser;
+        }
+      });
+    }
   }
 
-  generateReceiptContent(): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Appointment Receipt</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; }
-          .section { margin: 20px 0; }
-          .section h3 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-          .detail { display: flex; justify-content: space-between; margin: 5px 0; }
-          .label { font-weight: bold; }
-          .amount { color: #059669; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Hospital Management System</h1>
-          <h2>Appointment Receipt</h2>
-        </div>
-        
-        <div class="section">
-          <h3>Appointment Details</h3>
-          <div class="detail">
-            <span class="label">Doctor:</span>
-            <span>${this.appointmentData?.doctorName}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Specialization:</span>
-            <span>${this.appointmentData?.specialization}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Date:</span>
-            <span>${this.formatDate(this.appointmentData?.appointmentDate)}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Time:</span>
-            <span>${this.formatTime(this.appointmentData?.appointmentTime)} - ${this.formatTime(this.appointmentData?.endTime)}</span>
-          </div>
-        </div>
-        
-        <div class="section">
-          <h3>Payment Information</h3>
-          <div class="detail">
-            <span class="label">Payment ID:</span>
-            <span>${this.paymentData?.paymentId}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Transaction ID:</span>
-            <span>${this.paymentData?.transactionId || this.getTransactionId()}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Amount:</span>
-            <span class="amount">₹${this.appointmentData?.consultationFee}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Payment Method:</span>
-            <span>${this.paymentData?.method}</span>
-          </div>
-          <div class="detail">
-            <span class="label">Payment Date:</span>
-            <span>${this.formatDateTime(this.paymentData?.paymentDate)}</span>
-          </div>
-        </div>
-        
-        <div class="section">
-          <p><strong>Thank you for choosing our hospital!</strong></p>
-          <p>Please arrive 15 minutes before your appointment time.</p>
-        </div>
-      </body>
-      </html>
-    `;
+  downloadReceipt(): void {
+    try {
+      const pdf = new jsPDF();
+      
+      // Set up colors
+      const primaryColor = '#3b82f6';
+      const secondaryColor = '#6b7280';
+      const successColor = '#059669';
+      
+      // Header
+      pdf.setFillColor(primaryColor);
+      pdf.rect(0, 0, 210, 30, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Hospital Management System', 105, 15, { align: 'center' });
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Appointment Receipt', 105, 22, { align: 'center' });
+      
+      // Reset text color
+      pdf.setTextColor(0, 0, 0);
+      
+      // Receipt number and date
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Receipt #: ${this.paymentData?.paymentId || 'N/A'}`, 15, 45);
+      pdf.text(`Date: ${this.formatDateTime(new Date().toISOString())}`, 15, 50);
+      
+      // Patient Information
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Patient Information', 15, 65);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Name: ${this.userProfile?.name || this.appointmentData?.patientName || 'N/A'}`, 15, 75);
+      pdf.text(`Email: ${this.userProfile?.email || this.appointmentData?.patientEmail || 'N/A'}`, 15, 80);
+      pdf.text(`Phone: ${this.userProfile?.contact || this.appointmentData?.patientPhone || 'N/A'}`, 15, 85);
+      if (this.userProfile?.address) {
+        pdf.text(`Address: ${this.userProfile.address}`, 15, 90);
+      }
+      
+      // Doctor Information
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Doctor Information', 15, 100);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Doctor: ${this.appointmentData?.doctorName || 'N/A'}`, 15, 110);
+      pdf.text(`Specialization: ${this.appointmentData?.specialization || 'N/A'}`, 15, 115);
+      pdf.text(`Experience: ${this.appointmentData?.yearsOfExp || 'N/A'} years`, 15, 120);
+      
+      // Appointment Details
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Appointment Details', 15, 135);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Date: ${this.formatDate(this.appointmentData?.appointmentDate)}`, 15, 145);
+      pdf.text(`Time: ${this.formatTime(this.appointmentData?.appointmentTime)} - ${this.formatTime(this.appointmentData?.endTime)}`, 15, 150);
+      pdf.text(`Type: ${this.appointmentData?.appointmentType || 'CONSULTATION'}`, 15, 155);
+      
+      if (this.appointmentData?.symptoms) {
+        pdf.text(`Symptoms: ${this.appointmentData.symptoms}`, 15, 160);
+      }
+      
+      // Payment Information
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Payment Information', 15, 175);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Payment ID: ${this.paymentData?.paymentId || 'N/A'}`, 15, 185);
+      pdf.text(`Transaction ID: ${this.paymentData?.transactionId || this.getTransactionId()}`, 15, 190);
+      pdf.text(`Payment Method: ${this.paymentData?.method || 'Online Payment'}`, 15, 195);
+      pdf.text(`Payment Date: ${this.formatDateTime(this.paymentData?.paymentDate || new Date().toISOString())}`, 15, 200);
+      
+      // Amount
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(successColor);
+      pdf.text(`Total Amount: ₹${this.appointmentData?.consultationFee || '0'}`, 15, 215);
+      
+      // Footer
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Thank you for choosing our hospital!', 105, 250, { align: 'center' });
+      pdf.text('Please arrive 15 minutes before your appointment time.', 105, 255, { align: 'center' });
+      pdf.text('For any queries, contact us at support@hospital.com', 105, 260, { align: 'center' });
+      
+      // Add border
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(10, 35, 190, 220);
+      
+      // Download the PDF
+      const fileName = `appointment-receipt-${this.paymentData?.paymentId || Date.now()}.pdf`;
+      pdf.save(fileName);
+      
+      this.toastService.showSuccess('Receipt downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      this.toastService.showError('Error generating receipt. Please try again.');
+    }
   }
+
 
   goToAppointments(): void {
     this.router.navigate(['/appointments/my-appointments']);

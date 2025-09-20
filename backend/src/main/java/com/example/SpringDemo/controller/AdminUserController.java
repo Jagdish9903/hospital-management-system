@@ -1,8 +1,10 @@
 package com.example.SpringDemo.controller;
 
 import com.example.SpringDemo.dto.ApiResponse;
+import com.example.SpringDemo.dto.UserRequest;
 import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,13 +34,21 @@ public class AdminUserController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String role,
-            @RequestParam(required = false) String gender) {
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) String status) {
+        
+        System.out.println("=== ADMIN USERS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - Name: " + name + ", Email: " + email + ", Role: " + role + ", Gender: " + gender + ", Status: " + status);
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<User> users = userService.getAllUsers(name, email, role, gender, pageable);
+        Page<User> users = userService.getAllUsers(name, email, role, gender, status, pageable);
+        System.out.println("Found " + users.getTotalElements() + " users");
+        
         return ResponseEntity.ok(ApiResponse.success(users));
     }
     
@@ -97,6 +107,17 @@ public class AdminUserController {
         try {
             List<User> admins = userService.getAdmins();
             return ResponseEntity.ok(ApiResponse.success(admins));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<ApiResponse<User>> createUser(@Valid @RequestBody UserRequest request) {
+        try {
+            User user = userService.createUser(request);
+            return ResponseEntity.ok(ApiResponse.success("User created successfully", user));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

@@ -209,7 +209,7 @@ public class PaymentService {
         appointment.setAppointmentDate(payment.getTempAppointmentDate());
         appointment.setAppointmentTime(payment.getTempAppointmentTime());
         appointment.setEndTime(payment.getTempEndTime());
-        appointment.setStatus(Appointment.Status.CONFIRMED);
+        appointment.setStatus(Appointment.Status.SCHEDULED);
         appointment.setAppointmentType(Appointment.AppointmentType.valueOf(payment.getTempAppointmentType()));
         appointment.setConsultationFee(payment.getAmount());
         appointment.setSymptoms(payment.getTempSymptoms());

@@ -22,10 +22,12 @@ export class AuthService {
     return this.http.post<ApiResponse<LoginResponse>>(`${this.API_URL}/login`, credentials)
       .pipe(
         tap(response => {
+          console.log('Login response:', response);
           if (response.success) {
             if (typeof window !== 'undefined') {
               localStorage.setItem('token', response.data.token);
               localStorage.setItem('user', JSON.stringify(response.data));
+              console.log('Token stored in localStorage:', response.data.token.substring(0, 20) + '...');
             }
             this.setCurrentUser(response.data);
           }
@@ -47,7 +49,9 @@ export class AuthService {
 
   getToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
+      const token = localStorage.getItem('token');
+      console.log('AuthService.getToken() - Retrieved token:', token ? `${token.substring(0, 20)}...` : 'No token');
+      return token;
     }
     return null;
   }

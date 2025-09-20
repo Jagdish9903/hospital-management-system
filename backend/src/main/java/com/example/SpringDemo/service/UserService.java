@@ -1,7 +1,10 @@
 package com.example.SpringDemo.service;
 
+import com.example.SpringDemo.dto.UserRequest;
 import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.repository.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @Transactional
@@ -22,7 +26,87 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
     
-    public Page<User> getAllUsers(String name, String email, String role, String gender, Pageable pageable) {
+    @Autowired
+    private DoctorService doctorService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    public User createUser(UserRequest request) {
+        // Get current user's role for hierarchy validation
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserRole = "ADMIN"; // Default to ADMIN for now
+        
+        if (authentication != null && authentication.getAuthorities() != null && !authentication.getAuthorities().isEmpty()) {
+            currentUserRole = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+        }
+        
+        // Validate role hierarchy
+        User.Role requestedRole;
+        try {
+            requestedRole = User.Role.valueOf(request.getRole().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid role: " + request.getRole());
+        }
+        
+        // Check role hierarchy
+        if (currentUserRole.equals("ADMIN") && !requestedRole.equals(User.Role.PATIENT)) {
+            throw new RuntimeException("Admin can only create patient users");
+        }
+        if (currentUserRole.equals("SUPERADMIN") && 
+            !requestedRole.equals(User.Role.PATIENT) && !requestedRole.equals(User.Role.ADMIN)) {
+            throw new RuntimeException("SuperAdmin can only create patient or admin users");
+        }
+        
+        // Check if username already exists
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        
+        // Check if email already exists
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+        
+        // Create new user
+        User user = new User();
+        user.setName(request.getName());
+        user.setFirstname(request.getFirstname());
+        user.setLastname(request.getLastname());
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setRole(requestedRole);
+        user.setContact(request.getContact());
+        user.setBirthdate(request.getBirthdate());
+        user.setEmergencyContactName(request.getEmergencyContactName());
+        user.setEmergencyContactNum(request.getEmergencyContactNum());
+        user.setState(request.getState());
+        user.setCity(request.getCity());
+        user.setAddress(request.getAddress());
+        user.setCountry(request.getCountry());
+        user.setCountryCode(request.getCountryCode());
+        user.setPostalCode(request.getPostalCode());
+        user.setBloodGroup(request.getBloodGroup());
+        user.setProfileUrl(request.getProfileUrl());
+        
+        // Set gender if provided
+        if (request.getGender() != null && !request.getGender().isEmpty()) {
+            try {
+                user.setGender(User.Gender.valueOf(request.getGender().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid gender: " + request.getGender());
+            }
+        }
+        
+        // Set audit fields
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        return userRepository.save(user);
+    }
+    
+    public Page<User> getAllUsers(String name, String email, String role, String gender, String status, Pageable pageable) {
         User.Role roleEnum = null;
         if (role != null && !role.isEmpty()) {
             try {
@@ -41,7 +125,8 @@ public class UserService {
             }
         }
         
-        return userRepository.findUsersWithFilters(name, email, roleEnum, genderEnum, pageable);
+        // Use the method that includes deleted records for display purposes
+        return userRepository.findUsersWithFiltersIncludingDeleted(name, email, null, null, roleEnum, genderEnum, null, null, status, pageable);
     }
     
     public Page<User> getUsersByRole(User.Role role, Pageable pageable) {
@@ -204,6 +289,16 @@ public class UserService {
         user.setDeletedAt(LocalDateTime.now());
         user.setDeletedBy(user.getId());
         userRepository.save(user);
+        
+        // If user is a doctor, also soft delete the doctor record
+        if (user.getRole() == User.Role.DOCTOR) {
+            try {
+                doctorService.deleteDoctorByUserId(id);
+            } catch (Exception e) {
+                // Doctor record might not exist, which is fine
+                System.out.println("No doctor record found for user ID: " + id);
+            }
+        }
     }
     
     public Object getUserStats() {

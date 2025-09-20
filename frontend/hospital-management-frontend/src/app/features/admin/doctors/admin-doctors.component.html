@@ -125,8 +125,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let doctor of doctors" class="table-row">
-            <td class="doctor-id">{{ doctor.doctorId }}</td>
+          <tr *ngFor="let doctor of doctors" class="table-row" [class.deleted-row]="doctor.deletedAt">
+            <td class="doctor-id">
+              <span *ngIf="doctor.deletedAt" class="deleted-indicator">DELETED</span>
+              {{ doctor.doctorId }}
+            </td>
             <td class="doctor-name">
               <div class="doctor-info">
                 <div class="doctor-avatar">
@@ -136,31 +139,39 @@
                   </svg>
                 </div>
                 <div class="doctor-details">
-                  <div class="doctor-name-text">{{ doctor.user.name }}</div>
-                  <div class="doctor-email">{{ doctor.user.email }}</div>
+                  <div class="doctor-name-text" [class.deleted-text]="doctor.deletedAt">{{ doctor.user.name }}</div>
+                  <div class="doctor-email" [class.deleted-text]="doctor.deletedAt">{{ doctor.user.email }}</div>
                 </div>
               </div>
             </td>
             <td class="doctor-specialization">
-              <span class="specialization-badge">{{ doctor.specialization.name }}</span>
+              <span class="specialization-badge" [class.deleted-badge]="doctor.deletedAt">{{ doctor.specialization.name }}</span>
             </td>
-            <td class="doctor-license">{{ doctor.licenseNumber }}</td>
-            <td class="doctor-qualification">{{ doctor.qualification }}</td>
-            <td class="doctor-fee">{{ formatCurrency(doctor.consultationFee) }}</td>
+            <td class="doctor-license" [class.deleted-text]="doctor.deletedAt">{{ doctor.licenseNumber }}</td>
+            <td class="doctor-qualification" [class.deleted-text]="doctor.deletedAt">{{ doctor.qualification }}</td>
+            <td class="doctor-fee" [class.deleted-text]="doctor.deletedAt">{{ formatCurrency(doctor.consultationFee) }}</td>
             <td class="doctor-status">
-              <span class="badge" [class]="getStatusBadgeClass(doctor.status || '')">
+              <span class="badge" [class]="getStatusBadgeClass(doctor.status || '')" [class.deleted-badge]="doctor.deletedAt">
                 {{ doctor.status || 'Unknown' }}
               </span>
             </td>
             <td class="doctor-actions">
               <div class="action-buttons">
-                <button class="action-btn edit-btn" (click)="editDoctor(doctor)" title="Edit Doctor">
+                <button class="action-btn edit-btn" 
+                        [disabled]="doctor.deletedAt"
+                        [class.disabled]="doctor.deletedAt"
+                        (click)="editDoctor(doctor)" 
+                        title="Edit Doctor">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" (click)="deleteDoctor(doctor)" title="Delete Doctor">
+                <button class="action-btn delete-btn" 
+                        [disabled]="doctor.deletedAt"
+                        [class.disabled]="doctor.deletedAt"
+                        (click)="deleteDoctor(doctor)" 
+                        title="Delete Doctor">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -341,17 +352,45 @@
         </svg>
       </button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" (click)="showPatientDropdown = false">
       <form [formGroup]="addForm" class="add-form">
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Select Patient *</label>
-            <select formControlName="userId" class="form-select">
-              <option value="">Choose a patient...</option>
-              <option *ngFor="let patient of patients" [value]="patient.id">
-                {{ patient.name }} ({{ patient.email }})
-              </option>
-            </select>
+            <div class="searchable-select-container" (click)="$event.stopPropagation()">
+              <div class="searchable-select" [class.open]="showPatientDropdown">
+                <input 
+                  type="text" 
+                  class="searchable-input" 
+                  placeholder="Search patients by name or email..."
+                  [(ngModel)]="patientSearchTerm"
+                  (input)="onPatientSearch($any($event.target).value)"
+                  (focus)="onPatientFocus()"
+                  autocomplete="off"
+                />
+                <div class="dropdown-arrow" (click)="togglePatientDropdown()">
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="dropdown-options" *ngIf="showPatientDropdown">
+                  <div 
+                    *ngFor="let patient of filteredPatients; let i = index" 
+                    class="dropdown-option"
+                    (mousedown)="selectPatient(patient); $event.preventDefault()"
+                    [class.selected]="selectedPatient?.id === patient.id"
+                    [attr.data-index]="i"
+                  >
+                    <div class="patient-name">{{ patient.name }}</div>
+                    <div class="patient-email">{{ patient.email }}</div>
+                  </div>
+                  <div *ngIf="filteredPatients.length === 0" class="no-results">
+                    No patients found
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" formControlName="userId" />
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Specialization *</label>

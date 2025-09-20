@@ -76,7 +76,7 @@
   letter-spacing: 0.5px;
 }
 
-.status-badge.confirmed {
+.status-badge.scheduled {
   background: #dcfce7;
   color: #166534;
 }

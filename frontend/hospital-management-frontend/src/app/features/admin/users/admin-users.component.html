@@ -5,7 +5,7 @@
       <h1 class="page-title">User Management</h1>
       <p class="page-subtitle">Manage hospital users, patients, and administrators</p>
     </div>
-    <button class="add-user-btn">
+    <button class="add-user-btn" (click)="addUser()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
@@ -133,8 +133,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let user of users" class="table-row">
-            <td class="user-id">{{ user.id }}</td>
+          <tr *ngFor="let user of users" class="table-row" [class.deleted-row]="user.deletedAt">
+            <td class="user-id">
+              <span *ngIf="user.deletedAt" class="deleted-indicator">DELETED</span>
+              {{ user.id }}
+            </td>
             <td class="user-name">
               <div class="user-info">
                 <div class="user-avatar">
@@ -144,29 +147,37 @@
                   </svg>
                 </div>
                 <div class="user-details">
-                  <div class="user-name-text">{{ user.name }}</div>
-                  <div class="user-username">{{ '@' + user.username }}</div>
+                  <div class="user-name-text" [class.deleted-text]="user.deletedAt">{{ user.name }}</div>
+                  <div class="user-username" [class.deleted-text]="user.deletedAt">{{ '@' + user.username }}</div>
                 </div>
               </div>
             </td>
-            <td class="user-email">{{ user.email }}</td>
+            <td class="user-email" [class.deleted-text]="user.deletedAt">{{ user.email }}</td>
             <td class="user-role">
-              <span class="badge" [class]="getRoleBadgeClass(user.role)">
+              <span class="badge" [class]="getRoleBadgeClass(user.role)" [class.deleted-badge]="user.deletedAt">
                 {{ user.role }}
               </span>
             </td>
-            <td class="user-contact">{{ user.contact || '-' }}</td>
-            <td class="user-city">{{ user.city || '-' }}</td>
-            <td class="user-created">{{ formatDate(user.createdAt) }}</td>
+            <td class="user-contact" [class.deleted-text]="user.deletedAt">{{ user.contact || '-' }}</td>
+            <td class="user-city" [class.deleted-text]="user.deletedAt">{{ user.city || '-' }}</td>
+            <td class="user-created" [class.deleted-text]="user.deletedAt">{{ formatDate(user.createdAt) }}</td>
             <td class="user-actions">
               <div class="action-buttons">
-                <button class="action-btn edit-btn" (click)="editUser(user)" title="Edit User">
+                <button class="action-btn edit-btn" 
+                        [disabled]="user.deletedAt"
+                        [class.disabled]="user.deletedAt"
+                        (click)="editUser(user)" 
+                        title="Edit User">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" (click)="deleteUser(user)" title="Delete User">
+                <button class="action-btn delete-btn" 
+                        [disabled]="user.deletedAt"
+                        [class.disabled]="user.deletedAt"
+                        (click)="deleteUser(user)" 
+                        title="Delete User">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -356,3 +367,156 @@
       </div>
     </div>
   </div>
+
+<!-- Add User Modal -->
+<div *ngIf="showAddModal" class="modal-overlay" (click)="closeAddModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Add New User</h3>
+      <button class="modal-close" (click)="closeAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="addForm" class="add-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" formControlName="name" class="form-input" placeholder="Enter full name">
+            <div class="form-error" *ngIf="addForm.get('name')?.invalid && addForm.get('name')?.touched">
+              Name is required and must be at least 2 characters
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" formControlName="email" class="form-input" placeholder="Enter email address">
+            <div class="form-error" *ngIf="addForm.get('email')?.invalid && addForm.get('email')?.touched">
+              Please enter a valid email address
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Username *</label>
+            <input type="text" formControlName="username" class="form-input" placeholder="Enter username">
+            <div class="form-error" *ngIf="addForm.get('username')?.invalid && addForm.get('username')?.touched">
+              Username is required and must be at least 3 characters
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password *</label>
+            <input type="password" formControlName="password" class="form-input" placeholder="Enter password">
+            <div class="form-error" *ngIf="addForm.get('password')?.invalid && addForm.get('password')?.touched">
+              Password must be at least 6 characters
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name *</label>
+            <input type="text" formControlName="firstname" class="form-input" placeholder="Enter first name">
+            <div class="form-error" *ngIf="addForm.get('firstname')?.invalid && addForm.get('firstname')?.touched">
+              First name is required
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name *</label>
+            <input type="text" formControlName="lastname" class="form-input" placeholder="Enter last name">
+            <div class="form-error" *ngIf="addForm.get('lastname')?.invalid && addForm.get('lastname')?.touched">
+              Last name is required
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Role *</label>
+            <select formControlName="role" class="form-select">
+              <option value="">Select Role</option>
+              <option *ngFor="let role of availableRoles" [value]="role.value">{{ role.label }}</option>
+            </select>
+            <div class="form-error" *ngIf="addForm.get('role')?.invalid && addForm.get('role')?.touched">
+              Please select a role
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select formControlName="gender" class="form-select">
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Number</label>
+            <input type="tel" formControlName="contact" class="form-input" placeholder="Enter contact number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Birth Date</label>
+            <input type="date" formControlName="birthdate" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <textarea formControlName="address" class="form-textarea" placeholder="Enter address" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" formControlName="city" class="form-input" placeholder="Enter city">
+          </div>
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <input type="text" formControlName="state" class="form-input" placeholder="Enter state">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Postal Code</label>
+            <input type="text" formControlName="postalCode" class="form-input" placeholder="Enter postal code">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Emergency Contact Name</label>
+            <input type="text" formControlName="emergencyContactName" class="form-input" placeholder="Enter emergency contact name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Emergency Contact Number</label>
+            <input type="tel" formControlName="emergencyContactNum" class="form-input" placeholder="Enter emergency contact number">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Blood Group</label>
+            <select formControlName="bloodGroup" class="form-select">
+              <option value="">Select Blood Group</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Country</label>
+            <input type="text" formControlName="country" class="form-input" placeholder="Enter country">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="createUser()" [disabled]="addForm.invalid || isSubmitting">
+        <span *ngIf="isSubmitting" class="btn-spinner"></span>
+        {{ isSubmitting ? 'Creating...' : 'Create User' }}
+      </button>
+    </div>
+  </div>
+</div>

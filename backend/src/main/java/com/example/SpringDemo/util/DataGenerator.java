@@ -161,29 +161,29 @@ public class DataGenerator {
         // May 2025 appointments
         createAppointment(patients.get(0), doctors.get(0), LocalDate.of(2025, 5, 15), 
                          LocalTime.of(9, 0), LocalTime.of(9, 30), 
-                         "CONSULTATION", "CONFIRMED", "Chest pain evaluation", 
+                         "CONSULTATION", "SCHEDULED", "Chest pain evaluation", 
                          "Patient reported mild chest discomfort during exercise", new BigDecimal("150.00"));
         
         createAppointment(patients.get(1), doctors.get(0), LocalDate.of(2025, 5, 15), 
                          LocalTime.of(10, 0), LocalTime.of(10, 30), 
-                         "CONSULTATION", "CONFIRMED", "Annual heart checkup", 
+                         "CONSULTATION", "COMPLETED", "Annual heart checkup", 
                          "Routine cardiovascular examination", new BigDecimal("150.00"));
         
         // June 2025 appointments
         createAppointment(patients.get(2), doctors.get(1), LocalDate.of(2025, 6, 10), 
                          LocalTime.of(10, 0), LocalTime.of(10, 45), 
-                         "CONSULTATION", "CONFIRMED", "Headache consultation", 
+                         "CONSULTATION", "COMPLETED", "Headache consultation", 
                          "New patient with chronic headaches", new BigDecimal("200.00"));
         
         // July 2025 appointments
         createAppointment(patients.get(0), doctors.get(2), LocalDate.of(2025, 7, 8), 
                          LocalTime.of(8, 0), LocalTime.of(9, 0), 
-                         "CONSULTATION", "CONFIRMED", "Post-surgery follow-up", 
+                         "CONSULTATION", "COMPLETED", "Post-surgery follow-up", 
                          "Gallbladder removal follow-up", new BigDecimal("200.00"));
         
         createAppointment(patients.get(1), doctors.get(3), LocalDate.of(2025, 7, 12), 
                          LocalTime.of(8, 30), LocalTime.of(9, 0), 
-                         "CONSULTATION", "CONFIRMED", "Heart rhythm evaluation", 
+                         "CONSULTATION", "COMPLETED", "Heart rhythm evaluation", 
                          "ECG and heart monitoring", new BigDecimal("160.00"));
     }
 

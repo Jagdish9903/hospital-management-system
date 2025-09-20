@@ -56,11 +56,29 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
            "(:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
            "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
            "(:specialization IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
-           "(:status IS NULL OR d.status = :status) AND " +
+           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL) OR (:status = 'inactive' AND d.deletedAt IS NOT NULL)) AND " +
            "d.deletedAt IS NULL")
     Page<Doctor> findDoctorsWithFilters(@Param("name") String name,
                                        @Param("email") String email,
                                        @Param("specialization") String specialization,
-                                       @Param("status") Doctor.Status status,
+                                       @Param("status") String status,
                                        Pageable pageable);
+    
+    @Query("SELECT d FROM Doctor d WHERE d.doctorId = :id AND d.deletedAt IS NULL")
+    Optional<Doctor> findByIdAndDeletedAtIsNull(@Param("id") Long id);
+    
+    // Methods to include deleted records for display purposes
+    @Query("SELECT d FROM Doctor d WHERE d.status = 'ACTIVE'")
+    List<Doctor> findAllActiveIncludingDeleted();
+    
+    @Query("SELECT d FROM Doctor d JOIN d.user u JOIN d.specialization s WHERE " +
+           "(:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+           "(:specialization IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
+           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL) OR (:status = 'inactive' AND d.deletedAt IS NOT NULL))")
+    Page<Doctor> findDoctorsWithFiltersIncludingDeleted(@Param("name") String name,
+                                                       @Param("email") String email,
+                                                       @Param("specialization") String specialization,
+                                                       @Param("status") String status,
+                                                       Pageable pageable);
 }

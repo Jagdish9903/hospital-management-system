@@ -10,211 +10,23 @@ import { Router } from '@angular/router';
   selector: 'app-my-appointments',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="appointments-container">
-      <div class="appointments-header">
-        <h1>My Appointments</h1>
-        <div class="appointment-stats">
-          <div class="stat-card upcoming">
-            <div class="stat-number">{{ appointmentStats.totalUpcoming }}</div>
-            <div class="stat-label">Upcoming</div>
-          </div>
-          <div class="stat-card past">
-            <div class="stat-number">{{ appointmentStats.totalPast }}</div>
-            <div class="stat-label">Past</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="appointments-tabs">
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab === 'upcoming'"
-          (click)="setActiveTab('upcoming')"
-        >
-          Upcoming Appointments
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab === 'past'"
-          (click)="setActiveTab('past')"
-        >
-          Past Appointments
-        </button>
-      </div>
-
-      <div class="appointments-content">
-        <!-- Upcoming Appointments -->
-        <div *ngIf="activeTab === 'upcoming'" class="appointments-list">
-          <div *ngIf="upcomingAppointments.length === 0" class="empty-state">
-            <div class="empty-icon">📅</div>
-            <h3>No upcoming appointments</h3>
-            <p>You don't have any upcoming appointments scheduled.</p>
-            <button class="btn-primary" (click)="bookNewAppointment()">
-              Book New Appointment
-            </button>
-          </div>
-          
-          <div *ngFor="let appointment of upcomingAppointments" class="appointment-card upcoming">
-            <div class="appointment-header">
-              <div class="appointment-date">
-                <div class="date-day">{{ getDayOfWeek(appointment.appointmentDate) }}</div>
-                <div class="date-full">{{ formatDate(appointment.appointmentDate) }}</div>
-              </div>
-              <div class="appointment-time">
-                <div class="time-start">{{ formatTime(appointment.appointmentTime) }}</div>
-                <div class="time-end">{{ formatTime(appointment.endTime) }}</div>
-              </div>
-              <div class="appointment-status" [ngClass]="'status-' + appointment.status.toLowerCase()">
-                {{ appointment.status }}
-              </div>
-            </div>
-            
-            <div class="appointment-body">
-              <div class="doctor-info">
-                <div class="doctor-name">{{ appointment.doctor.user.name || 'Dr. Unknown' }}</div>
-                <div class="doctor-specialization">{{ appointment.doctor.specialization.name || 'General' }}</div>
-              </div>
-              
-              <div class="appointment-details">
-                <div class="detail-item">
-                  <span class="detail-label">Type:</span>
-                  <span class="detail-value">{{ appointment.appointmentType }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Fee:</span>
-                  <span class="detail-value">{{ appointment.consultationFee }}</span>
-                </div>
-                <div class="detail-item" *ngIf="appointment.symptoms">
-                  <span class="detail-label">Symptoms:</span>
-                  <span class="detail-value">{{ appointment.symptoms }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="appointment-actions" *ngIf="appointment.status !== 'CANCELLED'">
-              <button class="btn-secondary" (click)="rescheduleAppointment(appointment)">
-                Reschedule
-              </button>
-              <button class="btn-danger" (click)="cancelAppointment(appointment)">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Past Appointments -->
-        <div *ngIf="activeTab === 'past'" class="appointments-list">
-          <div *ngIf="pastAppointments.length === 0" class="empty-state">
-            <div class="empty-icon">📋</div>
-            <h3>No past appointments</h3>
-            <p>You haven't had any appointments yet.</p>
-          </div>
-          
-          <div *ngFor="let appointment of pastAppointments" class="appointment-card past">
-            <div class="appointment-header">
-              <div class="appointment-date">
-                <div class="date-day">{{ getDayOfWeek(appointment.appointmentDate) }}</div>
-                <div class="date-full">{{ formatDate(appointment.appointmentDate) }}</div>
-              </div>
-              <div class="appointment-time">
-                <div class="time-start">{{ formatTime(appointment.appointmentTime) }}</div>
-                <div class="time-end">{{ formatTime(appointment.endTime) }}</div>
-              </div>
-              <div class="appointment-status" [ngClass]="'status-' + appointment.status.toLowerCase()">
-                {{ appointment.status }}
-              </div>
-            </div>
-            
-            <div class="appointment-body">
-              <div class="doctor-info">
-                <div class="doctor-name">{{ appointment.doctor.user.name || 'Dr. Unknown' }}</div>
-                <div class="doctor-specialization">{{ appointment.doctor.specialization.name || 'General' }}</div>
-              </div>
-              
-              <div class="appointment-details">
-                <div class="detail-item">
-                  <span class="detail-label">Type:</span>
-                  <span class="detail-value">{{ appointment.appointmentType }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Fee:</span>
-                  <span class="detail-value">{{ appointment.consultationFee }}</span>
-                </div>
-                <div class="detail-item" *ngIf="appointment.symptoms">
-                  <span class="detail-label">Symptoms:</span>
-                  <span class="detail-value">{{ appointment.symptoms }}</span>
-                </div>
-                <div class="detail-item" *ngIf="appointment.cancellationReason">
-                  <span class="detail-label">Cancellation Reason:</span>
-                  <span class="detail-value">{{ appointment.cancellationReason }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reschedule Modal -->
-    <div *ngIf="showRescheduleModal" class="modal-overlay" (click)="closeRescheduleModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>Reschedule Appointment</h3>
-          <button class="modal-close" (click)="closeRescheduleModal()">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>New Date:</label>
-            <input type="date" [(ngModel)]="rescheduleData.appointmentDate" [min]="today">
-          </div>
-          <div class="form-group">
-            <label>New Time:</label>
-            <input type="time" [(ngModel)]="rescheduleData.appointmentTime">
-          </div>
-          <div class="form-group">
-            <label>End Time:</label>
-            <input type="time" [(ngModel)]="rescheduleData.endTime">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" (click)="closeRescheduleModal()">Cancel</button>
-          <button class="btn-primary" (click)="confirmReschedule()" [disabled]="!rescheduleData.appointmentDate || !rescheduleData.appointmentTime">
-            Reschedule
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cancel Modal -->
-    <div *ngIf="showCancelModal" class="modal-overlay" (click)="closeCancelModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>Cancel Appointment</h3>
-          <button class="modal-close" (click)="closeCancelModal()">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Reason for cancellation:</label>
-            <textarea [(ngModel)]="cancelReason" placeholder="Please provide a reason for cancelling this appointment..." rows="3"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" (click)="closeCancelModal()">Keep Appointment</button>
-          <button class="btn-danger" (click)="confirmCancel()" [disabled]="!cancelReason.trim()">
-            Cancel Appointment
-          </button>
-        </div>
-      </div>
-    </div>
-  `,
+  templateUrl: './my-appointments.component.html',
   styleUrls: ['./my-appointments.component.css']
 })
 export class MyAppointmentsComponent implements OnInit {
   activeTab: 'upcoming' | 'past' = 'upcoming';
-  upcomingAppointments: Appointment[] = [];
-  pastAppointments: Appointment[] = [];
+  appointments: Appointment[] = [];
   appointmentStats = { totalUpcoming: 0, totalPast: 0 };
+  
+  // Pagination properties
+  currentPage = 0;
+  pageSize = 10;
+  totalPages = 0;
+  totalElements = 0;
+  pageSizeOptions = [5, 10, 20, 50];
+  sortBy = 'appointmentDate';
+  sortDir = 'desc';
+  statusFilter = '';
   
   showRescheduleModal = false;
   showCancelModal = false;
@@ -222,6 +34,13 @@ export class MyAppointmentsComponent implements OnInit {
   rescheduleData = { appointmentDate: '', appointmentTime: '', endTime: '' };
   cancelReason = '';
   today = new Date().toISOString().split('T')[0];
+  isLoading = false;
+  hasFilteredResults = true;
+  
+  // Reschedule modal properties
+  availableSlots: any[] = [];
+  selectedSlot: any = null;
+  isLoadingSlots = false;
 
   constructor(
     private adminService: AdminService,
@@ -236,26 +55,88 @@ export class MyAppointmentsComponent implements OnInit {
 
   loadAppointments(): void {
     const currentUser = this.authService.getCurrentUser();
-    if (currentUser?.id) {
-      this.adminService.getUserAppointments(currentUser.id).subscribe({
-        next: (data) => {
-          this.upcomingAppointments = data.upcoming;
-          this.pastAppointments = data.past;
-          this.appointmentStats = {
-            totalUpcoming: data.totalUpcoming,
-            totalPast: data.totalPast
-          };
-        },
-        error: (error) => {
-          this.toastService.showError('Failed to load appointments');
-          console.error('Error loading appointments:', error);
-        }
-      });
+    if (!currentUser?.id) {
+      this.toastService.showError('User not authenticated');
+      return;
     }
+
+    this.isLoading = true;
+    
+    // Determine status filter based on active tab
+    let statusFilter = this.statusFilter;
+    if (this.activeTab === 'upcoming') {
+      // For upcoming, exclude cancelled appointments
+      statusFilter = this.statusFilter === 'CANCELLED' ? '' : this.statusFilter;
+    } else if (this.activeTab === 'past') {
+      // For past, we can include all statuses including cancelled
+      statusFilter = this.statusFilter;
+    }
+
+    this.adminService.getUserAppointmentsPaginated(currentUser.id, this.currentPage, this.pageSize, this.sortBy, this.sortDir, statusFilter, this.activeTab).subscribe({
+      next: (data) => {
+        this.appointments = data.appointments;
+        this.currentPage = data.currentPage;
+        this.totalPages = data.totalPages;
+        this.totalElements = data.totalElements;
+        this.hasFilteredResults = data.totalElements > 0;
+        this.isLoading = false;
+        console.log('Appointments loaded:', this.appointments);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.hasFilteredResults = false;
+        console.error('Error loading appointments:', error);
+        this.toastService.showError('Failed to load appointments');
+      }
+    });
   }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadAppointments();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+    this.loadAppointments();
+  }
+
+  onSortChange(sortBy: string): void {
+    if (this.sortBy === sortBy) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = sortBy;
+      this.sortDir = 'desc';
+    }
+    this.currentPage = 0;
+    this.loadAppointments();
+  }
+
+  onStatusFilterChange(): void {
+    this.currentPage = 0;
+    this.loadAppointments();
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const startPage = Math.max(0, this.currentPage - 2);
+    const endPage = Math.min(this.totalPages - 1, this.currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  // Expose Math to template
+  Math = Math;
 
   setActiveTab(tab: 'upcoming' | 'past'): void {
     this.activeTab = tab;
+    this.statusFilter = ''; // Reset status filter when switching tabs
+    this.currentPage = 0; // Reset to first page
+    this.loadAppointments();
   }
 
   bookNewAppointment(): void {
@@ -265,10 +146,12 @@ export class MyAppointmentsComponent implements OnInit {
   rescheduleAppointment(appointment: Appointment): void {
     this.selectedAppointment = appointment;
     this.rescheduleData = {
-      appointmentDate: appointment.appointmentDate,
-      appointmentTime: appointment.appointmentTime,
-      endTime: appointment.endTime
+      appointmentDate: '',
+      appointmentTime: '',
+      endTime: ''
     };
+    this.availableSlots = [];
+    this.selectedSlot = null;
     this.showRescheduleModal = true;
   }
 
@@ -276,26 +159,112 @@ export class MyAppointmentsComponent implements OnInit {
     this.showRescheduleModal = false;
     this.selectedAppointment = null;
     this.rescheduleData = { appointmentDate: '', appointmentTime: '', endTime: '' };
+    this.availableSlots = [];
+    this.selectedSlot = null;
+    this.isLoadingSlots = false;
+  }
+
+  onRescheduleDateChange(): void {
+    if (this.rescheduleData.appointmentDate && this.selectedAppointment?.doctor?.doctorId) {
+      this.loadAvailableSlots();
+    }
+  }
+
+  loadAvailableSlots(): void {
+    if (!this.selectedAppointment?.doctor?.doctorId || !this.rescheduleData.appointmentDate) {
+      return;
+    }
+
+    this.isLoadingSlots = true;
+    this.availableSlots = [];
+    this.selectedSlot = null;
+
+    console.log('Loading slots for doctor:', this.selectedAppointment.doctor.doctorId, 'date:', this.rescheduleData.appointmentDate);
+
+    this.adminService.getDoctorSlots(
+      this.selectedAppointment.doctor.doctorId, 
+      this.rescheduleData.appointmentDate
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.availableSlots = response.data || [];
+          console.log('Available slots loaded:', this.availableSlots);
+          if (this.availableSlots.length > 0) {
+            console.log('First slot example:', this.availableSlots[0]);
+            console.log('Start time type:', typeof this.availableSlots[0].startTime);
+            console.log('Start time value:', this.availableSlots[0].startTime);
+          }
+        }
+        this.isLoadingSlots = false;
+      },
+      error: (error) => {
+        console.error('Error loading available slots:', error);
+        this.toastService.showError('Failed to load available slots');
+        this.isLoadingSlots = false;
+      }
+    });
+  }
+
+  selectSlot(slot: any): void {
+    console.log('=== SLOT SELECTION DEBUG ===');
+    console.log('Selected slot:', slot);
+    console.log('Slot start time:', slot.startTime, 'type:', typeof slot.startTime);
+    console.log('Slot end time:', slot.endTime, 'type:', typeof slot.endTime);
+    
+    this.selectedSlot = slot;
+    this.rescheduleData.appointmentTime = slot.startTime;
+    this.rescheduleData.endTime = slot.endTime;
+    
+    console.log('Updated reschedule data:', this.rescheduleData);
   }
 
   confirmReschedule(): void {
-    if (!this.selectedAppointment) return;
+    if (!this.selectedAppointment || !this.selectedSlot) return;
+
+    console.log('=== RESCHEDULE DEBUG ===');
+    console.log('Selected slot:', this.selectedSlot);
+    console.log('Reschedule data:', this.rescheduleData);
+    console.log('Appointment time string:', this.rescheduleData.appointmentTime);
+    console.log('End time string:', this.rescheduleData.endTime);
+
+    // Parse time with better error handling
+    let appointmentTime, endTime;
+    
+    try {
+      const startTimeParts = this.rescheduleData.appointmentTime.split(':');
+      appointmentTime = {
+        hour: parseInt(startTimeParts[0]),
+        minute: parseInt(startTimeParts[1]),
+        second: 0,
+        nano: 0
+      };
+    } catch (error) {
+      console.error('Error parsing appointment time:', error);
+      this.toastService.showError('Invalid appointment time format');
+      return;
+    }
+
+    try {
+      const endTimeParts = this.rescheduleData.endTime.split(':');
+      endTime = {
+        hour: parseInt(endTimeParts[0]),
+        minute: parseInt(endTimeParts[1]),
+        second: 0,
+        nano: 0
+      };
+    } catch (error) {
+      console.error('Error parsing end time:', error);
+      this.toastService.showError('Invalid end time format');
+      return;
+    }
 
     const appointmentData = {
       appointmentDate: this.rescheduleData.appointmentDate,
-      appointmentTime: {
-        hour: parseInt(this.rescheduleData.appointmentTime.split(':')[0]),
-        minute: parseInt(this.rescheduleData.appointmentTime.split(':')[1]),
-        second: 0,
-        nano: 0
-      },
-      endTime: {
-        hour: parseInt(this.rescheduleData.endTime.split(':')[0]),
-        minute: parseInt(this.rescheduleData.endTime.split(':')[1]),
-        second: 0,
-        nano: 0
-      }
+      appointmentTime: appointmentTime,
+      endTime: endTime
     };
+
+    console.log('Final appointment data:', appointmentData);
 
     this.adminService.rescheduleAppointment(this.selectedAppointment.id!, appointmentData).subscribe({
       next: () => {
@@ -304,6 +273,7 @@ export class MyAppointmentsComponent implements OnInit {
         this.loadAppointments();
       },
       error: (error) => {
+        console.error('Reschedule error:', error);
         this.toastService.showError(error.error?.message || 'Failed to reschedule appointment');
       }
     });
@@ -354,5 +324,16 @@ export class MyAppointmentsComponent implements OnInit {
 
   getDayOfWeek(date: string): string {
     return new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+  }
+
+  isAppointmentUpcoming(appointment: Appointment): boolean {
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return appointmentDate >= today && appointment.status !== 'CANCELLED';
+  }
+
+  shouldShowActions(appointment: Appointment): boolean {
+    return this.activeTab === 'upcoming' && this.isAppointmentUpcoming(appointment);
   }
 }

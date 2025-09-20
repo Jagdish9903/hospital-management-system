@@ -55,12 +55,57 @@ public class ComplaintService {
     
     public Page<Complaint> getAllComplaints(String category, String status, String priority, 
                                            Long patientId, Long assignedTo, Pageable pageable) {
-        return complaintRepository.findComplaintsWithFilters(category, status, priority, 
+        // Convert strings to enums
+        Complaint.Category categoryEnum = null;
+        Complaint.Status statusEnum = null;
+        Complaint.Priority priorityEnum = null;
+        
+        if (category != null && !category.trim().isEmpty()) {
+            try {
+                categoryEnum = Complaint.Category.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                categoryEnum = null;
+            }
+        }
+        
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                statusEnum = Complaint.Status.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                statusEnum = null;
+            }
+        }
+        
+        if (priority != null && !priority.trim().isEmpty()) {
+            try {
+                priorityEnum = Complaint.Priority.valueOf(priority.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                priorityEnum = null;
+            }
+        }
+        
+        return complaintRepository.findComplaintsWithFilters(category, categoryEnum, status, statusEnum, priority, priorityEnum, 
                                                            patientId, assignedTo, pageable);
     }
     
     public Page<Complaint> getComplaintsByPatient(Long patientId, Pageable pageable) {
         return complaintRepository.findByPatientIdAndDeletedAtIsNull(patientId, pageable);
+    }
+    
+    public Page<Complaint> getComplaintsByPatientWithFilters(Long patientId, String status, Pageable pageable) {
+        // Convert string to enum if not null
+        Complaint.Status statusEnum = null;
+        
+        if (status != null && !status.trim().isEmpty()) {
+            try {
+                statusEnum = Complaint.Status.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // If invalid status, treat as null (no filter)
+                statusEnum = null;
+            }
+        }
+        
+        return complaintRepository.findByPatientIdAndStatusAndDeletedAtIsNull(patientId, status, statusEnum, pageable);
     }
     
     public Page<Complaint> searchComplaints(String title, String description, String category, 
@@ -126,7 +171,9 @@ public class ComplaintService {
     }
     
     public Page<Complaint> getAllComplaints(String title, String category, String status, String priority, Pageable pageable) {
-        return complaintRepository.findComplaintsWithFilters(title, category, status, priority, pageable);
+        // Use the method that includes deleted records for display purposes
+        // The repository method handles string-to-enum conversion internally
+        return complaintRepository.findComplaintsWithFiltersIncludingDeleted(title, null, category, status, priority, null, null, pageable);
     }
     
     

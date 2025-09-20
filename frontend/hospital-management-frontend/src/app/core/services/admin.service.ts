@@ -22,6 +22,7 @@ export interface User {
   emergencyContactNum?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Doctor {
@@ -42,6 +43,7 @@ export interface Doctor {
   status?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Appointment {
@@ -60,6 +62,7 @@ export interface Appointment {
   cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Complaint {
@@ -78,6 +81,7 @@ export interface Complaint {
   notes?: ComplaintNote[];
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface ComplaintNote {
@@ -219,7 +223,9 @@ export class AdminService {
     if (filters.email) params.email = filters.email;
     if (filters.role) params.role = filters.role;
     if (filters.gender) params.gender = filters.gender;
+    if (filters.status) params.status = filters.status;
     
+    console.log('Fetching users with params:', params);
     return this.http.get<ApiResponse<PaginatedResponse<User>>>(`${this.apiUrl}/api/admin/users`, { params });
   }
 
@@ -229,6 +235,10 @@ export class AdminService {
 
   deleteUser(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/api/admin/users/${id}`);
+  }
+
+  createUser(userData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/api/admin/users`, userData);
   }
 
   // Doctors management
@@ -244,6 +254,7 @@ export class AdminService {
     if (filters.specialization) params.specialization = filters.specialization;
     if (filters.status) params.status = filters.status;
     
+    console.log('Fetching doctors with params:', params);
     return this.http.get<ApiResponse<PaginatedResponse<Doctor>>>(`${this.apiUrl}/api/admin/doctors`, { params });
   }
 
@@ -270,6 +281,8 @@ export class AdminService {
     if (filters.dateFrom) params.dateFrom = filters.dateFrom;
     if (filters.dateTo) params.dateTo = filters.dateTo;
     
+    console.log('Fetching appointments with params:', params);
+    console.log('Appointments API URL:', `${this.apiUrl}/api/admin/appointments`);
     return this.http.get<ApiResponse<PaginatedResponse<Appointment>>>(`${this.apiUrl}/api/admin/appointments`, { params });
   }
 
@@ -284,6 +297,26 @@ export class AdminService {
   // User appointment methods
   getUserAppointments(userId: number): Observable<{upcoming: Appointment[], past: Appointment[], totalUpcoming: number, totalPast: number}> {
     return this.http.get<ApiResponse<{upcoming: Appointment[], past: Appointment[], totalUpcoming: number, totalPast: number}>>(`${this.apiUrl}/api/appointments/patient/${userId}/all`)
+      .pipe(map(response => response.data));
+  }
+
+  getUserAppointmentsPaginated(userId: number, page: number = 0, size: number = 10, sortBy: string = 'appointmentDate', sortDir: string = 'desc', status?: string, type?: string): Observable<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      sortBy: sortBy,
+      sortDir: sortDir
+    });
+    
+    if (status) {
+      params.append('status', status);
+    }
+    
+    if (type) {
+      params.append('type', type);
+    }
+
+    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/api/appointments/patient/${userId}/paginated?${params}`)
       .pipe(map(response => response.data));
   }
 
@@ -321,6 +354,8 @@ export class AdminService {
     if (filters.status) params.status = filters.status;
     if (filters.priority) params.priority = filters.priority;
     
+    console.log('Fetching complaints with params:', params);
+    console.log('Complaints API URL:', `${this.apiUrl}/api/admin/complaints`);
     return this.http.get<ApiResponse<PaginatedResponse<Complaint>>>(`${this.apiUrl}/api/admin/complaints`, { params });
   }
 
@@ -345,7 +380,10 @@ export class AdminService {
     if (filters.userId) params.userId = filters.userId;
     if (filters.fromDate) params.fromDate = filters.fromDate;
     if (filters.toDate) params.toDate = filters.toDate;
+    if (filters.status) params.status = filters.status;
     
+    console.log('Fetching audit logs with params:', params);
+    console.log('Audit logs API URL:', `${this.apiUrl}/api/admin/audit-logs`);
     return this.http.get<ApiResponse<PaginatedResponse<AuditLog>>>(`${this.apiUrl}/api/admin/audit-logs`, { params });
   }
 
@@ -354,17 +392,23 @@ export class AdminService {
     return this.http.put(`${this.apiUrl}/api/admin/complaints/${id}/status`, { status });
   }
 
-  // Doctor creation
-  getPatients(): Observable<ApiResponse<User[]>> {
-    return this.http.get<ApiResponse<User[]>>(`${this.apiUrl}/api/admin/users/patients`);
+  // Doctor creation - Get patients using admin users API with role filter
+  getPatients(searchTerm: string = ''): Observable<ApiResponse<PaginatedResponse<User>>> {
+    const params = {
+      page: '0',
+      size: '1000', // Get all patients
+      role: 'PATIENT',
+      name: searchTerm
+    };
+    return this.http.get<ApiResponse<PaginatedResponse<User>>>(`${this.apiUrl}/api/admin/users`, { params });
   }
 
   getSpecializations(): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/api/admin/doctors/specializations`);
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/api/doctors/specializations`);
   }
 
   createDoctor(doctorData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/admin/doctors`, doctorData);
+    return this.http.post(`${this.apiUrl}/api/doctors`, doctorData);
   }
 
   // Complaint details

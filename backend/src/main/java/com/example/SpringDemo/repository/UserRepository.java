@@ -42,11 +42,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "(:name IS NOT NULL AND :email IS NOT NULL AND (LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))))) AND " +
            "(:role IS NULL OR u.role = :role) AND " +
            "(:gender IS NULL OR u.gender = :gender) AND " +
-           "u.deletedAt IS NULL")
+           "(:status IS NULL OR (:status = 'active' AND u.deletedAt IS NULL) OR (:status = 'inactive' AND u.deletedAt IS NOT NULL))")
     Page<User> findUsersWithFilters(@Param("name") String name, 
                                    @Param("email") String email, 
                                    @Param("role") User.Role role, 
                                    @Param("gender") User.Gender gender,
+                                   @Param("status") String status,
                                    Pageable pageable);
     
     @Query("SELECT u FROM User u WHERE u.lastLoginAt >= :fromDate AND u.deletedAt IS NULL")
@@ -83,4 +84,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
                           @Param("city") String city,
                           @Param("state") String state,
                           Pageable pageable);
+    
+    // Method to include deleted records for display purposes
+    @Query("SELECT u FROM User u WHERE " +
+           "(:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+           "(:username IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :username, '%'))) AND " +
+           "(:contact IS NULL OR u.contact LIKE CONCAT('%', :contact, '%')) AND " +
+           "(:role IS NULL OR u.role = :role) AND " +
+           "(:gender IS NULL OR u.gender = :gender) AND " +
+           "(:city IS NULL OR LOWER(u.city) LIKE LOWER(CONCAT('%', :city, '%'))) AND " +
+           "(:state IS NULL OR LOWER(u.state) LIKE LOWER(CONCAT('%', :state, '%'))) AND " +
+           "(:status IS NULL OR (:status = 'active' AND u.deletedAt IS NULL) OR (:status = 'inactive' AND u.deletedAt IS NOT NULL))")
+    Page<User> findUsersWithFiltersIncludingDeleted(@Param("name") String name,
+                                                   @Param("email") String email,
+                                                   @Param("username") String username,
+                                                   @Param("contact") String contact,
+                                                   @Param("role") User.Role role,
+                                                   @Param("gender") User.Gender gender,
+                                                   @Param("city") String city,
+                                                   @Param("state") String state,
+                                                   @Param("status") String status,
+                                                   Pageable pageable);
 }

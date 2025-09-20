@@ -133,8 +133,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let appointment of appointments" class="table-row">
-            <td class="appointment-id">{{ appointment.id }}</td>
+          <tr *ngFor="let appointment of appointments" class="table-row" [class.deleted-row]="appointment.deletedAt">
+            <td class="appointment-id">
+              <span *ngIf="appointment.deletedAt" class="deleted-indicator">DELETED</span>
+              {{ appointment.id }}
+            </td>
             <td class="patient-info">
               <div class="patient-details">
                 <div class="patient-avatar">
@@ -144,39 +147,47 @@
                   </svg>
                 </div>
                 <div class="patient-text">
-                  <div class="patient-name">{{ appointment.patient.name }}</div>
-                  <div class="patient-contact">{{ appointment.patient.contact || appointment.patient.email }}</div>
+                  <div class="patient-name" [class.deleted-text]="appointment.deletedAt">{{ appointment.patient.name }}</div>
+                  <div class="patient-contact" [class.deleted-text]="appointment.deletedAt">{{ appointment.patient.contact || appointment.patient.email }}</div>
                 </div>
               </div>
             </td>
-            <td class="doctor-info">
+            <td>
               <div class="doctor-details">
-                <div class="doctor-name">{{ appointment.doctor.user.name }}</div>
-                <div class="doctor-specialization">{{ appointment.doctor.specialization.name }}</div>
+                <div class="doctor-name" [class.deleted-text]="appointment.deletedAt">{{ appointment.doctor.user.name }}</div>
+                <div class="doctor-specialization" [class.deleted-text]="appointment.deletedAt">{{ appointment.doctor.specialization.name }}</div>
               </div>
             </td>
-            <td class="appointment-date">{{ formatDate(appointment.appointmentDate) }}</td>
-            <td class="appointment-time">{{ appointment.appointmentTime }}</td>
+            <td class="appointment-date" [class.deleted-text]="appointment.deletedAt">{{ formatDate(appointment.appointmentDate) }}</td>
+            <td class="appointment-time" [class.deleted-text]="appointment.deletedAt">{{ appointment.appointmentTime }}</td>
             <td class="appointment-type">
-              <span class="badge" [class]="getTypeBadgeClass(appointment.appointmentType || '')">
+              <span class="badge" [class]="getTypeBadgeClass(appointment.appointmentType || '')" [class.deleted-badge]="appointment.deletedAt">
                 {{ (appointment.appointmentType || '').replace('_', ' ') }}
               </span>
             </td>
             <td class="appointment-status">
-              <span class="badge" [class]="getStatusBadgeClass(appointment.status)">
+              <span class="badge" [class]="getStatusBadgeClass(appointment.status)" [class.deleted-badge]="appointment.deletedAt">
                 {{ appointment.status }}
               </span>
             </td>
-            <td class="appointment-fee">{{ formatCurrency(appointment.consultationFee || 0) }}</td>
+            <td class="appointment-fee" [class.deleted-text]="appointment.deletedAt">{{ formatCurrency(appointment.consultationFee || 0) }}</td>
             <td class="appointment-actions">
               <div class="action-buttons">
-                <button class="action-btn edit-btn" (click)="editAppointment(appointment)" title="Edit Appointment">
+                <button class="action-btn edit-btn" 
+                        [disabled]="appointment.deletedAt"
+                        [class.disabled]="appointment.deletedAt"
+                        (click)="editAppointment(appointment)" 
+                        title="Edit Appointment">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" (click)="deleteAppointment(appointment)" title="Delete Appointment">
+                <button class="action-btn delete-btn" 
+                        [disabled]="appointment.deletedAt"
+                        [class.disabled]="appointment.deletedAt"
+                        (click)="deleteAppointment(appointment)" 
+                        title="Delete Appointment">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -284,7 +295,7 @@
               <label class="form-label">Status *</label>
               <select formControlName="status" class="form-select">
                 <option value="SCHEDULED">Scheduled</option>
-                <option value="CONFIRMED">Confirmed</option>
+                <option value="COMPLETED">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
             </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService, Appointment, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -65,7 +66,7 @@ export class AdminAppointmentsComponent implements OnInit {
   statuses = [
     { value: '', label: 'All Status' },
     { value: 'SCHEDULED', label: 'Scheduled' },
-    { value: 'CONFIRMED', label: 'Confirmed' },
+    { value: 'COMPLETED', label: 'Completed' },
     { value: 'CANCELLED', label: 'Cancelled' }
   ];
 
@@ -78,6 +79,7 @@ export class AdminAppointmentsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private authService: AuthService,
     private fb: FormBuilder
   ) {
     this.filterForm = this.fb.group({
@@ -114,6 +116,17 @@ export class AdminAppointmentsComponent implements OnInit {
 
   loadAppointments(): void {
     this.isLoading = true;
+    
+    // Check authentication before making API call
+    if (!this.authService.isLoggedIn()) {
+      console.error('User not authenticated');
+      this.isLoading = false;
+      return;
+    }
+    
+    const token = this.authService.getToken();
+    console.log('Current token for appointments:', token ? `${token.substring(0, 20)}...` : 'No token');
+    
     const filters: SearchFilters = {
       page: this.currentPage,
       size: this.pageSize,
@@ -127,18 +140,23 @@ export class AdminAppointmentsComponent implements OnInit {
       dateTo: this.selectedDateTo || undefined
     };
 
+    console.log('Loading appointments with filters:', filters);
     this.adminService.getAppointments(filters).subscribe({
       next: (response) => {
+        console.log('Appointments response:', response);
         if (response.success) {
           this.paginatedResponse = response.data;
           this.appointments = response.data.content;
           this.totalElements = response.data.totalElements;
           this.totalPages = response.data.totalPages;
+        } else {
+          console.error('API returned error:', response.message);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading appointments:', error);
+        console.error('Error details:', error.error);
         this.isLoading = false;
       }
     });
@@ -197,6 +215,9 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   editAppointment(appointment: Appointment): void {
+    if (appointment.deletedAt) {
+      return; // Don't allow editing deleted appointments
+    }
     this.selectedAppointment = appointment;
     this.showEditModal = true;
     this.editForm.patchValue({
@@ -232,6 +253,9 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   deleteAppointment(appointment: Appointment): void {
+    if (appointment.deletedAt) {
+      return; // Don't allow deleting already deleted appointments
+    }
     this.selectedAppointment = appointment;
     this.showDeleteModal = true;
   }
@@ -270,7 +294,7 @@ export class AdminAppointmentsComponent implements OnInit {
     switch (status) {
       case 'SCHEDULED':
         return 'badge--blue';
-      case 'CONFIRMED':
+      case 'COMPLETED':
         return 'badge--green';
       case 'CANCELLED':
         return 'badge--red';

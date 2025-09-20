@@ -53,7 +53,7 @@
 
     <!-- Doctor Cards -->
     <div class="doctors-grid">
-      <div *ngFor="let doctorData of paginatedSlots" class="doctor-card">
+      <div *ngFor="let doctorData of paginatedSlots" class="doctor-card" [class.deleted-card]="doctorData.doctor.deletedAt">
         <div class="doctor-header">
           <div class="doctor-avatar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -62,9 +62,12 @@
             </svg>
           </div>
           <div class="doctor-info">
-            <h3 class="doctor-name">{{ doctorData.doctor.user.name }}</h3>
-            <p class="doctor-specialization">{{ doctorData.doctor.specialization.name }}</p>
-            <p class="doctor-experience">{{ doctorData.doctor.yearsOfExp }} years experience</p>
+            <div class="doctor-name-section">
+              <span *ngIf="doctorData.doctor.deletedAt" class="deleted-indicator">DELETED</span>
+              <h3 class="doctor-name" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.user.name }}</h3>
+            </div>
+            <p class="doctor-specialization" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.specialization.name }}</p>
+            <p class="doctor-experience" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.yearsOfExp }} years experience</p>
           </div>
           <div class="doctor-fee">
             <span class="fee-amount">${{ doctorData.doctor.consultationFee }}</span>
@@ -89,8 +92,11 @@
         </div>
 
         <div class="doctor-actions">
-          <button class="book-btn" (click)="selectDoctor(doctorData)">
-            Book Appointment
+          <button class="book-btn" 
+                  [disabled]="doctorData.doctor.deletedAt"
+                  [class.disabled]="doctorData.doctor.deletedAt"
+                  (click)="selectDoctor(doctorData)">
+            {{ doctorData.doctor.deletedAt ? 'Unavailable' : 'Book Appointment' }}
           </button>
         </div>
       </div>
@@ -192,6 +198,13 @@
           </div>
 
           <div class="form-actions">
+            <!-- <button type="button" class="btn btn-outline" (click)="downloadAppointmentReceipt()" 
+                    [disabled]="!selectedSlot || !selectedDoctor">
+              <svg class="btn-icon" viewBox="0 0 24 24">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+              </svg>
+              Download Receipt
+            </button> -->
             <button type="button" class="btn btn-secondary" (click)="cancelBooking()">
               Cancel
             </button>

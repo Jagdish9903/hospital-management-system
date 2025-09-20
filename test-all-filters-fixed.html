@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Filters Fixed Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>All Admin Filters Fixed Test</h1>
+    
+    <div class="test-section">
+        <h3>Test All Fixed APIs</h3>
+        <button onclick="testAll()">Test All Fixed APIs</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+
+        function log(message, type = 'info') {
+            const element = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.className = `result ${type}`;
+        }
+
+        async function testAll() {
+            document.getElementById('result').innerHTML = '';
+            
+            // Login
+            log('Testing login...');
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@hospital.com', password: 'admin123' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    log('✅ Login successful!', 'success');
+                } else {
+                    log('❌ Login failed', 'error');
+                    return;
+                }
+            } catch (error) {
+                log('❌ Login error: ' + error.message, 'error');
+                return;
+            }
+
+            // Test Appointments with filters
+            log('Testing appointments with status filter...');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=5&status=CONFIRMED`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Appointments filtered: ${data.data.totalElements} found` : '❌ Appointments failed', data.success ? 'success' : 'error');
+            } catch (error) {
+                log('❌ Appointments error: ' + error.message, 'error');
+            }
+
+            // Test Complaints with filters
+            log('Testing complaints with status and priority filters...');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=5&status=OPEN&priority=HIGH`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Complaints filtered: ${data.data.totalElements} found` : '❌ Complaints failed', data.success ? 'success' : 'error');
+            } catch (error) {
+                log('❌ Complaints error: ' + error.message, 'error');
+            }
+
+            // Test Audit Logs with filters
+            log('Testing audit logs with action filter...');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=5&action=CREATE`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                log(data.success ? `✅ Audit logs filtered: ${data.data.totalElements} found` : '❌ Audit logs failed', data.success ? 'success' : 'error');
+            } catch (error) {
+                log('❌ Audit logs error: ' + error.message, 'error');
+            }
+
+            log('🎉 All tests completed!', 'success');
+        }
+    </script>
+</body>
+</html>

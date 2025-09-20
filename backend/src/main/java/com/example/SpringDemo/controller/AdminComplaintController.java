@@ -36,11 +36,18 @@ public class AdminComplaintController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority) {
         
+        System.out.println("=== ADMIN COMPLAINTS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - Title: " + title + ", Category: " + category + ", Status: " + status + ", Priority: " + priority);
+        
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<Complaint> complaints = complaintService.getAllComplaints(title, category, status, priority, pageable);
+        System.out.println("Found " + complaints.getTotalElements() + " complaints");
+        
         return ResponseEntity.ok(ApiResponse.success(complaints));
     }
     

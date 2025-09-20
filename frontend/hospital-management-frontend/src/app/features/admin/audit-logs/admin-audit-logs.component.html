@@ -58,6 +58,14 @@
             <label class="filter-label">User ID</label>
             <input type="number" formControlName="userId" class="filter-input" placeholder="Enter user ID">
           </div>
+          <div class="filter-group">
+            <label class="filter-label">Status</label>
+            <select formControlName="status" class="filter-select">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
         </div>
         <div class="filter-row">
           <div class="filter-group">

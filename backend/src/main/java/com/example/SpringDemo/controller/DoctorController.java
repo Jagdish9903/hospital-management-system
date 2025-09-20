@@ -3,6 +3,7 @@ package com.example.SpringDemo.controller;
 import com.example.SpringDemo.dto.ApiResponse;
 import com.example.SpringDemo.dto.DoctorRequest;
 import com.example.SpringDemo.entity.Doctor;
+import com.example.SpringDemo.entity.Specialization;
 import com.example.SpringDemo.service.DoctorService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +12,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -26,6 +29,7 @@ public class DoctorController {
     private DoctorService doctorService;
     
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<Doctor>> createDoctor(@Valid @RequestBody DoctorRequest request) {
         try {
             Doctor doctor = doctorService.createDoctor(request);
@@ -96,9 +100,9 @@ public class DoctorController {
     
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Doctor>> updateDoctor(@PathVariable Long id, 
-                                                           @Valid @RequestBody DoctorRequest request) {
+                                                           @RequestBody Map<String, Object> updateData) {
         try {
-            Doctor doctor = doctorService.updateDoctor(id, request);
+            Doctor doctor = doctorService.updateDoctor(id, updateData);
             return ResponseEntity.ok(ApiResponse.success("Doctor updated successfully", doctor));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -110,6 +114,16 @@ public class DoctorController {
         try {
             doctorService.deleteDoctor(id);
             return ResponseEntity.ok(ApiResponse.success("Doctor deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/specializations")
+    public ResponseEntity<ApiResponse<List<Specialization>>> getSpecializations() {
+        try {
+            List<Specialization> specializations = doctorService.getSpecializations();
+            return ResponseEntity.ok(ApiResponse.success(specializations));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

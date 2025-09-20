@@ -33,13 +33,21 @@ public class AdminAuditLogController {
             @RequestParam(required = false) String tableName,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String status) {
+        
+        System.out.println("=== ADMIN AUDIT LOGS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - Action: " + action + ", TableName: " + tableName + ", UserId: " + userId + ", FromDate: " + fromDate + ", ToDate: " + toDate + ", Status: " + status);
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<AuditLog> auditLogs = auditLogService.getAllAuditLogs(action, tableName, userId, fromDate, toDate, pageable);
+        Page<AuditLog> auditLogs = auditLogService.getAllAuditLogs(action, tableName, userId, fromDate, toDate, status, pageable);
+        System.out.println("Found " + auditLogs.getTotalElements() + " audit logs");
+        
         return ResponseEntity.ok(ApiResponse.success(auditLogs));
     }
     

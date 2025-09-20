@@ -16,10 +16,10 @@ import java.util.Optional;
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     
     @Query("SELECT a FROM AuditLog a WHERE a.user.id = :userId")
-    Page<AuditLog> findByUserIdAndDeletedAtIsNull(@Param("userId") Long userId, Pageable pageable);
+    Page<AuditLog> findByUserId(@Param("userId") Long userId, Pageable pageable);
     
     @Query("SELECT a FROM AuditLog a WHERE a.tableName = :tableName")
-    Page<AuditLog> findByTableNameAndDeletedAtIsNull(@Param("tableName") String tableName, Pageable pageable);
+    Page<AuditLog> findByTableName(@Param("tableName") String tableName, Pageable pageable);
     
     @Query("SELECT a FROM AuditLog a WHERE " +
            "(:userId IS NULL OR a.user.id = :userId) AND " +
@@ -52,27 +52,30 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                                    Pageable pageable);
     
     @Query("SELECT a FROM AuditLog a WHERE a.id = :id")
-    Optional<AuditLog> findByIdAndDeletedAtIsNull(@Param("id") Long id);
+    Optional<AuditLog> findByIdCustom(@Param("id") Long id);
     
     @Query("SELECT COUNT(a) FROM AuditLog a")
-    Long countByDeletedAtIsNull();
+    Long countAll();
     
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE a.action = :action")
-    Long countByActionAndDeletedAtIsNull(@Param("action") String action);
+    Long countByAction(@Param("action") String action);
     
     @Query("SELECT a FROM AuditLog a ORDER BY a.createdAt DESC")
-    List<AuditLog> findTop10ByDeletedAtIsNullOrderByCreatedAtDesc();
+    List<AuditLog> findTop10OrderByCreatedAtDesc();
     
     @Query("SELECT a FROM AuditLog a WHERE " +
-           "(:action IS NULL OR a.action = :action) AND " +
+           "(:action IS NULL OR a.action = :actionEnum) AND " +
            "(:tableName IS NULL OR a.tableName = :tableName) AND " +
            "(:userId IS NULL OR a.user.id = :userId) AND " +
-           "(:fromDate IS NULL OR a.createdAt >= :fromDate) AND " +
-           "(:toDate IS NULL OR a.createdAt <= :toDate)")
+           "(:fromDate IS NULL OR a.createdAt >= :fromDateParsed) AND " +
+           "(:toDate IS NULL OR a.createdAt <= :toDateParsed)")
     Page<AuditLog> findAuditLogsWithFilters(@Param("action") String action,
+                                           @Param("actionEnum") AuditLog.Action actionEnum,
                                            @Param("tableName") String tableName,
                                            @Param("userId") Long userId,
                                            @Param("fromDate") String fromDate,
+                                           @Param("fromDateParsed") LocalDateTime fromDateParsed,
                                            @Param("toDate") String toDate,
+                                           @Param("toDateParsed") LocalDateTime toDateParsed,
                                            Pageable pageable);
 }

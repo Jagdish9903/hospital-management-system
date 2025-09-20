@@ -52,7 +52,7 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<Appointment>> confirmPaymentAndCreateAppointment(@PathVariable String paymentId) {
         try {
             Appointment appointment = paymentService.confirmPaymentAndCreateAppointment(paymentId);
-            return ResponseEntity.ok(ApiResponse.success("Payment confirmed and appointment created successfully", appointment));
+            return ResponseEntity.ok(ApiResponse.success("Payment successful and appointment scheduled", appointment));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

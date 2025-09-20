@@ -44,11 +44,18 @@ INSERT INTO doctors (user_id, specialization_id, license_number, qualification, 
 
 -- Note: Doctor slots will be generated programmatically using DoctorSlotService
 
--- Initialize Appointments
-INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
-(5, 1, CURRENT_DATE + 1, '09:00:00', '09:30:00', 'CONSULTATION', 'SCHEDULED', 'Chest pain and shortness of breath', 'Patient reports chest pain for the past week', 150.00, CURRENT_TIMESTAMP, 1),
-(6, 2, CURRENT_DATE + 1, '10:00:00', '10:45:00', 'CONSULTATION', 'CONFIRMED', 'Frequent headaches and dizziness', 'Patient experiencing migraines for 2 weeks', 200.00, CURRENT_TIMESTAMP, 1),
-(7, 3, CURRENT_DATE + 2, '08:00:00', '09:00:00', 'CONSULTATION', 'SCHEDULED', 'Knee pain and swelling', 'Patient injured knee during sports activity', 180.00, CURRENT_TIMESTAMP, 1);
+-- Initialize Appointments with proper slot management
+-- First, create the specific slots as BOOKED for specific dates
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, created_at, created_by) VALUES
+(1, '2025-09-21', '09:00:00', '09:30:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(2, '2025-09-21', '10:00:00', '10:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(3, '2025-09-22', '08:00:00', '09:00:00', 'BOOKED', CURRENT_TIMESTAMP, 1);
+
+-- Now create appointments with proper slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(5, 1, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 1 AND slot_date = '2025-09-21' AND start_time = '09:00:00' AND end_time = '09:30:00'), '2025-09-21', '09:00:00', '09:30:00', 'CONSULTATION', 'SCHEDULED', 'Chest pain and shortness of breath', 'Patient reports chest pain for the past week', 150.00, CURRENT_TIMESTAMP, 1),
+(6, 2, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 2 AND slot_date = '2025-09-21' AND start_time = '10:00:00' AND end_time = '10:45:00'), '2025-09-21', '10:00:00', '10:45:00', 'CONSULTATION', 'SCHEDULED', 'Frequent headaches and dizziness', 'Patient experiencing migraines for 2 weeks', 200.00, CURRENT_TIMESTAMP, 1),
+(7, 3, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 3 AND slot_date = '2025-09-22' AND start_time = '08:00:00' AND end_time = '09:00:00'), '2025-09-22', '08:00:00', '09:00:00', 'CONSULTATION', 'SCHEDULED', 'Knee pain and swelling', 'Patient injured knee during sports activity', 180.00, CURRENT_TIMESTAMP, 1);
 
 -- Initialize Payments
 INSERT INTO payment (patient_id, appointment_id, payment_id, amount, payment_date, method, status, transaction_id, created_at, created_by) VALUES
@@ -86,34 +93,72 @@ INSERT INTO specialization (name, description, status, created_at, created_by) V
 
 -- Note: H2 database auto-generates sequences, no need to reset
 
--- Add more appointments
-INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
-(10, 4, CURRENT_DATE + 3, '10:00:00', '10:45:00', 'CONSULTATION', 'SCHEDULED', 'Child fever and cough', '3-year-old child with persistent fever for 3 days', 120.00, CURRENT_TIMESTAMP, 1),
-(5, 2, CURRENT_DATE + 4, '14:00:00', '14:45:00', 'FOLLOW_UP', 'CONFIRMED', 'Follow-up for previous treatment', 'Regular check-up after treatment', 200.00, CURRENT_TIMESTAMP, 1);
+-- Add more appointments with proper slot management
+-- Create slots as BOOKED
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, created_at, created_by) VALUES
+(4, CURRENT_DATE + 3, '10:00:00', '10:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(2, CURRENT_DATE + 4, '14:00:00', '14:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1);
+
+-- Create appointments with slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(10, 4, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 4 AND slot_date = CURRENT_DATE + 3 AND start_time = '10:00:00' AND end_time = '10:45:00'), CURRENT_DATE + 3, '10:00:00', '10:45:00', 'CONSULTATION', 'SCHEDULED', 'Child fever and cough', '3-year-old child with persistent fever for 3 days', 120.00, CURRENT_TIMESTAMP, 1),
+(5, 2, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 2 AND slot_date = CURRENT_DATE + 4 AND start_time = '14:00:00' AND end_time = '14:45:00'), CURRENT_DATE + 4, '14:00:00', '14:45:00', 'FOLLOW_UP', 'SCHEDULED', 'Follow-up for previous treatment', 'Regular check-up after treatment', 200.00, CURRENT_TIMESTAMP, 1);
 
 -- Super Admin Appointments (Past and Future)
--- Past appointments for superadmin (user_id = 8)
-INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
--- Past appointments (7 days ago)
-(8, 1, CURRENT_DATE - 7, '09:00:00', '09:30:00', 'CONSULTATION', 'CONFIRMED', 'Annual health checkup', 'Routine annual health examination', 150.00, CURRENT_TIMESTAMP, 1),
-(8, 2, CURRENT_DATE - 6, '14:00:00', '14:45:00', 'CONSULTATION', 'CONFIRMED', 'Headache evaluation', 'Persistent headaches for evaluation', 200.00, CURRENT_TIMESTAMP, 1),
-(8, 3, CURRENT_DATE - 5, '10:30:00', '11:15:00', 'FOLLOW_UP', 'CONFIRMED', 'Knee pain follow-up', 'Follow-up for previous knee injury', 180.00, CURRENT_TIMESTAMP, 1),
-(8, 4, CURRENT_DATE - 4, '15:00:00', '15:45:00', 'CONSULTATION', 'CONFIRMED', 'General consultation', 'General health consultation', 120.00, CURRENT_TIMESTAMP, 1),
-(8, 5, CURRENT_DATE - 3, '11:00:00', '11:45:00', 'CONSULTATION', 'CONFIRMED', 'Skin examination', 'Annual skin checkup', 160.00, CURRENT_TIMESTAMP, 1),
-(8, 6, CURRENT_DATE - 2, '16:00:00', '16:45:00', 'CONSULTATION', 'CONFIRMED', 'Women health checkup', 'Routine women health examination', 140.00, CURRENT_TIMESTAMP, 1),
-(8, 7, CURRENT_DATE - 1, '08:30:00', '09:15:00', 'EMERGENCY', 'CONFIRMED', 'Emergency consultation', 'Emergency medical consultation', 220.00, CURRENT_TIMESTAMP, 1),
+-- First create past doctor slots for completed appointments
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, created_at, created_by) VALUES
+-- Past slots for completed appointments
+(1, CURRENT_DATE - 7, '09:00:00', '09:30:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(2, CURRENT_DATE - 6, '14:00:00', '14:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(3, CURRENT_DATE - 5, '10:30:00', '11:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(4, CURRENT_DATE - 4, '15:00:00', '15:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(5, CURRENT_DATE - 3, '11:00:00', '11:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(6, CURRENT_DATE - 2, '16:00:00', '16:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(7, CURRENT_DATE - 1, '08:30:00', '09:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1);
 
--- Future appointments for superadmin
-(8, 1, CURRENT_DATE + 1, '09:30:00', '10:00:00', 'CONSULTATION', 'SCHEDULED', 'Cardiology follow-up', 'Follow-up cardiology consultation', 150.00, CURRENT_TIMESTAMP, 1),
-(8, 2, CURRENT_DATE + 2, '14:30:00', '15:15:00', 'CONSULTATION', 'SCHEDULED', 'Neurology consultation', 'Neurological symptoms evaluation', 200.00, CURRENT_TIMESTAMP, 1),
-(8, 3, CURRENT_DATE + 3, '10:00:00', '10:45:00', 'FOLLOW_UP', 'SCHEDULED', 'Orthopedic follow-up', 'Follow-up orthopedic consultation', 180.00, CURRENT_TIMESTAMP, 1),
-(8, 4, CURRENT_DATE + 4, '15:30:00', '16:15:00', 'CONSULTATION', 'SCHEDULED', 'Pediatric consultation', 'General pediatric consultation', 120.00, CURRENT_TIMESTAMP, 1),
-(8, 5, CURRENT_DATE + 5, '11:30:00', '12:15:00', 'CONSULTATION', 'SCHEDULED', 'Dermatology consultation', 'Skin condition evaluation', 160.00, CURRENT_TIMESTAMP, 1),
-(8, 6, CURRENT_DATE + 6, '16:30:00', '17:15:00', 'CONSULTATION', 'SCHEDULED', 'Gynecology consultation', 'Women health consultation', 140.00, CURRENT_TIMESTAMP, 1),
-(8, 7, CURRENT_DATE + 7, '08:00:00', '08:45:00', 'CONSULTATION', 'SCHEDULED', 'Surgery consultation', 'Pre-surgery consultation', 220.00, CURRENT_TIMESTAMP, 1),
-(8, 1, CURRENT_DATE + 8, '09:00:00', '09:30:00', 'FOLLOW_UP', 'SCHEDULED', 'Cardiology follow-up', 'Post-treatment follow-up', 150.00, CURRENT_TIMESTAMP, 1),
-(8, 2, CURRENT_DATE + 9, '14:00:00', '14:45:00', 'CONSULTATION', 'SCHEDULED', 'Neurology follow-up', 'Neurological follow-up consultation', 200.00, CURRENT_TIMESTAMP, 1),
-(8, 3, CURRENT_DATE + 10, '10:30:00', '11:15:00', 'CONSULTATION', 'SCHEDULED', 'Orthopedic consultation', 'New orthopedic consultation', 180.00, CURRENT_TIMESTAMP, 1);
+-- Past appointments for superadmin (user_id = 8) with proper slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(8, 1, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 1 AND slot_date = CURRENT_DATE - 7 AND start_time = '09:00:00' AND end_time = '09:30:00'), CURRENT_DATE - 7, '09:00:00', '09:30:00', 'CONSULTATION', 'COMPLETED', 'Annual health checkup', 'Routine annual health examination', 150.00, CURRENT_TIMESTAMP, 1),
+(8, 2, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 2 AND slot_date = CURRENT_DATE - 6 AND start_time = '14:00:00' AND end_time = '14:45:00'), CURRENT_DATE - 6, '14:00:00', '14:45:00', 'CONSULTATION', 'COMPLETED', 'Headache evaluation', 'Persistent headaches for evaluation', 200.00, CURRENT_TIMESTAMP, 1),
+(8, 3, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 3 AND slot_date = CURRENT_DATE - 5 AND start_time = '10:30:00' AND end_time = '11:15:00'), CURRENT_DATE - 5, '10:30:00', '11:15:00', 'FOLLOW_UP', 'COMPLETED', 'Knee pain follow-up', 'Follow-up for previous knee injury', 180.00, CURRENT_TIMESTAMP, 1),
+(8, 4, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 4 AND slot_date = CURRENT_DATE - 4 AND start_time = '15:00:00' AND end_time = '15:45:00'), CURRENT_DATE - 4, '15:00:00', '15:45:00', 'CONSULTATION', 'COMPLETED', 'General consultation', 'General health consultation', 120.00, CURRENT_TIMESTAMP, 1),
+(8, 5, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 5 AND slot_date = CURRENT_DATE - 3 AND start_time = '11:00:00' AND end_time = '11:45:00'), CURRENT_DATE - 3, '11:00:00', '11:45:00', 'CONSULTATION', 'COMPLETED', 'Skin examination', 'Annual skin checkup', 160.00, CURRENT_TIMESTAMP, 1),
+(8, 6, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 6 AND slot_date = CURRENT_DATE - 2 AND start_time = '16:00:00' AND end_time = '16:45:00'), CURRENT_DATE - 2, '16:00:00', '16:45:00', 'CONSULTATION', 'COMPLETED', 'Women health checkup', 'Routine women health examination', 140.00, CURRENT_TIMESTAMP, 1),
+(8, 7, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 7 AND slot_date = CURRENT_DATE - 1 AND start_time = '08:30:00' AND end_time = '09:15:00'), CURRENT_DATE - 1, '08:30:00', '09:15:00', 'EMERGENCY', 'COMPLETED', 'Emergency consultation', 'Emergency medical consultation', 220.00, CURRENT_TIMESTAMP, 1);
+
+-- Future appointments for superadmin with proper slot management
+-- First create future slots for scheduled appointments with specific dates
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, created_at, created_by) VALUES
+-- Future slots for scheduled appointments
+(1, '2025-09-21', '09:30:00', '10:00:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(2, '2025-09-22', '14:30:00', '15:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(3, '2025-09-23', '10:00:00', '10:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(4, '2025-09-24', '15:30:00', '16:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(5, '2025-09-25', '11:30:00', '12:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(6, '2025-09-26', '16:30:00', '17:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(7, '2025-09-27', '08:00:00', '08:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(1, '2025-09-28', '09:00:00', '09:30:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(2, '2025-09-29', '14:00:00', '14:45:00', 'BOOKED', CURRENT_TIMESTAMP, 1),
+(3, '2025-09-30', '10:30:00', '11:15:00', 'BOOKED', CURRENT_TIMESTAMP, 1);
+
+-- Create future appointments with slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(8, 1, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 1 AND slot_date = '2025-09-21' AND start_time = '09:30:00' AND end_time = '10:00:00'), '2025-09-21', '09:30:00', '10:00:00', 'CONSULTATION', 'SCHEDULED', 'Cardiology follow-up', 'Follow-up cardiology consultation', 150.00, CURRENT_TIMESTAMP, 1),
+(8, 2, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 2 AND slot_date = '2025-09-22' AND start_time = '14:30:00' AND end_time = '15:15:00'), '2025-09-22', '14:30:00', '15:15:00', 'CONSULTATION', 'SCHEDULED', 'Neurology consultation', 'Neurological symptoms evaluation', 200.00, CURRENT_TIMESTAMP, 1),
+(8, 3, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 3 AND slot_date = '2025-09-23' AND start_time = '10:00:00' AND end_time = '10:45:00'), '2025-09-23', '10:00:00', '10:45:00', 'FOLLOW_UP', 'SCHEDULED', 'Orthopedic follow-up', 'Follow-up orthopedic consultation', 180.00, CURRENT_TIMESTAMP, 1);
+
+-- Create remaining future appointments with slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(8, 4, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 4 AND slot_date = '2025-09-24' AND start_time = '15:30:00' AND end_time = '16:15:00'), '2025-09-24', '15:30:00', '16:15:00', 'CONSULTATION', 'SCHEDULED', 'Pediatric consultation', 'General pediatric consultation', 120.00, CURRENT_TIMESTAMP, 1),
+(8, 5, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 5 AND slot_date = '2025-09-25' AND start_time = '11:30:00' AND end_time = '12:15:00'), '2025-09-25', '11:30:00', '12:15:00', 'CONSULTATION', 'SCHEDULED', 'Dermatology consultation', 'Skin condition evaluation', 160.00, CURRENT_TIMESTAMP, 1),
+(8, 6, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 6 AND slot_date = '2025-09-26' AND start_time = '16:30:00' AND end_time = '17:15:00'), '2025-09-26', '16:30:00', '17:15:00', 'CONSULTATION', 'SCHEDULED', 'Gynecology consultation', 'Women health consultation', 140.00, CURRENT_TIMESTAMP, 1),
+(8, 7, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 7 AND slot_date = '2025-09-27' AND start_time = '08:00:00' AND end_time = '08:45:00'), '2025-09-27', '08:00:00', '08:45:00', 'CONSULTATION', 'SCHEDULED', 'Surgery consultation', 'Pre-surgery consultation', 220.00, CURRENT_TIMESTAMP, 1),
+(8, 1, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 1 AND slot_date = '2025-09-28' AND start_time = '09:00:00' AND end_time = '09:30:00'), '2025-09-28', '09:00:00', '09:30:00', 'FOLLOW_UP', 'SCHEDULED', 'Cardiology follow-up', 'Post-treatment follow-up', 150.00, CURRENT_TIMESTAMP, 1);
+
+-- Create final future appointments with slot references
+INSERT INTO appointments (patient_id, doctor_id, doctor_slot_id, appointment_date, appointment_time, end_time, appointment_type, status, symptoms, notes, consultation_fee, created_at, created_by) VALUES
+(8, 2, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 2 AND slot_date = '2025-09-29' AND start_time = '14:00:00' AND end_time = '14:45:00'), '2025-09-29', '14:00:00', '14:45:00', 'CONSULTATION', 'SCHEDULED', 'Neurology follow-up', 'Neurological follow-up consultation', 200.00, CURRENT_TIMESTAMP, 1),
+(8, 3, (SELECT slot_id FROM doctor_slots WHERE doctor_id = 3 AND slot_date = '2025-09-30' AND start_time = '10:30:00' AND end_time = '11:15:00'), '2025-09-30', '10:30:00', '11:15:00', 'CONSULTATION', 'SCHEDULED', 'Orthopedic consultation', 'New orthopedic consultation', 180.00, CURRENT_TIMESTAMP, 1);
 
 -- Add more payments
 INSERT INTO payment (patient_id, appointment_id, payment_id, amount, payment_date, method, status, transaction_id, created_at, created_by) VALUES
@@ -138,13 +183,27 @@ INSERT INTO specialization (name, description, status, created_at, created_by) V
 ('Anesthesiology', 'Pain management and surgical anesthesia specialist', 'ACTIVE', CURRENT_TIMESTAMP, 1),
 ('Emergency Medicine', 'Emergency and critical care specialist', 'ACTIVE', CURRENT_TIMESTAMP, 1);
 
+-- Add more cardiology doctors for better testing
+INSERT INTO users (name, firstname, lastname, email, username, password_hash, role, gender, birthdate, contact, address, city, state, country, postal_code, blood_group, emergency_contact_name, emergency_contact_num, profile_url, created_at, created_by) VALUES
+('Dr. Michael Thompson', 'Michael', 'Thompson', 'dr.michael.thompson@hospital.com', 'dr.michael.thompson', '$2a$10$UxUj4o9TMpxLaDfvsMEJK.nOc9lCrrCW4E6u1FLfc5sCyQM6dUwwS', 'DOCTOR', 'MALE', '1975-11-20', '+1234567830', '100 Heart Center Dr', 'Cardio City', 'Heart State', 'Cardio Country', '10001', 'A+', 'Dr. Sarah Thompson', '+1234567831', 'https://example.com/drmichaelthompson.jpg', CURRENT_TIMESTAMP, 1),
+('Dr. Jennifer Martinez', 'Jennifer', 'Martinez', 'dr.jennifer.martinez@hospital.com', 'dr.jennifer.martinez', '$2a$10$UxUj4o9TMpxLaDfvsMEJK.nOc9lCrrCW4E6u1FLfc5sCyQM6dUwwS', 'DOCTOR', 'FEMALE', '1980-04-15', '+1234567832', '200 Cardiac Blvd', 'Heart City', 'Cardio State', 'Heart Country', '10002', 'B+', 'Dr. Carlos Martinez', '+1234567833', 'https://example.com/drjennifermartinez.jpg', CURRENT_TIMESTAMP, 1),
+('Dr. Robert Anderson', 'Robert', 'Anderson', 'dr.robert.anderson@hospital.com', 'dr.robert.anderson', '$2a$10$UxUj4o9TMpxLaDfvsMEJK.nOc9lCrrCW4E6u1FLfc5sCyQM6dUwwS', 'DOCTOR', 'MALE', '1978-08-30', '+1234567834', '300 Vascular Ave', 'Vascular City', 'Heart State', 'Vascular Country', '10003', 'AB+', 'Dr. Lisa Anderson', '+1234567835', 'https://example.com/drrobertanderson.jpg', CURRENT_TIMESTAMP, 1),
+('Dr. Sarah Williams', 'Sarah', 'Williams', 'dr.sarah.williams@hospital.com', 'dr.sarah.williams', '$2a$10$UxUj4o9TMpxLaDfvsMEJK.nOc9lCrrCW4E6u1FLfc5sCyQM6dUwwS', 'DOCTOR', 'FEMALE', '1983-12-10', '+1234567836', '400 Heart Specialist St', 'Specialist City', 'Cardio State', 'Specialist Country', '10004', 'O-', 'Dr. David Williams', '+1234567837', 'https://example.com/drsarahwilliams.jpg', CURRENT_TIMESTAMP, 1),
+('Dr. Christopher Lee', 'Christopher', 'Lee', 'dr.christopher.lee@hospital.com', 'dr.christopher.lee', '$2a$10$UxUj4o9TMpxLaDfvsMEJK.nOc9lCrrCW4E6u1FLfc5sCyQM6dUwwS', 'DOCTOR', 'MALE', '1976-06-25', '+1234567838', '500 Cardiac Care Dr', 'Care City', 'Heart State', 'Care Country', '10005', 'A-', 'Dr. Michelle Lee', '+1234567839', 'https://example.com/drchristopherlee.jpg', CURRENT_TIMESTAMP, 1);
+
 -- Add the new doctors
 INSERT INTO doctors (user_id, specialization_id, license_number, qualification, bio, consultation_fee, years_of_exp, joining_date, status, created_at, created_by) VALUES
 (13, 1, 'CARD002', 'MD in Cardiology, Fellowship in Interventional Cardiology', 'Dr. Emily Chen is a highly skilled cardiologist specializing in interventional procedures and heart disease prevention.', 160.00, 12, '2012-03-15', 'ACTIVE', CURRENT_TIMESTAMP, 1),
 (14, 2, 'NEURO002', 'MD in Neurology, PhD in Neuroscience', 'Dr. Robert Kim is an expert neurologist with extensive experience in treating complex neurological disorders.', 220.00, 14, '2010-07-20', 'ACTIVE', CURRENT_TIMESTAMP, 1),
 (15, 3, 'ORTHO002', 'MD in Orthopedics, Fellowship in Sports Medicine', 'Dr. Jennifer Lee specializes in sports medicine and minimally invasive orthopedic procedures.', 190.00, 11, '2013-01-10', 'ACTIVE', CURRENT_TIMESTAMP, 1),
 (16, 4, 'PED002', 'MD in Pediatrics, Fellowship in Pediatric Emergency Medicine', 'Dr. Christopher Wang is a dedicated pediatrician with expertise in emergency pediatric care.', 130.00, 9, '2015-05-25', 'ACTIVE', CURRENT_TIMESTAMP, 1),
-(17, 5, 'DERMA002', 'MD in Dermatology, Board Certified Dermatologist', 'Dr. Amanda Garcia specializes in cosmetic dermatology and skin cancer treatment.', 170.00, 10, '2014-09-12', 'ACTIVE', CURRENT_TIMESTAMP, 1);
+(17, 5, 'DERMA002', 'MD in Dermatology, Board Certified Dermatologist', 'Dr. Amanda Garcia specializes in cosmetic dermatology and skin cancer treatment.', 170.00, 10, '2014-09-12', 'ACTIVE', CURRENT_TIMESTAMP, 1),
+-- Additional Cardiology Doctors
+(18, 1, 'CARD003', 'MD in Cardiology, Fellowship in Cardiac Electrophysiology', 'Dr. Michael Thompson is a renowned cardiologist specializing in cardiac electrophysiology and arrhythmia management.', 180.00, 18, '2008-09-10', 'ACTIVE', CURRENT_TIMESTAMP, 1),
+(19, 1, 'CARD004', 'MD in Cardiology, Fellowship in Interventional Cardiology', 'Dr. Jennifer Martinez is an expert in interventional cardiology with extensive experience in complex cardiac procedures.', 170.00, 15, '2009-11-15', 'ACTIVE', CURRENT_TIMESTAMP, 1),
+(20, 1, 'CARD005', 'MD in Cardiology, Fellowship in Heart Failure and Transplant', 'Dr. Robert Anderson specializes in heart failure management and cardiac transplantation with over 20 years of experience.', 200.00, 20, '2006-03-20', 'ACTIVE', CURRENT_TIMESTAMP, 1),
+(21, 1, 'CARD006', 'MD in Cardiology, Fellowship in Preventive Cardiology', 'Dr. Sarah Williams focuses on preventive cardiology and cardiovascular risk assessment for optimal heart health.', 165.00, 13, '2011-07-08', 'ACTIVE', CURRENT_TIMESTAMP, 1),
+(22, 1, 'CARD007', 'MD in Cardiology, Fellowship in Adult Congenital Heart Disease', 'Dr. Christopher Lee is a specialist in adult congenital heart disease with expertise in complex cardiac conditions.', 185.00, 16, '2008-12-12', 'ACTIVE', CURRENT_TIMESTAMP, 1);
 
 -- Now add all doctor slot templates for all 12 doctors
 INSERT INTO doctor_slot_templates (doctor_id, day_of_week, start_time, end_time, slot_duration_minutes, is_active, created_at, created_by) VALUES
@@ -214,7 +273,36 @@ INSERT INTO doctor_slot_templates (doctor_id, day_of_week, start_time, end_time,
 -- Dr. Amanda Garcia (Dermatologist) - ID 12 - Monday, Wednesday, Friday, 9:30 AM to 5:30 PM, 30 min slots
 (12, 'MONDAY', '09:30:00', '17:30:00', 30, true, CURRENT_TIMESTAMP, 1),
 (12, 'WEDNESDAY', '09:30:00', '17:30:00', 30, true, CURRENT_TIMESTAMP, 1),
-(12, 'FRIDAY', '09:30:00', '17:30:00', 30, true, CURRENT_TIMESTAMP, 1);
+(12, 'FRIDAY', '09:30:00', '17:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+
+-- Additional Cardiology Doctors Slot Templates
+-- Dr. Michael Thompson (Cardiologist) - ID 13 - Monday to Friday, 8 AM to 4 PM, 30 min slots
+(13, 'MONDAY', '08:00:00', '16:00:00', 30, true, CURRENT_TIMESTAMP, 1),
+(13, 'TUESDAY', '08:00:00', '16:00:00', 30, true, CURRENT_TIMESTAMP, 1),
+(13, 'WEDNESDAY', '08:00:00', '16:00:00', 30, true, CURRENT_TIMESTAMP, 1),
+(13, 'THURSDAY', '08:00:00', '16:00:00', 30, true, CURRENT_TIMESTAMP, 1),
+(13, 'FRIDAY', '08:00:00', '16:00:00', 30, true, CURRENT_TIMESTAMP, 1),
+
+-- Dr. Jennifer Martinez (Cardiologist) - ID 14 - Monday, Wednesday, Friday, 9 AM to 5 PM, 45 min slots
+(14, 'MONDAY', '09:00:00', '17:00:00', 45, true, CURRENT_TIMESTAMP, 1),
+(14, 'WEDNESDAY', '09:00:00', '17:00:00', 45, true, CURRENT_TIMESTAMP, 1),
+(14, 'FRIDAY', '09:00:00', '17:00:00', 45, true, CURRENT_TIMESTAMP, 1),
+
+-- Dr. Robert Anderson (Cardiologist) - ID 15 - Tuesday, Thursday, 10 AM to 6 PM, 60 min slots
+(15, 'TUESDAY', '10:00:00', '18:00:00', 60, true, CURRENT_TIMESTAMP, 1),
+(15, 'THURSDAY', '10:00:00', '18:00:00', 60, true, CURRENT_TIMESTAMP, 1),
+
+-- Dr. Sarah Williams (Cardiologist) - ID 16 - Monday to Friday, 8:30 AM to 4:30 PM, 30 min slots
+(16, 'MONDAY', '08:30:00', '16:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+(16, 'TUESDAY', '08:30:00', '16:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+(16, 'WEDNESDAY', '08:30:00', '16:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+(16, 'THURSDAY', '08:30:00', '16:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+(16, 'FRIDAY', '08:30:00', '16:30:00', 30, true, CURRENT_TIMESTAMP, 1),
+
+-- Dr. Christopher Lee (Cardiologist) - ID 17 - Monday, Wednesday, Friday, 9:30 AM to 5:30 PM, 45 min slots
+(17, 'MONDAY', '09:30:00', '17:30:00', 45, true, CURRENT_TIMESTAMP, 1),
+(17, 'WEDNESDAY', '09:30:00', '17:30:00', 45, true, CURRENT_TIMESTAMP, 1),
+(17, 'FRIDAY', '09:30:00', '17:30:00', 45, true, CURRENT_TIMESTAMP, 1);
 
 -- Add more patients for testing
 INSERT INTO users (name, firstname, lastname, email, username, password_hash, role, gender, birthdate, contact, address, city, state, country, postal_code, blood_group, emergency_contact_name, emergency_contact_num, profile_url, created_at, created_by) VALUES
@@ -817,6 +905,161 @@ INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, cr
 (5, CURRENT_DATE + 12, '16:30:00', '17:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
 (5, CURRENT_DATE + 12, '17:00:00', '17:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
 (5, CURRENT_DATE + 12, '17:30:00', '18:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1);
+
+-- Additional Cardiology Doctors Slots for Next 5 Days
+-- Dr. Michael Thompson (ID 13) - Monday to Friday, 8 AM to 4 PM, 30 min slots
+-- Day 1 (Monday)
+INSERT INTO doctor_slots (doctor_id, slot_date, start_time, end_time, status, created_at, created_by) VALUES
+(13, CURRENT_DATE + 1, '08:00:00', '08:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '08:30:00', '09:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '09:00:00', '09:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '09:30:00', '10:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '10:00:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '10:30:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '11:00:00', '11:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '11:30:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '12:00:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '12:30:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '13:00:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '13:30:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '14:00:00', '14:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '14:30:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '15:00:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 1, '15:30:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Day 2 (Tuesday)
+(13, CURRENT_DATE + 2, '08:00:00', '08:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '08:30:00', '09:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '09:00:00', '09:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '09:30:00', '10:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '10:00:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '10:30:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '11:00:00', '11:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '11:30:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '12:00:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '12:30:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '13:00:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '13:30:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '14:00:00', '14:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '14:30:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '15:00:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(13, CURRENT_DATE + 2, '15:30:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Dr. Jennifer Martinez (ID 14) - Monday, Wednesday, Friday, 9 AM to 5 PM, 45 min slots
+-- Day 1 (Monday)
+(14, CURRENT_DATE + 1, '09:00:00', '09:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '09:45:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '10:30:00', '11:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '11:15:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '12:00:00', '12:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '12:45:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '13:30:00', '14:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '14:15:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '15:00:00', '15:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '15:45:00', '16:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '16:30:00', '17:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 1, '17:15:00', '18:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Day 3 (Wednesday)
+(14, CURRENT_DATE + 3, '09:00:00', '09:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '09:45:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '10:30:00', '11:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '11:15:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '12:00:00', '12:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '12:45:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '13:30:00', '14:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '14:15:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '15:00:00', '15:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '15:45:00', '16:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '16:30:00', '17:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(14, CURRENT_DATE + 3, '17:15:00', '18:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Dr. Robert Anderson (ID 15) - Tuesday, Thursday, 10 AM to 6 PM, 60 min slots
+-- Day 2 (Tuesday)
+(15, CURRENT_DATE + 2, '10:00:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '11:00:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '12:00:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '13:00:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '14:00:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '15:00:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '16:00:00', '17:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 2, '17:00:00', '18:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Day 4 (Thursday)
+(15, CURRENT_DATE + 4, '10:00:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '11:00:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '12:00:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '13:00:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '14:00:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '15:00:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '16:00:00', '17:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(15, CURRENT_DATE + 4, '17:00:00', '18:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Dr. Sarah Williams (ID 16) - Monday to Friday, 8:30 AM to 4:30 PM, 30 min slots
+-- Day 1 (Monday)
+(16, CURRENT_DATE + 1, '08:30:00', '09:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '09:00:00', '09:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '09:30:00', '10:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '10:00:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '10:30:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '11:00:00', '11:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '11:30:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '12:00:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '12:30:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '13:00:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '13:30:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '14:00:00', '14:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '14:30:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '15:00:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '15:30:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 1, '16:00:00', '16:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Day 2 (Tuesday)
+(16, CURRENT_DATE + 2, '08:30:00', '09:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '09:00:00', '09:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '09:30:00', '10:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '10:00:00', '10:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '10:30:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '11:00:00', '11:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '11:30:00', '12:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '12:00:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '12:30:00', '13:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '13:00:00', '13:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '13:30:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '14:00:00', '14:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '14:30:00', '15:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '15:00:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '15:30:00', '16:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(16, CURRENT_DATE + 2, '16:00:00', '16:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Dr. Christopher Lee (ID 17) - Monday, Wednesday, Friday, 9:30 AM to 5:30 PM, 45 min slots
+-- Day 1 (Monday)
+(17, CURRENT_DATE + 1, '09:30:00', '10:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '10:15:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '11:00:00', '11:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '11:45:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '12:30:00', '13:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '13:15:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '14:00:00', '14:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '14:45:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '15:30:00', '16:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '16:15:00', '17:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '17:00:00', '17:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 1, '17:45:00', '18:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+
+-- Day 3 (Wednesday)
+(17, CURRENT_DATE + 3, '09:30:00', '10:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '10:15:00', '11:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '11:00:00', '11:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '11:45:00', '12:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '12:30:00', '13:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '13:15:00', '14:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '14:00:00', '14:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '14:45:00', '15:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '15:30:00', '16:15:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '16:15:00', '17:00:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '17:00:00', '17:45:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1),
+(17, CURRENT_DATE + 3, '17:45:00', '18:30:00', 'AVAILABLE', CURRENT_TIMESTAMP, 1);
 
 -- Dr. Maria Rodriguez (ID 6) - Tuesday, Thursday, Saturday, 9 AM to 5 PM, 45 min slots
 -- Week 1

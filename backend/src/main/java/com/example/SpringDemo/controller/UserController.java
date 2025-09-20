@@ -1,6 +1,7 @@
 package com.example.SpringDemo.controller;
 
 import com.example.SpringDemo.dto.ApiResponse;
+
 import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,13 +33,15 @@ public class UserController {
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) String role) {
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) String status) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<User> users = userService.getAllUsers(name, email, role, role, pageable);
+        Page<User> users = userService.getAllUsers(name, email, role, gender, status, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
     
@@ -178,4 +181,16 @@ public class UserController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    
+    @GetMapping("/patients/list")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<User>>> getPatientsList() {
+        try {
+            List<User> patients = userService.getPatients();
+            return ResponseEntity.ok(ApiResponse.success(patients));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
 }

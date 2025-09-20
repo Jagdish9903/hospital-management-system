@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin APIs Test - Hospital Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-section h3 { color: #333; margin-top: 0; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Hospital Management System - Admin APIs Test</h1>
+    <p>This page tests all admin APIs to ensure filtering, sorting, and pagination work correctly.</p>
+    
+    <div class="test-section">
+        <h3>1. Test Login</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Test Users API</h3>
+        <button onclick="testUsers()">Test Users (All)</button>
+        <button onclick="testUsersWithFilters()">Test Users (With Filters)</button>
+        <div id="usersResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Test Doctors API</h3>
+        <button onclick="testDoctors()">Test Doctors (All)</button>
+        <button onclick="testDoctorsWithFilters()">Test Doctors (With Filters)</button>
+        <button onclick="testSpecializations()">Test Specializations</button>
+        <div id="doctorsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Test Appointments API</h3>
+        <button onclick="testAppointments()">Test Appointments (All)</button>
+        <button onclick="testAppointmentsWithFilters()">Test Appointments (With Filters)</button>
+        <div id="appointmentsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. Test Complaints API</h3>
+        <button onclick="testComplaints()">Test Complaints (All)</button>
+        <button onclick="testComplaintsWithFilters()">Test Complaints (With Filters)</button>
+        <div id="complaintsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>6. Test Audit Logs API</h3>
+        <button onclick="testAuditLogs()">Test Audit Logs (All)</button>
+        <button onclick="testAuditLogsWithFilters()">Test Audit Logs (With Filters)</button>
+        <div id="auditLogsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>7. Test All APIs</h3>
+        <button onclick="testAllApis()">Test All APIs</button>
+        <div id="allResults" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.className = `result ${type}`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function testLogin() {
+            clearLog('loginResult');
+            log('loginResult', 'Testing login...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@hospital.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.token;
+                    log('loginResult', `✅ Login successful! Token: ${authToken.substring(0, 20)}...`, 'success');
+                } else {
+                    log('loginResult', `❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('loginResult', `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUsers() {
+            clearLog('usersResult');
+            log('usersResult', 'Testing users API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users?page=0&size=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('usersResult', `✅ Users API successful! Found ${data.data.totalElements} users`, 'success');
+                    log('usersResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('usersResult', `❌ Users API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('usersResult', `❌ Users API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUsersWithFilters() {
+            clearLog('usersResult');
+            log('usersResult', 'Testing users API with filters...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users?page=0&size=5&role=PATIENT&status=ACTIVE`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('usersResult', `✅ Users API with filters successful! Found ${data.data.totalElements} users`, 'success');
+                    log('usersResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('usersResult', `❌ Users API with filters failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('usersResult', `❌ Users API with filters error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDoctors() {
+            clearLog('doctorsResult');
+            log('doctorsResult', 'Testing doctors API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/doctors?page=0&size=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('doctorsResult', `✅ Doctors API successful! Found ${data.data.totalElements} doctors`, 'success');
+                    log('doctorsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('doctorsResult', `❌ Doctors API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('doctorsResult', `❌ Doctors API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDoctorsWithFilters() {
+            clearLog('doctorsResult');
+            log('doctorsResult', 'Testing doctors API with filters...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/doctors?page=0&size=5&status=ACTIVE`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('doctorsResult', `✅ Doctors API with filters successful! Found ${data.data.totalElements} doctors`, 'success');
+                    log('doctorsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('doctorsResult', `❌ Doctors API with filters failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('doctorsResult', `❌ Doctors API with filters error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSpecializations() {
+            clearLog('doctorsResult');
+            log('doctorsResult', 'Testing specializations API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/specializations`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('doctorsResult', `✅ Specializations API successful! Found ${data.data.length} specializations`, 'success');
+                    log('doctorsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('doctorsResult', `❌ Specializations API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('doctorsResult', `❌ Specializations API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAppointments() {
+            clearLog('appointmentsResult');
+            log('appointmentsResult', 'Testing appointments API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('appointmentsResult', `✅ Appointments API successful! Found ${data.data.totalElements} appointments`, 'success');
+                    log('appointmentsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('appointmentsResult', `❌ Appointments API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('appointmentsResult', `❌ Appointments API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAppointmentsWithFilters() {
+            clearLog('appointmentsResult');
+            log('appointmentsResult', 'Testing appointments API with filters...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=5&status=SCHEDULED&appointmentType=CONSULTATION`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('appointmentsResult', `✅ Appointments API with filters successful! Found ${data.data.totalElements} appointments`, 'success');
+                    log('appointmentsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('appointmentsResult', `❌ Appointments API with filters failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('appointmentsResult', `❌ Appointments API with filters error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testComplaints() {
+            clearLog('complaintsResult');
+            log('complaintsResult', 'Testing complaints API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('complaintsResult', `✅ Complaints API successful! Found ${data.data.totalElements} complaints`, 'success');
+                    log('complaintsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('complaintsResult', `❌ Complaints API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('complaintsResult', `❌ Complaints API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testComplaintsWithFilters() {
+            clearLog('complaintsResult');
+            log('complaintsResult', 'Testing complaints API with filters...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=5&status=OPEN&priority=HIGH`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('complaintsResult', `✅ Complaints API with filters successful! Found ${data.data.totalElements} complaints`, 'success');
+                    log('complaintsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('complaintsResult', `❌ Complaints API with filters failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('complaintsResult', `❌ Complaints API with filters error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuditLogs() {
+            clearLog('auditLogsResult');
+            log('auditLogsResult', 'Testing audit logs API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('auditLogsResult', `✅ Audit logs API successful! Found ${data.data.totalElements} audit logs`, 'success');
+                    log('auditLogsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('auditLogsResult', `❌ Audit logs API failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('auditLogsResult', `❌ Audit logs API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuditLogsWithFilters() {
+            clearLog('auditLogsResult');
+            log('auditLogsResult', 'Testing audit logs API with filters...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=5&action=CREATE&tableName=users`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('auditLogsResult', `✅ Audit logs API with filters successful! Found ${data.data.totalElements} audit logs`, 'success');
+                    log('auditLogsResult', `Data: ${JSON.stringify(data.data, null, 2)}`, 'info');
+                } else {
+                    log('auditLogsResult', `❌ Audit logs API with filters failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('auditLogsResult', `❌ Audit logs API with filters error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllApis() {
+            clearLog('allResults');
+            log('allResults', 'Testing all APIs...', 'info');
+            
+            // Test login first
+            await testLogin();
+            
+            if (authToken) {
+                // Test all APIs
+                await testUsers();
+                await testDoctors();
+                await testAppointments();
+                await testComplaints();
+                await testAuditLogs();
+                
+                log('allResults', '✅ All API tests completed!', 'success');
+            } else {
+                log('allResults', '❌ Cannot test APIs without authentication token', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -131,12 +131,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let complaint of complaints" class="table-row">
-            <td class="complaint-id">{{ complaint.complaintId }}</td>
+          <tr *ngFor="let complaint of complaints" class="table-row" [class.deleted-row]="complaint.deletedAt">
+            <td class="complaint-id">
+              <span *ngIf="complaint.deletedAt" class="deleted-indicator">DELETED</span>
+              {{ complaint.complaintId }}
+            </td>
             <td class="complaint-title">
               <div class="title-content">
-                <div class="title-text">{{ complaint.title }}</div>
-                <div class="title-description">{{ complaint.description | slice:0:100 }}{{ complaint.description.length > 100 ? '...' : '' }}</div>
+                <div class="title-text" [class.deleted-text]="complaint.deletedAt">{{ complaint.title }}</div>
+                <div class="title-description" [class.deleted-text]="complaint.deletedAt">{{ complaint.description | slice:0:100 }}{{ complaint.description.length > 100 ? '...' : '' }}</div>
               </div>
             </td>
             <td class="patient-info">
@@ -148,35 +151,35 @@
                   </svg>
                 </div>
                 <div class="patient-text">
-                <div class="patient-name">{{ complaint.patient?.name }}</div>
-                <div class="patient-contact">{{ complaint.patient?.contact || complaint.patient?.email }}</div>
+                <div class="patient-name" [class.deleted-text]="complaint.deletedAt">{{ complaint.patient?.name }}</div>
+                <div class="patient-contact" [class.deleted-text]="complaint.deletedAt">{{ complaint.patient?.contact || complaint.patient?.email }}</div>
                 </div>
               </div>
             </td>
             <td class="complaint-category">
-              <span class="badge" [class]="getCategoryBadgeClass(complaint.category)">
+              <span class="badge" [class]="getCategoryBadgeClass(complaint.category)" [class.deleted-badge]="complaint.deletedAt">
                 {{ complaint.category.replace('_', ' ') }}
               </span>
             </td>
             <td class="complaint-priority">
-              <span class="badge" [class]="getPriorityBadgeClass(complaint.priority)">
+              <span class="badge" [class]="getPriorityBadgeClass(complaint.priority)" [class.deleted-badge]="complaint.deletedAt">
                 {{ complaint.priority }}
               </span>
             </td>
             <td class="complaint-status">
-              <span class="badge" [class]="getStatusBadgeClass(complaint.status)">
+              <span class="badge" [class]="getStatusBadgeClass(complaint.status)" [class.deleted-badge]="complaint.deletedAt">
                 {{ complaint.status.replace('_', ' ') }}
               </span>
             </td>
             <td class="assigned-to">
-              <span *ngIf="complaint.assignedTo; else notAssigned">
+              <span *ngIf="complaint.assignedTo; else notAssigned" [class.deleted-text]="complaint.deletedAt">
                 {{ complaint.assignedTo.name }}
               </span>
               <ng-template #notAssigned>
-                <span class="not-assigned">Not Assigned</span>
+                <span class="not-assigned" [class.deleted-text]="complaint.deletedAt">Not Assigned</span>
               </ng-template>
             </td>
-            <td class="complaint-created">{{ formatDate(complaint.createdAt) }}</td>
+            <td class="complaint-created" [class.deleted-text]="complaint.deletedAt">{{ formatDate(complaint.createdAt) }}</td>
             <td class="complaint-actions">
               <div class="action-buttons">
                 <button class="action-btn view-btn" (click)="viewComplaint(complaint)" title="View Details">
@@ -185,7 +188,11 @@
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
                 </button>
-                <button class="action-btn edit-btn" (click)="editComplaint(complaint)" title="Edit Complaint">
+                <button class="action-btn edit-btn" 
+                        [disabled]="complaint.deletedAt"
+                        [class.disabled]="complaint.deletedAt"
+                        (click)="editComplaint(complaint)" 
+                        title="Edit Complaint">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -208,7 +215,11 @@
                     <polyline points="20,6 9,17 4,12"/>
                   </svg>
                 </button>
-                <button class="action-btn delete-btn" (click)="deleteComplaint(complaint)" title="Delete Complaint">
+                <button class="action-btn delete-btn" 
+                        [disabled]="complaint.deletedAt"
+                        [class.disabled]="complaint.deletedAt"
+                        (click)="deleteComplaint(complaint)" 
+                        title="Delete Complaint">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>

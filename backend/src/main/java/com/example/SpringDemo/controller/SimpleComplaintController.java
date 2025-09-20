@@ -103,12 +103,41 @@ public class SimpleComplaintController {
     
     // Get complaints by patient - NO AUTHENTICATION REQUIRED
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<ApiResponse<List<Complaint>>> getComplaintsByPatient(@PathVariable Long patientId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getComplaintsByPatient(
+            @PathVariable Long patientId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String status) {
         try {
-            System.out.println("Getting complaints for patient: " + patientId);
-            List<Complaint> complaints = complaintService.getComplaintsByPatient(patientId, null).getContent();
-            System.out.println("Found " + complaints.size() + " complaints");
-            return ResponseEntity.ok(ApiResponse.success(complaints));
+            System.out.println("Getting complaints for patient: " + patientId + " page: " + page + " size: " + size + " status: " + status);
+            
+            // Create Pageable object
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                page, 
+                size, 
+                sortDir.equalsIgnoreCase("desc") ? 
+                    org.springframework.data.domain.Sort.by(sortBy).descending() : 
+                    org.springframework.data.domain.Sort.by(sortBy).ascending()
+            );
+            
+            // Use the filtering method instead of the simple patient method
+            org.springframework.data.domain.Page<Complaint> complaintPage = complaintService.getComplaintsByPatientWithFilters(
+                patientId, status, pageable);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("complaints", complaintPage.getContent());
+            response.put("currentPage", complaintPage.getNumber());
+            response.put("totalPages", complaintPage.getTotalPages());
+            response.put("totalElements", complaintPage.getTotalElements());
+            response.put("size", complaintPage.getSize());
+            response.put("first", complaintPage.isFirst());
+            response.put("last", complaintPage.isLast());
+            response.put("numberOfElements", complaintPage.getNumberOfElements());
+            
+            System.out.println("Found " + complaintPage.getTotalElements() + " total complaints, showing " + complaintPage.getNumberOfElements() + " on page " + (page + 1));
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             System.out.println("Error getting complaints: " + e.getMessage());
             e.printStackTrace();

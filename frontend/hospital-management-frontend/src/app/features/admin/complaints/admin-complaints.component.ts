@@ -3,6 +3,7 @@ import { CommonModule, SlicePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService, Complaint, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -91,6 +92,7 @@ export class AdminComplaintsComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private authService: AuthService,
     private fb: FormBuilder,
     private router: Router
   ) {
@@ -124,6 +126,17 @@ export class AdminComplaintsComponent implements OnInit {
 
   loadComplaints(): void {
     this.isLoading = true;
+    
+    // Check authentication before making API call
+    if (!this.authService.isLoggedIn()) {
+      console.error('User not authenticated');
+      this.isLoading = false;
+      return;
+    }
+    
+    const token = this.authService.getToken();
+    console.log('Current token for complaints:', token ? `${token.substring(0, 20)}...` : 'No token');
+    
     const filters: SearchFilters = {
       page: this.currentPage,
       size: this.pageSize,
@@ -135,18 +148,23 @@ export class AdminComplaintsComponent implements OnInit {
       priority: this.selectedPriority || undefined
     };
 
+    console.log('Loading complaints with filters:', filters);
     this.adminService.getComplaints(filters).subscribe({
       next: (response) => {
+        console.log('Complaints response:', response);
         if (response.success) {
           this.paginatedResponse = response.data;
           this.complaints = response.data.content;
           this.totalElements = response.data.totalElements;
           this.totalPages = response.data.totalPages;
+        } else {
+          console.error('API returned error:', response.message);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading complaints:', error);
+        console.error('Error details:', error.error);
         this.isLoading = false;
       }
     });
@@ -203,6 +221,9 @@ export class AdminComplaintsComponent implements OnInit {
   }
 
   editComplaint(complaint: Complaint): void {
+    if (complaint.deletedAt) {
+      return; // Don't allow editing deleted complaints
+    }
     this.selectedComplaint = complaint;
     this.showEditModal = true;
     this.editForm.patchValue({
@@ -255,6 +276,9 @@ export class AdminComplaintsComponent implements OnInit {
   }
 
   deleteComplaint(complaint: Complaint): void {
+    if (complaint.deletedAt) {
+      return; // Don't allow deleting already deleted complaints
+    }
     this.selectedComplaint = complaint;
     this.showDeleteModal = true;
   }

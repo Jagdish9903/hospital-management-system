@@ -93,7 +93,7 @@ public class Appointment {
     private Long deletedBy;
     
     public enum Status {
-        SCHEDULED, CONFIRMED, CANCELLED
+        SCHEDULED, CANCELLED, COMPLETED
     }
     
     public enum AppointmentType {

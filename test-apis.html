@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Hospital Management System API Test</h1>
+    
+    <div>
+        <h2>Test Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div>
+        <h2>Test Users API</h2>
+        <button onclick="testUsers()">Test Users API</button>
+        <div id="usersResult"></div>
+    </div>
+    
+    <div>
+        <h2>Test Doctors API</h2>
+        <button onclick="testDoctors()">Test Doctors API</button>
+        <div id="doctorsResult"></div>
+    </div>
+    
+    <div>
+        <h2>Test Appointments API</h2>
+        <button onclick="testAppointments()">Test Appointments API</button>
+        <div id="appointmentsResult"></div>
+    </div>
+    
+    <div>
+        <h2>Test Complaints API</h2>
+        <button onclick="testComplaints()">Test Complaints API</button>
+        <div id="complaintsResult"></div>
+    </div>
+    
+    <div>
+        <h2>Test Audit Logs API</h2>
+        <button onclick="testAuditLogs()">Test Audit Logs API</button>
+        <div id="auditLogsResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let authToken = '';
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('loginResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                
+                if (result.success) {
+                    authToken = result.data.token;
+                    console.log('Login successful, token:', authToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/users?page=0&size=5&sortBy=id&sortDir=asc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('usersResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('usersResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testDoctors() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/doctors?page=0&size=5&sortBy=id&sortDir=asc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('doctorsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('doctorsResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testAppointments() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/appointments?page=0&size=5&sortBy=id&sortDir=asc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('appointmentsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('appointmentsResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testComplaints() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/complaints?page=0&size=5&sortBy=id&sortDir=asc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('complaintsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('complaintsResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testAuditLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/audit-logs?page=0&size=5&sortBy=id&sortDir=asc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                document.getElementById('auditLogsResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('auditLogsResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

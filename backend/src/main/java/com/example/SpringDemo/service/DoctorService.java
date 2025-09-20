@@ -64,16 +64,8 @@ public class DoctorService {
     }
     
     public Page<Doctor> getAllDoctors(String name, String email, String specialization, String status, Pageable pageable) {
-        Doctor.Status statusEnum = null;
-        if (status != null && !status.isEmpty()) {
-            try {
-                statusEnum = Doctor.Status.valueOf(status.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                // Invalid status, treat as null
-            }
-        }
-        
-        return doctorRepository.findDoctorsWithFilters(name, email, specialization, statusEnum, pageable);
+        // Use the method that includes deleted records for display purposes
+        return doctorRepository.findDoctorsWithFiltersIncludingDeleted(name, email, specialization, status, pageable);
     }
     
     public List<Doctor> getActiveDoctors() {
@@ -117,37 +109,68 @@ public class DoctorService {
     }
     
     public void deleteDoctor(Long id) {
-        Doctor doctor = doctorRepository.findById(id)
+        Doctor doctor = doctorRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
-        doctorRepository.delete(doctor);
+        doctor.setDeletedAt(java.time.LocalDateTime.now());
+        doctor.setDeletedBy(doctor.getDoctorId());
+        doctorRepository.save(doctor);
+        
+        // Also soft delete the associated user
+        User user = doctor.getUser();
+        if (user != null && user.getDeletedAt() == null) {
+            user.setDeletedAt(java.time.LocalDateTime.now());
+            user.setDeletedBy(doctor.getDoctorId());
+            userRepository.save(user);
+        }
     }
     
-    public Doctor updateDoctor(Long id, Doctor doctorData) {
-        Doctor doctor = doctorRepository.findById(id)
+    public void deleteDoctorByUserId(Long userId) {
+        Doctor doctor = doctorRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found for user ID: " + userId));
+        
+        doctor.setDeletedAt(java.time.LocalDateTime.now());
+        doctor.setDeletedBy(doctor.getDoctorId());
+        doctorRepository.save(doctor);
+    }
+    
+    public Doctor updateDoctor(Long id, Map<String, Object> updateData) {
+        Doctor doctor = doctorRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
-        if (doctorData.getSpecialization() != null) {
-            doctor.setSpecialization(doctorData.getSpecialization());
+        // Only update fields that are provided and not null
+        if (updateData.containsKey("licenseNumber") && updateData.get("licenseNumber") != null) {
+            doctor.setLicenseNumber((String) updateData.get("licenseNumber"));
         }
-        if (doctorData.getLicenseNumber() != null) {
-            doctor.setLicenseNumber(doctorData.getLicenseNumber());
+        if (updateData.containsKey("yearsOfExp") && updateData.get("yearsOfExp") != null) {
+            doctor.setYearsOfExp((Integer) updateData.get("yearsOfExp"));
         }
-        if (doctorData.getYearsOfExp() != null) {
-            doctor.setYearsOfExp(doctorData.getYearsOfExp());
+        if (updateData.containsKey("qualification") && updateData.get("qualification") != null) {
+            doctor.setQualification((String) updateData.get("qualification"));
         }
-        if (doctorData.getQualification() != null) {
-            doctor.setQualification(doctorData.getQualification());
+        if (updateData.containsKey("consultationFee") && updateData.get("consultationFee") != null) {
+            Object fee = updateData.get("consultationFee");
+            if (fee instanceof Number) {
+                doctor.setConsultationFee(java.math.BigDecimal.valueOf(((Number) fee).doubleValue()));
+            } else if (fee instanceof String) {
+                doctor.setConsultationFee(new java.math.BigDecimal((String) fee));
+            }
         }
-        if (doctorData.getConsultationFee() != null) {
-            doctor.setConsultationFee(doctorData.getConsultationFee());
+        if (updateData.containsKey("bio") && updateData.get("bio") != null) {
+            doctor.setBio((String) updateData.get("bio"));
         }
-        if (doctorData.getBio() != null) {
-            doctor.setBio(doctorData.getBio());
+        if (updateData.containsKey("status") && updateData.get("status") != null) {
+            String statusStr = updateData.get("status").toString();
+            try {
+                doctor.setStatus(Doctor.Status.valueOf(statusStr.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid status: " + statusStr);
+            }
         }
-        if (doctorData.getStatus() != null) {
-            doctor.setStatus(doctorData.getStatus());
-        }
+        
+        // Update audit fields
+        doctor.setUpdatedAt(java.time.LocalDateTime.now());
+        doctor.setUpdatedBy(doctor.getDoctorId());
         
         return doctorRepository.save(doctor);
     }

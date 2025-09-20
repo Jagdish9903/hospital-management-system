@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/admin/appointments")
 @CrossOrigin(origins = "*")
@@ -34,11 +36,18 @@ public class AdminAppointmentController {
             @RequestParam(required = false) String dateFrom,
             @RequestParam(required = false) String dateTo) {
         
+        System.out.println("=== ADMIN APPOINTMENTS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - PatientName: " + patientName + ", DoctorName: " + doctorName + ", Status: " + status + ", Type: " + appointmentType + ", DateFrom: " + dateFrom + ", DateTo: " + dateTo);
+        
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<Appointment> appointments = appointmentService.getAllAppointments(patientName, doctorName, status, appointmentType, dateFrom, dateTo, pageable);
+        System.out.println("Found " + appointments.getTotalElements() + " appointments");
+        
         return ResponseEntity.ok(ApiResponse.success(appointments));
     }
     
@@ -55,9 +64,9 @@ public class AdminAppointmentController {
     
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
-    public ResponseEntity<ApiResponse<Appointment>> updateAppointment(@PathVariable Long id, @RequestBody Appointment appointmentData) {
+    public ResponseEntity<ApiResponse<Appointment>> updateAppointment(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
         try {
-            Appointment updatedAppointment = appointmentService.updateAppointment(id, appointmentData);
+            Appointment updatedAppointment = appointmentService.updateAppointment(id, updateData);
             return ResponseEntity.ok(ApiResponse.success("Appointment updated successfully", updatedAppointment));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

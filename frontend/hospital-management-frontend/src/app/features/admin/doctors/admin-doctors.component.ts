@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService, Doctor, User, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
   selector: 'app-admin-doctors',
   templateUrl: './admin-doctors.component.html',
   styleUrls: ['./admin-doctors.component.css'],
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   standalone: true
 })
 export class AdminDoctorsComponent implements OnInit {
@@ -51,7 +51,11 @@ export class AdminDoctorsComponent implements OnInit {
   
   // Data for dropdowns
   patients: User[] = [];
+  filteredPatients: User[] = [];
   specializations: any[] = [];
+  patientSearchTerm = '';
+  selectedPatient: User | null = null;
+  showPatientDropdown = false;
   
   // Table columns
   columns = [
@@ -135,18 +139,23 @@ export class AdminDoctorsComponent implements OnInit {
       status: this.selectedStatus || undefined
     };
 
+    console.log('Loading doctors with filters:', filters);
     this.adminService.getDoctors(filters).subscribe({
       next: (response) => {
+        console.log('Doctors response:', response);
         if (response.success) {
           this.paginatedResponse = response.data;
           this.doctors = response.data.content;
           this.totalElements = response.data.totalElements;
           this.totalPages = response.data.totalPages;
+        } else {
+          console.error('API returned error:', response.message);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading doctors:', error);
+        console.error('Error details:', error.error);
         this.isLoading = false;
       }
     });
@@ -201,6 +210,9 @@ export class AdminDoctorsComponent implements OnInit {
   }
 
   editDoctor(doctor: Doctor): void {
+    if (doctor.deletedAt) {
+      return; // Don't allow editing deleted doctors
+    }
     this.selectedDoctor = doctor;
     this.showEditModal = true;
     this.editForm.patchValue({
@@ -235,6 +247,9 @@ export class AdminDoctorsComponent implements OnInit {
   }
 
   deleteDoctor(doctor: Doctor): void {
+    if (doctor.deletedAt) {
+      return; // Don't allow deleting already deleted doctors
+    }
     this.selectedDoctor = doctor;
     this.showDeleteModal = true;
   }
@@ -269,21 +284,16 @@ export class AdminDoctorsComponent implements OnInit {
     this.showDeleteModal = false;
   }
 
-  loadPatients(): void {
-    this.adminService.getPatients().subscribe({
+  loadPatients(searchTerm: string = ''): void {
+    console.log('Loading patients with search term:', searchTerm);
+    this.adminService.getPatients(searchTerm).subscribe({
       next: (response) => {
+        console.log('Patients API response:', response);
         if (response.success) {
-          this.patients = response.data;
-          console.log('Loaded patients from API:', this.patients); // Debug log
-          
-          // Filter out any users who are not patients (just in case)
-          this.patients = this.patients.filter(user => {
-            const isPatient = user.role === 'PATIENT' || user.role === 'Patient';
-            console.log(`User ${user.name} (${user.email}) has role: ${user.role}, isPatient: ${isPatient}`);
-            return isPatient;
-          });
-          
-          console.log('Filtered patients:', this.patients); // Debug log
+          this.patients = response.data.content || response.data;
+          this.filteredPatients = [...this.patients];
+          console.log('Loaded patients from API:', this.patients);
+          console.log('Filtered patients:', this.filteredPatients);
         }
       },
       error: (error) => {
@@ -292,16 +302,78 @@ export class AdminDoctorsComponent implements OnInit {
     });
   }
 
+  onPatientSearch(searchTerm: string): void {
+    this.patientSearchTerm = searchTerm;
+    this.showPatientDropdown = true;
+    
+    console.log('Searching patients with term:', searchTerm);
+    console.log('Available patients:', this.patients);
+    
+    if (searchTerm.trim() === '') {
+      this.filteredPatients = [...this.patients];
+    } else {
+      this.filteredPatients = this.patients.filter(patient => 
+        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    console.log('Filtered patients after search:', this.filteredPatients);
+  }
+
+  onPatientFocus(): void {
+    this.showPatientDropdown = true;
+    if (this.patients.length === 0) {
+      this.loadPatients();
+    }
+  }
+
+  onPatientBlur(): void {
+    // Delay hiding to allow for click events
+    setTimeout(() => {
+      this.showPatientDropdown = false;
+    }, 300);
+  }
+
+  togglePatientDropdown(): void {
+    this.showPatientDropdown = !this.showPatientDropdown;
+    if (this.showPatientDropdown && this.patients.length === 0) {
+      this.loadPatients();
+    }
+  }
+
+  selectPatient(patient: User): void {
+    console.log('=== SELECTING PATIENT ===');
+    console.log('Patient to select:', patient);
+    console.log('Current form value before:', this.addForm.value);
+    
+    this.selectedPatient = patient;
+    this.patientSearchTerm = `${patient.name} (${patient.email})`;
+    this.addForm.patchValue({ userId: patient.id });
+    this.showPatientDropdown = false;
+    
+    console.log('Selected patient:', this.selectedPatient);
+    console.log('Search term:', this.patientSearchTerm);
+    console.log('Form userId after selection:', this.addForm.get('userId')?.value);
+    console.log('Form valid:', this.addForm.valid);
+    console.log('Form errors:', this.addForm.errors);
+    console.log('=== END SELECTING PATIENT ===');
+  }
+
   loadSpecializations(): void {
     this.adminService.getSpecializations().subscribe({
       next: (response) => {
+        console.log('Specializations API response:', response);
         if (response.success) {
           this.specializations = response.data;
-          console.log('Loaded specializations:', this.specializations); // Debug log
+          console.log('Loaded specializations:', this.specializations);
+        } else {
+          console.error('API returned error:', response.message);
         }
       },
       error: (error) => {
         console.error('Error loading specializations:', error);
+        console.error('Error details:', error.error);
       }
     });
   }
@@ -309,7 +381,15 @@ export class AdminDoctorsComponent implements OnInit {
   addDoctor(): void {
     this.showAddModal = true;
     this.addForm.reset();
+    this.selectedPatient = null;
+    this.patientSearchTerm = '';
+    this.showPatientDropdown = false;
     console.log('Add doctor modal opened');
+    
+    // Load patients and specializations when opening the modal
+    this.loadPatients();
+    this.loadSpecializations();
+    
     console.log('Available patients:', this.patients);
     console.log('Available specializations:', this.specializations);
     

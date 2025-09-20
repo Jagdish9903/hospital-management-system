@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fixed Filtered APIs Test - Hospital Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-section h3 { color: #333; margin-top: 0; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Hospital Management System - Fixed Filtered APIs Test</h1>
+    <p>This page tests the specific URLs that were causing 401 errors.</p>
+    
+    <div class="test-section">
+        <h3>1. Test Login First</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Test Appointments - The Problematic URLs</h3>
+        <button onclick="testAppointmentsBasic()">Test Basic URL (should work)</button>
+        <button onclick="testAppointmentsFiltered()">Test Filtered URL (was giving 401)</button>
+        <div id="appointmentsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Test Complaints with Filters</h3>
+        <button onclick="testComplaintsBasic()">Test Basic URL</button>
+        <button onclick="testComplaintsFiltered()">Test Filtered URL</button>
+        <div id="complaintsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Test Audit Logs with Filters</h3>
+        <button onclick="testAuditLogsBasic()">Test Basic URL</button>
+        <button onclick="testAuditLogsFiltered()">Test Filtered URL</button>
+        <div id="auditLogsResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. Test All Fixed APIs</h3>
+        <button onclick="testAllFixedApis()">Test All Fixed APIs</button>
+        <div id="allResults" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.className = `result ${type}`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function testLogin() {
+            clearLog('loginResult');
+            log('loginResult', 'Testing login...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@hospital.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.token;
+                    log('loginResult', `✅ Login successful! Token: ${authToken.substring(0, 20)}...`, 'success');
+                } else {
+                    log('loginResult', `❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('loginResult', `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAppointmentsBasic() {
+            clearLog('appointmentsResult');
+            log('appointmentsResult', 'Testing basic appointments URL...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=10&sortBy=appointmentDate&sortDir=desc`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('appointmentsResult', `✅ Basic appointments URL successful! Found ${data.data.totalElements} appointments`, 'success');
+                } else {
+                    log('appointmentsResult', `❌ Basic appointments URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('appointmentsResult', `❌ Basic appointments URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAppointmentsFiltered() {
+            clearLog('appointmentsResult');
+            log('appointmentsResult', 'Testing filtered appointments URL (the one that was giving 401)...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/appointments?page=0&size=10&sortBy=appointmentDate&sortDir=desc&status=CONFIRMED`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('appointmentsResult', `✅ Filtered appointments URL successful! Found ${data.data.totalElements} appointments`, 'success');
+                } else {
+                    log('appointmentsResult', `❌ Filtered appointments URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('appointmentsResult', `❌ Filtered appointments URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testComplaintsBasic() {
+            clearLog('complaintsResult');
+            log('complaintsResult', 'Testing basic complaints URL...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('complaintsResult', `✅ Basic complaints URL successful! Found ${data.data.totalElements} complaints`, 'success');
+                } else {
+                    log('complaintsResult', `❌ Basic complaints URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('complaintsResult', `❌ Basic complaints URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testComplaintsFiltered() {
+            clearLog('complaintsResult');
+            log('complaintsResult', 'Testing filtered complaints URL...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/complaints?page=0&size=10&status=OPEN&priority=HIGH`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('complaintsResult', `✅ Filtered complaints URL successful! Found ${data.data.totalElements} complaints`, 'success');
+                } else {
+                    log('complaintsResult', `❌ Filtered complaints URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('complaintsResult', `❌ Filtered complaints URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuditLogsBasic() {
+            clearLog('auditLogsResult');
+            log('auditLogsResult', 'Testing basic audit logs URL...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('auditLogsResult', `✅ Basic audit logs URL successful! Found ${data.data.totalElements} audit logs`, 'success');
+                } else {
+                    log('auditLogsResult', `❌ Basic audit logs URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('auditLogsResult', `❌ Basic audit logs URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuditLogsFiltered() {
+            clearLog('auditLogsResult');
+            log('auditLogsResult', 'Testing filtered audit logs URL...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/audit-logs?page=0&size=10&action=CREATE&tableName=users`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('auditLogsResult', `✅ Filtered audit logs URL successful! Found ${data.data.totalElements} audit logs`, 'success');
+                } else {
+                    log('auditLogsResult', `❌ Filtered audit logs URL failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log('auditLogsResult', `❌ Filtered audit logs URL error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllFixedApis() {
+            clearLog('allResults');
+            log('allResults', 'Testing all fixed APIs...', 'info');
+            
+            // Test login first
+            await testLogin();
+            
+            if (authToken) {
+                // Test all APIs
+                await testAppointmentsBasic();
+                await testAppointmentsFiltered();
+                await testComplaintsBasic();
+                await testComplaintsFiltered();
+                await testAuditLogsBasic();
+                await testAuditLogsFiltered();
+                
+                log('allResults', '✅ All fixed API tests completed!', 'success');
+            } else {
+                log('allResults', '❌ Cannot test APIs without authentication token', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

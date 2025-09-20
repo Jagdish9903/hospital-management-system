@@ -9,7 +9,7 @@ export interface User {
   contact: string;
   countryCode: string;
   address: string;
-  role: 'ADMIN' | 'SUPERADMIN' | 'PATIENT';
+  role: 'ADMIN' | 'SUPERADMIN' | 'PATIENT' | 'DOCTOR';
   gender?: 'MALE' | 'FEMALE' | 'OTHER';
   state?: string;
   city?: string;
@@ -22,6 +22,7 @@ export interface User {
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface LoginRequest {

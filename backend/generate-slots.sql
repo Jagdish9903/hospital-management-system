@@ -1,5 +1,6 @@
 -- Generate Doctor Slots for Next 2 Weeks Based on Templates
 -- This script generates slots for all 12 doctors based on their templates
+-- NOTE: This script should only be run if data.sql has not already created slots for the same dates
 
 -- First, let's see what templates we have
 SELECT 'Templates Count:' as info, COUNT(*) as count FROM doctor_slot_templates;
