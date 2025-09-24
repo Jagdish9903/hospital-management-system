@@ -26,7 +26,7 @@ public class AdminDoctorController {
     private DoctorService doctorService;
     
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<Doctor>>> getAllDoctors(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -34,7 +34,7 @@ public class AdminDoctorController {
             @RequestParam(defaultValue = "asc") String sortDir,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) String specialization,
+            @RequestParam(required = false) Long specialization,
             @RequestParam(required = false) String status) {
         
         System.out.println("=== ADMIN DOCTORS API DEBUG ===");
@@ -53,7 +53,7 @@ public class AdminDoctorController {
     }
     
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getDoctorStats() {
         try {
             Object stats = doctorService.getDoctorStats();
@@ -64,7 +64,7 @@ public class AdminDoctorController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Doctor>> updateDoctor(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
         try {
             Doctor updatedDoctor = doctorService.updateDoctor(id, updateData);
@@ -75,7 +75,7 @@ public class AdminDoctorController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteDoctor(@PathVariable Long id) {
         try {
             doctorService.deleteDoctor(id);
@@ -86,7 +86,7 @@ public class AdminDoctorController {
     }
     
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Doctor>> createDoctor(@RequestBody DoctorRequest request) {
         try {
             System.out.println("Received doctor request: " + request); // Debug log
@@ -100,7 +100,7 @@ public class AdminDoctorController {
     }
     
     @GetMapping("/specializations")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<Specialization>>> getSpecializations() {
         try {
             List<Specialization> specializations = doctorService.getSpecializations();

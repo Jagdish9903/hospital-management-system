@@ -78,6 +78,9 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
     
+    @Column(nullable = false)
+    private Boolean active = true;
+    
     // Audit fields
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -100,7 +103,7 @@ public class User {
     private Long deletedBy;
     
     public enum Role {
-        ADMIN, SUPERADMIN, PATIENT, DOCTOR
+        ADMIN, PATIENT
     }
     
     public enum Gender {

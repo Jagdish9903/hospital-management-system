@@ -1,21 +1,10 @@
 package com.example.SpringDemo.controller;
 
 import com.example.SpringDemo.dto.ApiResponse;
-import com.example.SpringDemo.entity.DoctorSlot;
-import com.example.SpringDemo.service.DoctorSlotService;
+import com.example.SpringDemo.service.DoctorSlotGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/doctor-slots")
@@ -23,163 +12,60 @@ import java.util.Optional;
 public class DoctorSlotController {
     
     @Autowired
-    private DoctorSlotService doctorSlotService;
+    private DoctorSlotGeneratorService doctorSlotGeneratorService;
     
-    @PostMapping("/generate/{doctorId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<String>> generateSlotsForDoctor(
-            @PathVariable Long doctorId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    /**
+     * Generate slots for all doctors for the next month
+     */
+    @PostMapping("/generate-all")
+    public ResponseEntity<ApiResponse<String>> generateAllSlots() {
         try {
-            doctorSlotService.generateSlotsForDoctor(doctorId, startDate, endDate);
-            return ResponseEntity.ok(ApiResponse.success("Slots generated successfully for doctor", null));
+            doctorSlotGeneratorService.generateSlotsForAllDoctors();
+            return ResponseEntity.ok(ApiResponse.success("Slots generated successfully for all doctors"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error generating slots: " + e.getMessage()));
         }
     }
     
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<DoctorSlot>>> getAllSlots(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "slotDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
-            @RequestParam(required = false) Long doctorId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate slotDate) {
-        
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Page<DoctorSlot> slots = doctorSlotService.getAllSlots(doctorId, status, slotDate, pageable);
-        return ResponseEntity.ok(ApiResponse.success(slots));
-    }
-    
-    @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<ApiResponse<Page<DoctorSlot>>> getSlotsByDoctor(
-            @PathVariable Long doctorId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "slotDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate slotDate) {
-        
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Page<DoctorSlot> slots = doctorSlotService.getSlotsByDoctor(doctorId, status, slotDate, pageable);
-        return ResponseEntity.ok(ApiResponse.success(slots));
-    }
-    
-    @GetMapping("/available")
-    public ResponseEntity<ApiResponse<List<DoctorSlot>>> getAvailableSlots(
-            @RequestParam Long doctorId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate slotDate) {
+    /**
+     * Generate slots for the next week
+     */
+    @PostMapping("/generate-next-week")
+    public ResponseEntity<ApiResponse<String>> generateNextWeekSlots() {
         try {
-            List<DoctorSlot> slots = doctorSlotService.getAvailableSlots(doctorId, slotDate);
-            return ResponseEntity.ok(ApiResponse.success(slots));
+            doctorSlotGeneratorService.generateNextWeekSlots();
+            return ResponseEntity.ok(ApiResponse.success("Next week slots generated successfully"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error generating next week slots: " + e.getMessage()));
         }
     }
     
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<DoctorSlot>>> searchSlots(
-            @RequestParam(required = false) Long doctorId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) String startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) String endTime,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "slotDate") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
-        
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
-            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-        
-        Page<DoctorSlot> slots = doctorSlotService.searchSlots(doctorId, status, fromDate, toDate, 
-                                                              startTime, endTime, pageable);
-        return ResponseEntity.ok(ApiResponse.success(slots));
-    }
-    
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<DoctorSlot>> getSlotById(@PathVariable Long id) {
-        Optional<DoctorSlot> slot = doctorSlotService.getSlotById(id);
-        if (slot.isPresent()) {
-            return ResponseEntity.ok(ApiResponse.success(slot.get()));
-        } else {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Slot not found"));
+    /**
+     * Generate slots for all doctors for the next month (for initial setup)
+     */
+    @PostMapping("/generate-initial-slots")
+    public ResponseEntity<ApiResponse<String>> generateInitialSlots() {
+        try {
+            doctorSlotGeneratorService.generateSlotsForAllDoctors();
+            return ResponseEntity.ok(ApiResponse.success("Initial slots generated successfully for all doctors"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error generating initial slots: " + e.getMessage()));
         }
     }
     
-    @PutMapping("/{id}/book")
-    public ResponseEntity<ApiResponse<DoctorSlot>> bookSlot(@PathVariable Long id) {
+    /**
+     * Generate slots for all doctors for a specific number of days (configurable)
+     */
+    @PostMapping("/generate-slots")
+    public ResponseEntity<ApiResponse<String>> generateSlots(@RequestParam(defaultValue = "30") int days) {
         try {
-            DoctorSlot slot = doctorSlotService.bookSlot(id);
-            return ResponseEntity.ok(ApiResponse.success("Slot booked successfully", slot));
+            System.out.println("=== MANUAL SLOT GENERATION REQUEST ===");
+            System.out.println("Requested days: " + days);
+            
+            doctorSlotGeneratorService.generateSlotsForAllDoctors();
+            return ResponseEntity.ok(ApiResponse.success("Slots generated successfully for all doctors for the next " + days + " days"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-    
-    @PutMapping("/{id}/unbook")
-    public ResponseEntity<ApiResponse<DoctorSlot>> unbookSlot(@PathVariable Long id) {
-        try {
-            DoctorSlot slot = doctorSlotService.unbookSlot(id);
-            return ResponseEntity.ok(ApiResponse.success("Slot unbooked successfully", slot));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-    
-    @PutMapping("/{id}/block")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<DoctorSlot>> blockSlot(@PathVariable Long id) {
-        try {
-            DoctorSlot slot = doctorSlotService.blockSlot(id);
-            return ResponseEntity.ok(ApiResponse.success("Slot blocked successfully", slot));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-    
-    @PutMapping("/{id}/unblock")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<DoctorSlot>> unblockSlot(@PathVariable Long id) {
-        try {
-            DoctorSlot slot = doctorSlotService.unblockSlot(id);
-            return ResponseEntity.ok(ApiResponse.success("Slot unblocked successfully", slot));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-    
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteSlot(@PathVariable Long id) {
-        try {
-            doctorSlotService.deleteSlot(id);
-            return ResponseEntity.ok(ApiResponse.success("Slot deleted successfully", null));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-    
-    @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> getSlotStats() {
-        try {
-            Object stats = doctorSlotService.getSlotStats();
-            return ResponseEntity.ok(ApiResponse.success(stats));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error generating slots: " + e.getMessage()));
         }
     }
 }

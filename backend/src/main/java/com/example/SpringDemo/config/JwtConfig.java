@@ -57,6 +57,25 @@ public class JwtConfig {
         return createToken(claims, userDetails.getUsername());
     }
     
+    public String generateTokenForDoctor(com.example.SpringDemo.entity.Doctor doctor) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "DOCTOR");
+        claims.put("userId", doctor.getDoctorId());
+        claims.put("email", doctor.getEmail());
+        claims.put("fullName", doctor.getFullName());
+        return createToken(claims, doctor.getEmail());
+    }
+    
+    public String generateTokenForUser(com.example.SpringDemo.entity.User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put("userId", user.getId());
+        claims.put("email", user.getEmail());
+        claims.put("username", user.getUsername());
+        claims.put("fullName", user.getName());
+        return createToken(claims, user.getEmail());
+    }
+    
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)

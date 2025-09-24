@@ -64,7 +64,7 @@
           <div class="doctor-info">
             <div class="doctor-name-section">
               <span *ngIf="doctorData.doctor.deletedAt" class="deleted-indicator">DELETED</span>
-              <h3 class="doctor-name" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.user.name }}</h3>
+              <h3 class="doctor-name" [class.deleted-text]="doctorData.doctor.deletedAt">Dr. {{ doctorData.doctor.firstName }} {{ doctorData.doctor.lastName }}</h3>
             </div>
             <p class="doctor-specialization" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.specialization.name }}</p>
             <p class="doctor-experience" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.yearsOfExp }} years experience</p>
@@ -159,11 +159,11 @@
           <h4>Appointment Details</h4>
           <div class="summary-item">
             <span class="summary-label">Doctor:</span>
-            <span class="summary-value">{{ selectedDoctor?.user.name }}</span>
+            <span class="summary-value">{{ selectedDoctor ? 'Dr. ' + selectedDoctor.firstName + ' ' + selectedDoctor.lastName : 'Not selected' }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Specialization:</span>
-            <span class="summary-value">{{ selectedDoctor?.specialization.name }}</span>
+            <span class="summary-value">{{ selectedDoctor?.specialization?.name || 'Not selected' }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Date:</span>
@@ -175,7 +175,7 @@
           </div>
           <div class="summary-item">
             <span class="summary-label">Fee:</span>
-            <span class="summary-value">${{ selectedDoctor?.consultationFee }}</span>
+            <span class="summary-value">${{ selectedDoctor?.consultationFee || '0' }}</span>
           </div>
         </div>
 
@@ -220,6 +220,14 @@
               <span *ngIf="!isBooking">Proceed to Payment</span>
               <span *ngIf="isBooking">Processing...</span>
             </button>
+            
+            <!-- Debug info for troubleshooting -->
+            <div *ngIf="!selectedSlot" class="debug-info">
+              <small style="color: #dc3545;">⚠️ Please select a time slot to proceed</small>
+            </div>
+            <div *ngIf="selectedSlot && !bookingForm.valid" class="debug-info">
+              <small style="color: #dc3545;">⚠️ Please fill in the symptoms field</small>
+            </div>
           </div>
         </form>
       </div>

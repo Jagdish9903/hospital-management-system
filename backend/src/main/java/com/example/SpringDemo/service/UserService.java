@@ -27,9 +27,6 @@ public class UserService {
     private UserRepository userRepository;
     
     @Autowired
-    private DoctorService doctorService;
-    
-    @Autowired
     private PasswordEncoder passwordEncoder;
     
     public User createUser(UserRequest request) {
@@ -53,7 +50,7 @@ public class UserService {
         if (currentUserRole.equals("ADMIN") && !requestedRole.equals(User.Role.PATIENT)) {
             throw new RuntimeException("Admin can only create patient users");
         }
-        if (currentUserRole.equals("SUPERADMIN") && 
+        if (currentUserRole.equals("ADMIN") && 
             !requestedRole.equals(User.Role.PATIENT) && !requestedRole.equals(User.Role.ADMIN)) {
             throw new RuntimeException("SuperAdmin can only create patient or admin users");
         }
@@ -290,15 +287,7 @@ public class UserService {
         user.setDeletedBy(user.getId());
         userRepository.save(user);
         
-        // If user is a doctor, also soft delete the doctor record
-        if (user.getRole() == User.Role.DOCTOR) {
-            try {
-                doctorService.deleteDoctorByUserId(id);
-            } catch (Exception e) {
-                // Doctor record might not exist, which is fine
-                System.out.println("No doctor record found for user ID: " + id);
-            }
-        }
+        // Note: Doctors are now independent entities, so no need to delete doctor records when deleting users
     }
     
     public Object getUserStats() {
@@ -307,7 +296,6 @@ public class UserService {
         stats.put("totalUsers", userRepository.countByDeletedAtIsNull());
         stats.put("totalPatients", userRepository.countByRoleAndDeletedAtIsNull(User.Role.PATIENT));
         stats.put("totalAdmins", userRepository.countByRoleAndDeletedAtIsNull(User.Role.ADMIN));
-        stats.put("totalSuperAdmins", userRepository.countByRoleAndDeletedAtIsNull(User.Role.SUPERADMIN));
         stats.put("activeUsers", userRepository.countByDeletedAtIsNull());
         
         return stats;
@@ -318,7 +306,7 @@ public class UserService {
     }
 
     public List<User> getAdmins() {
-        return userRepository.findByRoleIn(List.of(User.Role.ADMIN, User.Role.SUPERADMIN));
+        return userRepository.findByRoleIn(List.of(User.Role.ADMIN));
     }
     
     public List<User> getActiveUsers() {

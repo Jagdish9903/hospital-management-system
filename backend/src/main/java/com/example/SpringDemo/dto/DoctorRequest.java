@@ -1,5 +1,6 @@
 package com.example.SpringDemo.dto;
 
+import com.example.SpringDemo.entity.Doctor;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -9,8 +10,30 @@ import java.time.LocalDate;
 @Data
 public class DoctorRequest {
     
-    @NotNull(message = "User ID is required")
-    private Long userId;
+    @NotBlank(message = "First name is required")
+    private String firstName;
+    
+    @NotBlank(message = "Last name is required")
+    private String lastName;
+    
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
+    private String email;
+    
+    private String contact;
+    
+    private Doctor.Gender gender;
+    
+    private String emergencyContactName;
+    private String emergencyContactNum;
+    private String state;
+    private String city;
+    private String address;
+    private String country;
+    private String countryCode;
+    private String postalCode;
+    private String bloodGroup;
+    private String profileUrl;
     
     @NotNull(message = "Specialization ID is required")
     private Long specializationId;
@@ -33,4 +56,21 @@ public class DoctorRequest {
     private LocalDate joiningDate;
     
     private String bio;
+    
+    // Slot management fields
+    @NotBlank(message = "Slot start time is required")
+    private String slotStartTime; // e.g., "09:00"
+    
+    @NotBlank(message = "Slot end time is required")
+    private String slotEndTime; // e.g., "17:00"
+    
+    @NotNull(message = "Appointment duration is required")
+    @Min(value = 15, message = "Appointment duration must be at least 15 minutes")
+    @Max(value = 60, message = "Appointment duration must be at most 60 minutes")
+    private Integer appointmentDuration; // in minutes: 15, 30, 45, 60
+    
+    @NotBlank(message = "Working days are required")
+    private String workingDays; // e.g., "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY"
+    
+    private Boolean active = true;
 }

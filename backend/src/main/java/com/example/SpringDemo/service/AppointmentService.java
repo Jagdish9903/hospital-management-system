@@ -12,6 +12,8 @@ import com.example.SpringDemo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -100,6 +102,80 @@ public class AppointmentService {
     
     public Page<Appointment> getAppointmentsByDoctor(Long doctorId, Pageable pageable) {
         return appointmentRepository.findByDoctorId(doctorId, pageable);
+    }
+    
+    public Page<Appointment> getMyAppointmentsAsDoctor(Pageable pageable, String status, 
+                                                      String appointmentType, LocalDate dateFrom, 
+                                                      LocalDate dateTo, String search) {
+        // Get current doctor ID from authentication context
+        Long doctorId = getCurrentDoctorId();
+        
+        Appointment.Status statusEnum = status != null ? Appointment.Status.valueOf(status) : null;
+        Appointment.AppointmentType typeEnum = appointmentType != null ? 
+            Appointment.AppointmentType.valueOf(appointmentType) : null;
+        
+        // If search term is provided, search in patient name
+        if (search != null && !search.trim().isEmpty()) {
+            return appointmentRepository.findMyAppointmentsWithSearch(
+                doctorId, statusEnum, typeEnum, dateFrom, dateTo, search.trim(), pageable);
+        } else {
+            return appointmentRepository.findMyAppointmentsWithFilters(
+                doctorId, statusEnum, typeEnum, dateFrom, dateTo, pageable);
+        }
+    }
+    
+    private Long getCurrentDoctorId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        
+        // For doctors, the username is the email
+        String email = authentication.getName();
+        
+        // Find doctor by email
+        Doctor doctor = doctorRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        return doctor.getDoctorId();
+    }
+    
+    public Appointment updateAppointmentStatusByDoctor(Long appointmentId, String status, String notes) {
+        Appointment appointment = appointmentRepository.findByIdAndDeletedAtIsNull(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        // Verify that the current doctor owns this appointment
+        Long currentDoctorId = getCurrentDoctorId();
+        if (!appointment.getDoctor().getDoctorId().equals(currentDoctorId)) {
+            throw new RuntimeException("You can only update your own appointments");
+        }
+        
+        // Update status
+        try {
+            appointment.setStatus(Appointment.Status.valueOf(status));
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+        
+        // Update notes if provided
+        if (notes != null && !notes.trim().isEmpty()) {
+            appointment.setNotes(notes);
+        }
+        
+        return appointmentRepository.save(appointment);
+    }
+    
+    public Appointment getAppointmentByIdForDoctor(Long appointmentId) {
+        Appointment appointment = appointmentRepository.findByIdAndDeletedAtIsNull(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        // Verify that the current doctor owns this appointment
+        Long currentDoctorId = getCurrentDoctorId();
+        if (!appointment.getDoctor().getDoctorId().equals(currentDoctorId)) {
+            throw new RuntimeException("You can only view your own appointments");
+        }
+        
+        return appointment;
     }
     
     public Page<Appointment> searchAppointments(Long patientId, Long doctorId, String status, 
@@ -496,7 +572,7 @@ public class AppointmentService {
         result.put("appointmentId", savedAppointment.getId());
         result.put("appointmentDate", savedAppointment.getAppointmentDate());
         result.put("appointmentTime", savedAppointment.getAppointmentTime());
-        result.put("doctorName", savedAppointment.getDoctor().getUser().getName());
+        result.put("doctorName", savedAppointment.getDoctor().getFullName());
         result.put("specialization", savedAppointment.getDoctor().getSpecialization().getName());
         result.put("consultationFee", savedAppointment.getConsultationFee());
         result.put("status", savedAppointment.getStatus());

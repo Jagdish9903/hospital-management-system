@@ -53,3 +53,10 @@ logging:
   level:
     com.example.SpringDemo: DEBUG
     org.springframework.security: DEBUG
+
+# Application-specific configuration
+app:
+  # Auto-generate doctor slots on application startup
+  auto-generate-doctor-slots: true
+  # Number of days to generate slots for (default: 30 days)
+  slot-generation-days: 30

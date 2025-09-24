@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -165,6 +166,28 @@ public class AppointmentController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<Appointment> appointments = appointmentService.getAppointmentsByDoctor(doctorId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(appointments));
+    }
+    
+    @GetMapping("/doctor/my-appointments")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<ApiResponse<Page<Appointment>>> getMyAppointments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "appointmentDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String appointmentType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) String search) {
+        
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
+            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Appointment> appointments = appointmentService.getMyAppointmentsAsDoctor(
+            pageable, status, appointmentType, dateFrom, dateTo, search);
         return ResponseEntity.ok(ApiResponse.success(appointments));
     }
     

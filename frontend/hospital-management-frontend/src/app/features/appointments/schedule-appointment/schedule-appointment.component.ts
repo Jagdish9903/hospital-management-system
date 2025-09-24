@@ -22,7 +22,7 @@ export class ScheduleAppointmentComponent implements OnInit {
   bookingForm: FormGroup;
   
   specializations: Specialization[] = [];
-  availableSlots: DoctorSlot[] = [];
+  availableSlots: any[] = []; // Changed to any[] to accommodate grouped data structure
   selectedDoctor: any = null;
   selectedSlot: DoctorSlot | null = null;
   currentUser: User | null = null;
@@ -117,7 +117,9 @@ export class ScheduleAppointmentComponent implements OnInit {
             console.log('Raw slots data:', response.data);
             console.log('Number of raw slots:', response.data.length);
             
-            this.availableSlots = response.data;
+            // Store the original slots data
+            const originalSlots: DoctorSlot[] = response.data;
+            this.availableSlots = originalSlots;
             this.currentPage = 1;
             this.groupSlotsByDoctor();
             
@@ -139,12 +141,15 @@ export class ScheduleAppointmentComponent implements OnInit {
     // Group slots by doctor for better display
     const groupedSlots = new Map();
     
-    console.log('=== GROUPING SLOTS BY DOCTOR ===');
-    console.log('Available slots before grouping:', this.availableSlots.length);
+    // Store the original slots array temporarily
+    const originalSlots = this.availableSlots as DoctorSlot[];
     
-    this.availableSlots.forEach((slot, index) => {
+    console.log('=== GROUPING SLOTS BY DOCTOR ===');
+    console.log('Available slots before grouping:', originalSlots.length);
+    
+    originalSlots.forEach((slot: DoctorSlot, index: number) => {
       const doctorId = slot.doctor.doctorId;
-      const doctorName = slot.doctor.user.name;
+      const doctorName = `Dr. ${slot.doctor.firstName} ${slot.doctor.lastName}`;
       
       console.log(`Slot ${index + 1}: Doctor ID ${doctorId} (${doctorName})`);
       
@@ -169,8 +174,8 @@ export class ScheduleAppointmentComponent implements OnInit {
     console.log('Total items for pagination:', this.totalItems);
     
     // Log each doctor and their slot count
-    this.availableSlots.forEach((doctorData: any, index) => {
-      console.log(`Doctor ${index + 1}: ${doctorData.doctor.user.name} - ${doctorData.slots?.length || 0} slots`);
+    this.availableSlots.forEach((doctorData: any, index: number) => {
+      console.log(`Doctor ${index + 1}: Dr. ${doctorData.doctor.firstName} ${doctorData.doctor.lastName} - ${doctorData.slots?.length || 0} slots`);
     });
   }
 
@@ -178,13 +183,31 @@ export class ScheduleAppointmentComponent implements OnInit {
     if (doctorData.doctor.deletedAt) {
       return; // Don't allow booking with deleted doctors
     }
-    this.selectedDoctor = doctorData.doctor;
-    this.showBookingForm = true;
-    this.bookingForm.reset();
+    
+    // Only set doctor if no slot is selected yet
+    // If a slot is already selected, don't override it
+    if (!this.selectedSlot) {
+      this.selectedDoctor = doctorData.doctor;
+      this.showBookingForm = true;
+      this.bookingForm.reset();
+      console.log('=== DOCTOR SELECTED (NO SLOT) ===');
+      console.log('Selected doctor:', this.selectedDoctor);
+    } else {
+      console.log('=== DOCTOR SELECTION SKIPPED ===');
+      console.log('Slot already selected, keeping current selection');
+    }
   }
 
   proceedToPayment(): void {
+    console.log('=== PROCEED TO PAYMENT DEBUG ===');
+    console.log('Booking form valid:', this.bookingForm.valid);
+    console.log('Selected slot:', this.selectedSlot);
+    console.log('Current user:', this.currentUser);
+    console.log('Selected doctor:', this.selectedDoctor);
+    
     if (this.bookingForm.valid && this.selectedSlot && this.currentUser && this.selectedDoctor) {
+      console.log('All conditions met, proceeding to payment...');
+      
       // Store appointment data in session storage for payment flow
       const appointmentData = {
         slotId: this.selectedSlot.slotId,
@@ -197,24 +220,42 @@ export class ScheduleAppointmentComponent implements OnInit {
         consultationFee: this.selectedDoctor.consultationFee,
         symptoms: this.bookingForm.value.symptoms,
         notes: this.bookingForm.value.notes || '',
-        doctorName: this.selectedDoctor.user.name,
+        doctorName: `Dr. ${this.selectedDoctor.firstName} ${this.selectedDoctor.lastName}`,
         specialization: this.selectedDoctor.specialization.name
       };
       
+      console.log('Appointment data:', appointmentData);
       sessionStorage.setItem('pendingAppointment', JSON.stringify(appointmentData));
       
       // Redirect to payment selection
+      console.log('Navigating to payment selection...');
       this.router.navigate(['/payments/select']);
+    } else {
+      console.log('Conditions not met for payment:');
+      if (!this.bookingForm.valid) console.log('- Booking form invalid');
+      if (!this.selectedSlot) console.log('- No slot selected');
+      if (!this.currentUser) console.log('- No current user');
+      if (!this.selectedDoctor) console.log('- No selected doctor');
     }
   }
 
   selectSlot(slot: DoctorSlot): void {
     this.selectedSlot = slot;
-    // Find the doctor for this slot
-    const slotWithDoctor = this.availableSlots.find(s => s.slotId === slot.slotId);
-    if (slotWithDoctor && slotWithDoctor.doctor) {
-      this.selectedDoctor = slotWithDoctor.doctor;
+    console.log('=== SLOT SELECTED ===');
+    console.log('Selected slot:', slot);
+    
+    // Find the doctor for this slot from the grouped data
+    const doctorData = this.availableSlots.find((doctorGroup: any) => 
+      doctorGroup.slots.some((s: DoctorSlot) => s.slotId === slot.slotId)
+    );
+    
+    if (doctorData && doctorData.doctor) {
+      this.selectedDoctor = doctorData.doctor;
+      console.log('Selected doctor:', this.selectedDoctor);
     }
+    
+    // Also show the booking form when a slot is selected
+    this.showBookingForm = true;
   }
 
   bookAppointment(): void {
@@ -314,7 +355,7 @@ export class ScheduleAppointmentComponent implements OnInit {
     console.log('End index:', endIndex);
     console.log('Available slots length:', this.availableSlots.length);
     console.log('Paginated slots length:', paginated.length);
-    console.log('Paginated slots:', paginated.map(d => d.doctor.user.name));
+    console.log('Paginated slots:', paginated.map(d => `Dr. ${d.doctor.firstName} ${d.doctor.lastName}`));
     
     return paginated;
   }
@@ -415,7 +456,7 @@ export class ScheduleAppointmentComponent implements OnInit {
       
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Doctor: ${this.selectedDoctor.user.name}`, 15, 110);
+      pdf.text(`Doctor: Dr. ${this.selectedDoctor.firstName} ${this.selectedDoctor.lastName}`, 15, 110);
       pdf.text(`Specialization: ${this.selectedDoctor.specialization.name}`, 15, 115);
       pdf.text(`Experience: ${this.selectedDoctor.yearsOfExp} years`, 15, 120);
       

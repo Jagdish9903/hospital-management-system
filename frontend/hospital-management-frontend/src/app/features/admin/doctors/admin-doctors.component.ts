@@ -61,11 +61,13 @@ export class AdminDoctorsComponent implements OnInit {
   columns = [
     { key: 'doctorId', label: 'ID', sortable: true },
     { key: 'name', label: 'Doctor Name', sortable: true },
+    { key: 'email', label: 'Email', sortable: true },
     { key: 'specialization', label: 'Specialization', sortable: true },
     { key: 'licenseNumber', label: 'License', sortable: true },
     { key: 'qualification', label: 'Qualification', sortable: true },
     { key: 'consultationFee', label: 'Fee', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
+    { key: 'active', label: 'Active', sortable: true },
     { key: 'actions', label: 'Actions', sortable: false }
   ];
 
@@ -86,23 +88,66 @@ export class AdminDoctorsComponent implements OnInit {
     });
 
     this.editForm = this.fb.group({
+      firstName: ['', [Validators.required]],
+      lastName: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      contact: [''],
+      gender: [''],
+      emergencyContactName: [''],
+      emergencyContactNum: [''],
+      state: [''],
+      city: [''],
+      address: [''],
+      country: [''],
+      countryCode: [''],
+      postalCode: [''],
+      bloodGroup: [''],
+      profileUrl: [''],
+      specializationId: ['', [Validators.required]],
       licenseNumber: ['', [Validators.required]],
       qualification: ['', [Validators.required]],
       bio: [''],
       consultationFee: [0, [Validators.required, Validators.min(0)]],
       yearsOfExp: [0, [Validators.required, Validators.min(0)]],
-      status: ['ACTIVE', [Validators.required]]
+      status: ['ACTIVE', [Validators.required]],
+      joiningDate: ['', [Validators.required]],
+      active: [true],
+      // Slot management fields
+      slotStartTime: ['09:00', [Validators.required]],
+      slotEndTime: ['17:00', [Validators.required]],
+      appointmentDuration: [30, [Validators.required, Validators.min(15), Validators.max(60)]],
+      workingDays: ['MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY', [Validators.required]]
     });
 
     this.addForm = this.fb.group({
-      userId: ['', [Validators.required]],
+      firstName: ['', [Validators.required]],
+      lastName: ['', [Validators.required]],
+      email: ['', [Validators.required, Validators.email]],
+      contact: [''],
+      gender: [''],
+      emergencyContactName: [''],
+      emergencyContactNum: [''],
+      state: [''],
+      city: [''],
+      address: [''],
+      country: [''],
+      countryCode: [''],
+      postalCode: [''],
+      bloodGroup: [''],
+      profileUrl: [''],
       specializationId: ['', [Validators.required]],
       licenseNumber: ['', [Validators.required]],
       qualification: ['', [Validators.required]],
       bio: [''],
-      joiningDate: ['', [Validators.required]],
       consultationFee: [0, [Validators.required, Validators.min(0)]],
-      yearsOfExp: [0, [Validators.required, Validators.min(0)]]
+      yearsOfExp: [0, [Validators.required, Validators.min(0)]],
+      joiningDate: ['', [Validators.required]],
+      active: [true],
+      // Slot management fields
+      slotStartTime: ['09:00', [Validators.required]],
+      slotEndTime: ['17:00', [Validators.required]],
+      appointmentDuration: [30, [Validators.required, Validators.min(15), Validators.max(60)]],
+      workingDays: ['MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY', [Validators.required]]
     });
 
     // Add form value change debugging
@@ -216,12 +261,35 @@ export class AdminDoctorsComponent implements OnInit {
     this.selectedDoctor = doctor;
     this.showEditModal = true;
     this.editForm.patchValue({
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      email: doctor.email,
+      contact: doctor.contact || '',
+      gender: doctor.gender || '',
+      emergencyContactName: doctor.emergencyContactName || '',
+      emergencyContactNum: doctor.emergencyContactNum || '',
+      state: doctor.state || '',
+      city: doctor.city || '',
+      address: doctor.address || '',
+      country: doctor.country || '',
+      countryCode: doctor.countryCode || '',
+      postalCode: doctor.postalCode || '',
+      bloodGroup: doctor.bloodGroup || '',
+      profileUrl: doctor.profileUrl || '',
+      specializationId: doctor.specialization.specializationId,
       licenseNumber: doctor.licenseNumber,
       qualification: doctor.qualification,
       bio: doctor.bio || '',
       consultationFee: doctor.consultationFee,
       yearsOfExp: doctor.yearsOfExp,
-      status: doctor.status
+      status: doctor.status,
+      joiningDate: doctor.joiningDate,
+      active: doctor.active,
+      // Slot management fields
+      slotStartTime: doctor.slotStartTime || '09:00',
+      slotEndTime: doctor.slotEndTime || '17:00',
+      appointmentDuration: doctor.appointmentDuration || 30,
+      workingDays: doctor.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY'
     });
   }
 
@@ -453,34 +521,22 @@ export class AdminDoctorsComponent implements OnInit {
     
     if (this.addForm.valid) {
       this.isSubmitting = true;
+      const doctorData = this.addForm.value;
       
-      // Convert string values to proper types
-      const doctorData = {
-        userId: parseInt(formValue.userId),
-        specializationId: parseInt(formValue.specializationId),
-        licenseNumber: formValue.licenseNumber,
-        qualification: formValue.qualification,
-        bio: formValue.bio || '',
-        joiningDate: formValue.joiningDate, // Keep as string, backend will convert to LocalDate
-        consultationFee: parseFloat(formValue.consultationFee),
-        yearsOfExp: parseInt(formValue.yearsOfExp)
-      };
-      
-      console.log('Sending doctor data:', doctorData); // Debug log
+      console.log('Sending doctor data:', doctorData);
       
       this.adminService.createDoctor(doctorData).subscribe({
         next: (response) => {
-          console.log('Doctor creation response:', response); // Debug response
+          console.log('Doctor creation response:', response);
           if (response.success) {
             this.loadDoctors();
             this.closeAddModal();
-            this.addForm.reset(); // Reset form after successful creation
+            this.addForm.reset();
           }
           this.isSubmitting = false;
         },
         error: (error) => {
           console.error('Error creating doctor:', error);
-          console.error('Error details:', error.error); // Debug error details
           this.isSubmitting = false;
         }
       });
@@ -536,5 +592,66 @@ export class AdminDoctorsComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  toggleDoctorStatus(doctor: Doctor): void {
+    const newStatus = !doctor.active;
+    this.adminService.updateDoctor(doctor.doctorId, { active: newStatus }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          doctor.active = newStatus;
+          this.loadDoctors();
+        }
+      },
+      error: (error) => {
+        console.error('Error updating doctor status:', error);
+      }
+    });
+  }
+
+  getDoctorName(doctor: Doctor): string {
+    return `Dr. ${doctor.firstName} ${doctor.lastName}`;
+  }
+
+  updateWorkingDays(event: Event, day: string): void {
+    const checkbox = event.target as HTMLInputElement;
+    const currentDays = this.addForm.get('workingDays')?.value || '';
+    const daysArray = currentDays ? currentDays.split(',') : [];
+    
+    if (checkbox.checked) {
+      if (!daysArray.includes(day)) {
+        daysArray.push(day);
+      }
+    } else {
+      const index = daysArray.indexOf(day);
+      if (index > -1) {
+        daysArray.splice(index, 1);
+      }
+    }
+    
+    this.addForm.patchValue({
+      workingDays: daysArray.join(',')
+    });
+  }
+
+  updateWorkingDaysEdit(event: Event, day: string): void {
+    const checkbox = event.target as HTMLInputElement;
+    const currentDays = this.editForm.get('workingDays')?.value || '';
+    const daysArray = currentDays ? currentDays.split(',') : [];
+    
+    if (checkbox.checked) {
+      if (!daysArray.includes(day)) {
+        daysArray.push(day);
+      }
+    } else {
+      const index = daysArray.indexOf(day);
+      if (index > -1) {
+        daysArray.splice(index, 1);
+      }
+    }
+    
+    this.editForm.patchValue({
+      workingDays: daysArray.join(',')
+    });
   }
 }

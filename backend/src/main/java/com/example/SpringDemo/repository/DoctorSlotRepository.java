@@ -30,4 +30,7 @@ public interface DoctorSlotRepository extends JpaRepository<DoctorSlot, Long> {
     List<DoctorSlot> findAvailableSlotsByDateAndSpecialization(@Param("slotDate") LocalDate slotDate, @Param("specializationId") Long specializationId);
     
     boolean existsByDoctorDoctorIdAndSlotDateAndStartTimeAndStatus(Long doctorId, LocalDate slotDate, LocalTime startTime, DoctorSlot.SlotStatus status);
+    
+    @Query("SELECT COUNT(s) > 0 FROM DoctorSlot s WHERE s.doctor = :doctor AND s.slotDate = :slotDate")
+    boolean existsByDoctorAndSlotDate(@Param("doctor") com.example.SpringDemo.entity.Doctor doctor, @Param("slotDate") LocalDate slotDate);
 }

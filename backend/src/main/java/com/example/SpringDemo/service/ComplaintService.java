@@ -197,7 +197,7 @@ public class ComplaintService {
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
         
-        if (!admin.getRole().equals(User.Role.ADMIN) && !admin.getRole().equals(User.Role.SUPERADMIN)) {
+        if (!admin.getRole().equals(User.Role.ADMIN)) {
             throw new RuntimeException("User is not an admin");
         }
         

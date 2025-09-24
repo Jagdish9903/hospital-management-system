@@ -23,7 +23,7 @@ public class AdminAuditLogController {
     private AuditLogService auditLogService;
     
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<AuditLog>>> getAllAuditLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -52,7 +52,7 @@ public class AdminAuditLogController {
     }
     
     @GetMapping("/recent")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<AuditLog>>> getRecentAuditLogs() {
         try {
             List<AuditLog> recentLogs = auditLogService.getRecentAuditLogs();

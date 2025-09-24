@@ -51,6 +51,35 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND a.deletedAt IS NULL")
     Page<Appointment> findByDoctorId(@Param("doctorId") Long doctorId, Pageable pageable);
     
+    @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND " +
+           "(:status IS NULL OR a.status = :status) AND " +
+           "(:appointmentType IS NULL OR a.appointmentType = :appointmentType) AND " +
+           "(:fromDate IS NULL OR a.appointmentDate >= :fromDate) AND " +
+           "(:toDate IS NULL OR a.appointmentDate <= :toDate) AND " +
+           "a.deletedAt IS NULL")
+    Page<Appointment> findMyAppointmentsWithFilters(@Param("doctorId") Long doctorId,
+                                                   @Param("status") Appointment.Status status,
+                                                   @Param("appointmentType") Appointment.AppointmentType appointmentType,
+                                                   @Param("fromDate") LocalDate fromDate,
+                                                   @Param("toDate") LocalDate toDate,
+                                                   Pageable pageable);
+    
+    @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND " +
+           "(:status IS NULL OR a.status = :status) AND " +
+           "(:appointmentType IS NULL OR a.appointmentType = :appointmentType) AND " +
+           "(:fromDate IS NULL OR a.appointmentDate >= :fromDate) AND " +
+           "(:toDate IS NULL OR a.appointmentDate <= :toDate) AND " +
+           "(LOWER(a.patient.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(a.patient.email) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+           "a.deletedAt IS NULL")
+    Page<Appointment> findMyAppointmentsWithSearch(@Param("doctorId") Long doctorId,
+                                                  @Param("status") Appointment.Status status,
+                                                  @Param("appointmentType") Appointment.AppointmentType appointmentType,
+                                                  @Param("fromDate") LocalDate fromDate,
+                                                  @Param("toDate") LocalDate toDate,
+                                                  @Param("search") String search,
+                                                  Pageable pageable);
+    
     @Query("SELECT a FROM Appointment a WHERE a.doctor = :doctor AND a.appointmentDate = :date AND a.status != 'CANCELLED' AND a.deletedAt IS NULL")
     List<Appointment> findByDoctorAndDate(@Param("doctor") Doctor doctor, @Param("date") LocalDate date);
     
@@ -91,9 +120,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.status = :status AND a.deletedAt IS NULL")
     Long countByStatus(@Param("status") Appointment.Status status);
     
-    @Query("SELECT a FROM Appointment a JOIN a.patient p JOIN a.doctor d JOIN d.user u WHERE " +
+    @Query("SELECT a FROM Appointment a JOIN a.patient p JOIN a.doctor d WHERE " +
            "(:patientName IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :patientName, '%'))) AND " +
-           "(:doctorName IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :doctorName, '%'))) AND " +
+           "(:doctorName IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :doctorName, '%'))) AND " +
            "(:status IS NULL OR a.status = :statusEnum) AND " +
            "(:appointmentType IS NULL OR a.appointmentType = :appointmentTypeEnum) AND " +
            "(:dateFrom IS NULL OR a.appointmentDate >= :dateFromParsed) AND " +
@@ -115,9 +144,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Optional<Appointment> findByIdAndDeletedAtIsNull(@Param("id") Long id);
     
     // Method to include deleted records for display purposes
-    @Query("SELECT a FROM Appointment a JOIN a.patient p JOIN a.doctor d JOIN d.user u WHERE " +
+    @Query("SELECT a FROM Appointment a JOIN a.patient p JOIN a.doctor d WHERE " +
            "(:patientName IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :patientName, '%'))) AND " +
-           "(:doctorName IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :doctorName, '%'))) AND " +
+           "(:doctorName IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :doctorName, '%'))) AND " +
            "(:status IS NULL OR a.status = :statusEnum) AND " +
            "(:appointmentType IS NULL OR a.appointmentType = :appointmentTypeEnum) AND " +
            "(:dateFrom IS NULL OR a.appointmentDate >= :dateFromParsed) AND " +

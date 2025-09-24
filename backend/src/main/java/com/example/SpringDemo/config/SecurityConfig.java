@@ -1,7 +1,9 @@
 package com.example.SpringDemo.config;
 
+import com.example.SpringDemo.service.DoctorUserDetailsService;
 import com.example.SpringDemo.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,10 +28,14 @@ public class SecurityConfig {
     private UserDetailsServiceImpl userDetailsService;
     
     @Autowired
+    @Qualifier("doctorUserDetailsService")
+    private DoctorUserDetailsService doctorUserDetailsService;
+    
+    @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     
     @Autowired
-    private JwtRequestFilter jwtRequestFilter;
+    private CustomJwtRequestFilter customJwtRequestFilter;
     
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
@@ -43,6 +49,14 @@ public class SecurityConfig {
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+    
+    @Bean
+    public DaoAuthenticationProvider doctorAuthenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(doctorUserDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -63,8 +77,16 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
+                .requestMatchers("/api/appointments/doctor/my-appointments").hasRole("DOCTOR")
+                .requestMatchers("/api/doctors/my-appointments").hasRole("DOCTOR")
                 .requestMatchers("/api/appointments/**").permitAll()
-                .requestMatchers("/api/doctors").hasAnyRole("ADMIN", "SUPERADMIN")
+                .requestMatchers("/api/doctor-slots/generate-all").hasRole("ADMIN")
+                .requestMatchers("/api/doctor-slots/generate-next-week").hasRole("ADMIN")
+                .requestMatchers("/api/doctor-slots/generate-initial-slots").permitAll()
+                .requestMatchers("/api/doctor-slots/generate-slots").permitAll()
+                .requestMatchers("/api/doctor/**").hasRole("DOCTOR")
+                .requestMatchers("/api/doctors/appointments/**").hasRole("DOCTOR")
+                .requestMatchers("/api/doctors").hasRole("ADMIN")
                 .requestMatchers("/api/doctors/**").permitAll()
                 .requestMatchers("/api/payments/**").permitAll()
                 .requestMatchers("/api/profile/test/**").permitAll()
@@ -73,14 +95,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/data-generation/**").permitAll()
                 .requestMatchers("/api/enhanced-data-generation/**").permitAll()
                 .requestMatchers("/api/profile/**").authenticated()
-                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPERADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
+            .authenticationProvider(authenticationProvider())
+            .authenticationProvider(doctorAuthenticationProvider())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions().disable());
         
-        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(customJwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }

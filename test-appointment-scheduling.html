@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Scheduling Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        input, select, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 200px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .slot-btn {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 2px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .slot-btn:hover {
+            background-color: #dee2e6;
+        }
+        .slot-btn.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .doctor-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Appointment Scheduling Test</h1>
+        
+        <div class="section">
+            <h2>1. Login as Patient</h2>
+            <p>First, login as a patient to test the appointment scheduling flow.</p>
+            <input type="email" id="patientEmail" placeholder="Patient Email" value="john.smith@email.com">
+            <input type="password" id="patientPassword" placeholder="Password" value="Password123">
+            <button onclick="loginPatient()">Login as Patient</button>
+            <div id="patientLoginResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. Get Specializations</h2>
+            <p>Get available specializations for appointment booking.</p>
+            <button onclick="getSpecializations()">Get Specializations</button>
+            <div id="specializationsResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. Search Available Slots</h2>
+            <p>Search for available appointment slots.</p>
+            <select id="specializationSelect">
+                <option value="">Select Specialization...</option>
+            </select>
+            <input type="date" id="appointmentDate" value="">
+            <button onclick="searchSlots()">Search Slots</button>
+            <div id="slotsResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. Select Slot and Test Payment Flow</h2>
+            <p>Select a slot and test the payment flow.</p>
+            <div id="slotSelection">
+                <p>No slots available. Please search for slots first.</p>
+            </div>
+            <div id="paymentTestResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let specializations = [];
+        let availableSlots = [];
+        let selectedSlot = null;
+        let selectedDoctor = null;
+        const baseUrl = 'http://localhost:8080/api';
+        
+        // Set today's date as default
+        document.getElementById('appointmentDate').value = new Date().toISOString().split('T')[0];
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken ? `Bearer ${authToken}` : '',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return {
+                    success: response.ok,
+                    data: data,
+                    status: response.status,
+                    statusText: response.statusText
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    data: null
+                };
+            }
+        }
+        
+        async function loginPatient() {
+            const email = document.getElementById('patientEmail').value;
+            const password = document.getElementById('patientPassword').value;
+            const resultDiv = document.getElementById('patientLoginResult');
+            
+            resultDiv.textContent = 'Logging in as patient...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            if (result.success) {
+                authToken = result.data.data.token;
+                resultDiv.textContent = `✅ Patient Login Successful!\n\nToken: ${authToken}\n\nUser Info:\n${JSON.stringify(result.data.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `❌ Patient Login Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function getSpecializations() {
+            const resultDiv = document.getElementById('specializationsResult');
+            
+            resultDiv.textContent = 'Loading specializations...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/admin/appointment-specializations`);
+            
+            if (result.success) {
+                specializations = result.data.data;
+                resultDiv.textContent = `✅ Specializations loaded!\n\n${JSON.stringify(specializations, null, 2)}`;
+                resultDiv.className = 'result success';
+                
+                // Populate select dropdown
+                const select = document.getElementById('specializationSelect');
+                select.innerHTML = '<option value="">Select Specialization...</option>';
+                specializations.forEach(spec => {
+                    const option = document.createElement('option');
+                    option.value = spec.specializationId;
+                    option.textContent = spec.name;
+                    select.appendChild(option);
+                });
+            } else {
+                resultDiv.textContent = `❌ Failed to load specializations!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function searchSlots() {
+            const specializationId = document.getElementById('specializationSelect').value;
+            const appointmentDate = document.getElementById('appointmentDate').value;
+            const resultDiv = document.getElementById('slotsResult');
+            
+            if (!specializationId || !appointmentDate) {
+                resultDiv.textContent = 'Please select specialization and date first.';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = 'Searching for available slots...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/admin/available-slots/${specializationId}/${appointmentDate}`);
+            
+            if (result.success) {
+                availableSlots = result.data.data;
+                resultDiv.textContent = `✅ Found ${availableSlots.length} available slots!\n\n${JSON.stringify(availableSlots, null, 2)}`;
+                resultDiv.className = 'result success';
+                
+                displaySlots();
+            } else {
+                resultDiv.textContent = `❌ Failed to search slots!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function displaySlots() {
+            const container = document.getElementById('slotSelection');
+            
+            if (availableSlots.length === 0) {
+                container.innerHTML = '<p>No slots available. Please try a different date or specialization.</p>';
+                return;
+            }
+            
+            // Group slots by doctor
+            const groupedSlots = new Map();
+            availableSlots.forEach(slot => {
+                const doctorId = slot.doctor.doctorId;
+                if (!groupedSlots.has(doctorId)) {
+                    groupedSlots.set(doctorId, {
+                        doctor: slot.doctor,
+                        slots: []
+                    });
+                }
+                groupedSlots.get(doctorId).slots.push(slot);
+            });
+            
+            let html = '<h3>Available Doctors and Time Slots:</h3>';
+            groupedSlots.forEach((doctorData, doctorId) => {
+                html += `<div class="doctor-card">`;
+                html += `<h4>Dr. ${doctorData.doctor.firstName} ${doctorData.doctor.lastName}</h4>`;
+                html += `<p><strong>Specialization:</strong> ${doctorData.doctor.specialization.name}</p>`;
+                html += `<p><strong>Fee:</strong> $${doctorData.doctor.consultationFee}</p>`;
+                html += `<p><strong>Available Times:</strong></p>`;
+                html += `<div>`;
+                
+                doctorData.slots.forEach(slot => {
+                    const timeStr = new Date(`2000-01-01T${slot.startTime}`).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    html += `<button class="slot-btn" onclick="selectSlot(${slot.slotId}, ${doctorId})">${timeStr}</button>`;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function selectSlot(slotId, doctorId) {
+            // Find the slot and doctor
+            const slot = availableSlots.find(s => s.slotId === slotId);
+            const doctorData = Array.from(new Map(availableSlots.map(s => [s.doctor.doctorId, s.doctor])).entries())
+                .find(([id]) => id === doctorId);
+            
+            if (slot && doctorData) {
+                selectedSlot = slot;
+                selectedDoctor = doctorData[1];
+                
+                // Update UI
+                document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('selected'));
+                event.target.classList.add('selected');
+                
+                // Show test payment button
+                const container = document.getElementById('slotSelection');
+                container.innerHTML += `
+                    <div style="margin-top: 20px; padding: 15px; background-color: #e8f5e8; border-radius: 5px;">
+                        <h4>Selected Appointment:</h4>
+                        <p><strong>Doctor:</strong> Dr. ${selectedDoctor.firstName} ${selectedDoctor.lastName}</p>
+                        <p><strong>Time:</strong> ${new Date(`2000-01-01T${selectedSlot.startTime}`).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: true})}</p>
+                        <p><strong>Fee:</strong> $${selectedDoctor.consultationFee}</p>
+                        <button onclick="testPaymentFlow()" style="background-color: #28a745; margin-top: 10px;">Test Payment Flow</button>
+                    </div>
+                `;
+                
+                console.log('Selected slot:', selectedSlot);
+                console.log('Selected doctor:', selectedDoctor);
+            }
+        }
+        
+        async function testPaymentFlow() {
+            if (!selectedSlot || !selectedDoctor) {
+                document.getElementById('paymentTestResult').textContent = 'Please select a slot first.';
+                document.getElementById('paymentTestResult').className = 'result error';
+                return;
+            }
+            
+            const resultDiv = document.getElementById('paymentTestResult');
+            resultDiv.textContent = 'Testing payment flow...';
+            resultDiv.className = 'result info';
+            
+            // Simulate the appointment data that would be stored
+            const appointmentData = {
+                slotId: selectedSlot.slotId,
+                patientId: 1, // This would come from the logged-in user
+                doctorId: selectedDoctor.doctorId,
+                appointmentDate: document.getElementById('appointmentDate').value,
+                appointmentTime: selectedSlot.startTime,
+                endTime: selectedSlot.endTime,
+                appointmentType: 'CONSULTATION',
+                consultationFee: selectedDoctor.consultationFee,
+                symptoms: 'Test symptoms for appointment booking',
+                notes: 'Test notes for appointment',
+                doctorName: `Dr. ${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
+                specialization: selectedDoctor.specialization.name
+            };
+            
+            // Store in session storage (simulating what the frontend would do)
+            sessionStorage.setItem('pendingAppointment', JSON.stringify(appointmentData));
+            
+            resultDiv.textContent = `✅ Payment Flow Test Successful!\n\nAppointment data prepared:\n${JSON.stringify(appointmentData, null, 2)}\n\nData stored in sessionStorage as 'pendingAppointment'\n\nIn the actual app, this would navigate to /payments/select`;
+            resultDiv.className = 'result success';
+            
+            // Show what would happen next
+            setTimeout(() => {
+                resultDiv.textContent += '\n\n🔄 In the real application, the user would now be redirected to the payment selection page...';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

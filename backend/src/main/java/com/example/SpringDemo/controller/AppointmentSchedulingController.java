@@ -155,7 +155,7 @@ public class AppointmentSchedulingController {
                     Map<String, Object> data = new java.util.HashMap<>();
                     data.put("slotId", slot.getSlotId());
                     data.put("doctorId", slot.getDoctor().getDoctorId());
-                    data.put("doctorName", slot.getDoctor().getUser().getName());
+                    data.put("doctorName", slot.getDoctor().getFullName());
                     data.put("specialization", slot.getDoctor().getSpecialization().getName());
                     data.put("slotDate", slot.getSlotDate());
                     data.put("startTime", slot.getStartTime());

@@ -16,8 +16,10 @@ import java.util.Optional;
 @Repository
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     
-    @Query("SELECT d FROM Doctor d WHERE d.user.id = :userId AND d.deletedAt IS NULL")
-    Optional<Doctor> findByUserId(@Param("userId") Long userId);
+    @Query("SELECT d FROM Doctor d WHERE d.email = :email AND d.deletedAt IS NULL")
+    Optional<Doctor> findByEmail(@Param("email") String email);
+    
+    boolean existsByEmail(String email);
     
     @Query("SELECT d FROM Doctor d WHERE d.specialization = :specialization AND d.status = 'ACTIVE' AND d.deletedAt IS NULL")
     List<Doctor> findBySpecializationAndActive(@Param("specialization") Specialization specialization);
@@ -29,13 +31,13 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     List<Doctor> findAllActive();
     
     @Query("SELECT d FROM Doctor d WHERE " +
-           "(:name IS NULL OR LOWER(d.user.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:name IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
            "(:specializationId IS NULL OR d.specialization.id = :specializationId) AND " +
            "(:minExperience IS NULL OR d.yearsOfExp >= :minExperience) AND " +
            "(:maxExperience IS NULL OR d.yearsOfExp <= :maxExperience) AND " +
            "(:minFee IS NULL OR d.consultationFee >= :minFee) AND " +
            "(:maxFee IS NULL OR d.consultationFee <= :maxFee) AND " +
-           "d.status = 'ACTIVE' AND d.deletedAt IS NULL")
+           "d.status = 'ACTIVE' AND d.active = true AND d.deletedAt IS NULL")
     Page<Doctor> findDoctorsWithFilters(@Param("name") String name,
                                        @Param("specializationId") Long specializationId,
                                        @Param("minExperience") Integer minExperience,
@@ -52,11 +54,11 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     @Query("SELECT COUNT(d) FROM Doctor d WHERE d.status = :status AND d.deletedAt IS NULL")
     Long countByStatus(@Param("status") Doctor.Status status);
     
-    @Query("SELECT d FROM Doctor d JOIN d.user u JOIN d.specialization s WHERE " +
-           "(:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-           "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+    @Query("SELECT d FROM Doctor d JOIN d.specialization s WHERE " +
+           "(:name IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:email IS NULL OR LOWER(d.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
            "(:specialization IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
-           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL) OR (:status = 'inactive' AND d.deletedAt IS NOT NULL)) AND " +
+           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL AND d.active = true) OR (:status = 'inactive' AND (d.deletedAt IS NOT NULL OR d.active = false))) AND " +
            "d.deletedAt IS NULL")
     Page<Doctor> findDoctorsWithFilters(@Param("name") String name,
                                        @Param("email") String email,
@@ -71,14 +73,25 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     @Query("SELECT d FROM Doctor d WHERE d.status = 'ACTIVE'")
     List<Doctor> findAllActiveIncludingDeleted();
     
-    @Query("SELECT d FROM Doctor d JOIN d.user u JOIN d.specialization s WHERE " +
-           "(:name IS NULL OR LOWER(u.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-           "(:email IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+    @Query("SELECT d FROM Doctor d JOIN d.specialization s WHERE " +
+           "(:name IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:email IS NULL OR LOWER(d.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
            "(:specialization IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :specialization, '%'))) AND " +
-           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL) OR (:status = 'inactive' AND d.deletedAt IS NOT NULL))")
+           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL AND d.active = true) OR (:status = 'inactive' AND (d.deletedAt IS NOT NULL OR d.active = false)))")
     Page<Doctor> findDoctorsWithFiltersIncludingDeleted(@Param("name") String name,
                                                        @Param("email") String email,
                                                        @Param("specialization") String specialization,
                                                        @Param("status") String status,
                                                        Pageable pageable);
+    
+    @Query("SELECT d FROM Doctor d JOIN d.specialization s WHERE " +
+           "(:name IS NULL OR LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:email IS NULL OR LOWER(d.email) LIKE LOWER(CONCAT('%', :email, '%'))) AND " +
+           "(:specializationId IS NULL OR s.specializationId = :specializationId) AND " +
+           "(:status IS NULL OR (:status = 'active' AND d.deletedAt IS NULL AND d.active = true) OR (:status = 'inactive' AND (d.deletedAt IS NOT NULL OR d.active = false)))")
+    Page<Doctor> findDoctorsWithFiltersBySpecializationIdIncludingDeleted(@Param("name") String name,
+                                                                         @Param("email") String email,
+                                                                         @Param("specializationId") Long specializationId,
+                                                                         @Param("status") String status,
+                                                                         Pageable pageable);
 }

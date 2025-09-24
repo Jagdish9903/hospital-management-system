@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Specializations Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        input, select, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input, select {
+            width: 200px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .dropdown-test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Specializations Test</h1>
+        
+        <div class="section">
+            <h2>1. Login as Admin</h2>
+            <p>First, login as an admin to test the specializations API.</p>
+            <input type="email" id="adminEmail" placeholder="Admin Email" value="admin@hospital.com">
+            <input type="password" id="adminPassword" placeholder="Password" value="Password123">
+            <button onclick="loginAdmin()">Login as Admin</button>
+            <div id="adminLoginResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. Test Specializations API</h2>
+            <p>Test the specializations API endpoint directly.</p>
+            <button onclick="testSpecializationsAPI()">Test Specializations API</button>
+            <div id="specializationsAPIResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. Test Dropdown Rendering</h2>
+            <p>Test how the specializations data should be rendered in dropdowns.</p>
+            <div class="dropdown-test">
+                <h4>Filter Dropdown (Fixed):</h4>
+                <select id="filterDropdown">
+                    <option value="">All Specializations</option>
+                </select>
+            </div>
+            <div class="dropdown-test">
+                <h4>Add/Edit Form Dropdown:</h4>
+                <select id="formDropdown">
+                    <option value="">Choose specialization...</option>
+                </select>
+            </div>
+            <div id="dropdownTestResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. Test Admin Doctors Page</h2>
+            <p>Navigate to the admin doctors page to test the actual implementation.</p>
+            <button onclick="openAdminDoctorsPage()">Open Admin Doctors Page</button>
+            <div id="adminDoctorsResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let specializations = [];
+        const baseUrl = 'http://localhost:8080/api';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken ? `Bearer ${authToken}` : '',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return {
+                    success: response.ok,
+                    data: data,
+                    status: response.status,
+                    statusText: response.statusText
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    data: null
+                };
+            }
+        }
+        
+        async function loginAdmin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const resultDiv = document.getElementById('adminLoginResult');
+            
+            resultDiv.textContent = 'Logging in as admin...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            if (result.success) {
+                authToken = result.data.data.token;
+                resultDiv.textContent = `✅ Admin Login Successful!\n\nToken: ${authToken}\n\nUser Info:\n${JSON.stringify(result.data.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `❌ Admin Login Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testSpecializationsAPI() {
+            const resultDiv = document.getElementById('specializationsAPIResult');
+            
+            resultDiv.textContent = 'Testing specializations API...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/doctors/specializations`);
+            
+            if (result.success) {
+                specializations = result.data.data;
+                resultDiv.textContent = `✅ Specializations API Success!\n\nFound ${specializations.length} specializations:\n${JSON.stringify(specializations, null, 2)}`;
+                resultDiv.className = 'result success';
+                
+                // Test dropdown rendering
+                populateDropdowns();
+            } else {
+                resultDiv.textContent = `❌ Specializations API Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function populateDropdowns() {
+            const filterDropdown = document.getElementById('filterDropdown');
+            const formDropdown = document.getElementById('formDropdown');
+            
+            // Clear existing options (except first option)
+            filterDropdown.innerHTML = '<option value="">All Specializations</option>';
+            formDropdown.innerHTML = '<option value="">Choose specialization...</option>';
+            
+            // Populate both dropdowns with the same data structure
+            specializations.forEach(spec => {
+                // Filter dropdown - uses specializationId as value and name as display
+                const filterOption = document.createElement('option');
+                filterOption.value = spec.specializationId;
+                filterOption.textContent = spec.name;
+                filterDropdown.appendChild(filterOption);
+                
+                // Form dropdown - same structure
+                const formOption = document.createElement('option');
+                formOption.value = spec.specializationId;
+                formOption.textContent = spec.name;
+                formDropdown.appendChild(formOption);
+            });
+            
+            // Show the populated dropdowns
+            document.getElementById('dropdownTestResult').textContent = `✅ Dropdowns populated successfully!\n\nBoth dropdowns now use the same data structure:\n- Value: specializationId\n- Display: name\n\nThis should fix the issue in the admin doctors page.`;
+            document.getElementById('dropdownTestResult').className = 'result success';
+        }
+        
+        function openAdminDoctorsPage() {
+            const resultDiv = document.getElementById('adminDoctorsResult');
+            
+            if (!authToken) {
+                resultDiv.textContent = 'Please login as admin first.';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            resultDiv.textContent = 'Opening admin doctors page...\n\nIn the actual application, you would navigate to:\nhttp://localhost:4200/admin/doctors\n\nMake sure to check the browser console for any errors and verify that the specialization dropdowns are populated correctly.';
+            resultDiv.className = 'result info';
+            
+            // In a real scenario, you would navigate to the admin doctors page
+            // For this test, we'll just show instructions
+            setTimeout(() => {
+                resultDiv.textContent += '\n\n🔍 Check the following:\n1. Filter dropdown should show "All Specializations" as first option\n2. Add/Edit form dropdown should show "Choose specialization..." as first option\n3. Both should populate with actual specialization names\n4. No console errors should appear';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

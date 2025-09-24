@@ -23,7 +23,7 @@ public class AdminAppointmentController {
     private AppointmentService appointmentService;
     
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<Appointment>>> getAllAppointments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -52,7 +52,7 @@ public class AdminAppointmentController {
     }
     
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getAppointmentStats() {
         try {
             Object stats = appointmentService.getAppointmentStats();
@@ -63,7 +63,7 @@ public class AdminAppointmentController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Appointment>> updateAppointment(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
         try {
             Appointment updatedAppointment = appointmentService.updateAppointment(id, updateData);
@@ -74,7 +74,7 @@ public class AdminAppointmentController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteAppointment(@PathVariable Long id) {
         try {
             appointmentService.deleteAppointment(id);

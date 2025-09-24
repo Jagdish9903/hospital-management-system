@@ -160,6 +160,21 @@
             </td>
             <td class="user-contact" [class.deleted-text]="user.deletedAt">{{ user.contact || '-' }}</td>
             <td class="user-city" [class.deleted-text]="user.deletedAt">{{ user.city || '-' }}</td>
+            <td class="user-status">
+              <div class="status-toggle" *ngIf="!user.deletedAt">
+                <label class="toggle-switch">
+                  <input type="checkbox" 
+                         [checked]="user.active" 
+                         (change)="toggleUserStatus(user)"
+                         [disabled]="isSubmitting">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="status-text" [class.active]="user.active" [class.inactive]="!user.active">
+                  {{ user.active ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+              <span *ngIf="user.deletedAt" class="deleted-status">Deleted</span>
+            </td>
             <td class="user-created" [class.deleted-text]="user.deletedAt">{{ formatDate(user.createdAt) }}</td>
             <td class="user-actions">
               <div class="action-buttons">

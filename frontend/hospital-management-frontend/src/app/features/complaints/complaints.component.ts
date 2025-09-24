@@ -14,10 +14,8 @@ interface Appointment {
   appointmentTime: string;
   doctor: {
     doctorId: number;
-    user: {
-      firstname: string;
-      lastname: string;
-    };
+    firstName: string;
+    lastName: string;
     specialization: {
       name: string;
     };
@@ -405,8 +403,8 @@ export class ComplaintsComponent implements OnInit {
   formatAppointmentOption(appointment: Appointment): string {
     const date = new Date(appointment.appointmentDate);
     const formattedDate = date.toLocaleDateString();
-    const doctorName = appointment.doctor?.user ? 
-      `${appointment.doctor.user.firstname} ${appointment.doctor.user.lastname}` : 
+    const doctorName = appointment.doctor?.firstName && appointment.doctor?.lastName ? 
+      `Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}` : 
       'Unknown Doctor';
     const specialization = appointment.doctor?.specialization?.name || 'General';
     return `Appointment #${appointment.id} - ${formattedDate} at ${appointment.appointmentTime} (Dr. ${doctorName} - ${specialization})`;

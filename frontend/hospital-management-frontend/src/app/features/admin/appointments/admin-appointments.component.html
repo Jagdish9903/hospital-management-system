@@ -154,7 +154,7 @@
             </td>
             <td>
               <div class="doctor-details">
-                <div class="doctor-name" [class.deleted-text]="appointment.deletedAt">{{ appointment.doctor.user.name }}</div>
+                <div class="doctor-name" [class.deleted-text]="appointment.deletedAt">Dr. {{ appointment.doctor.firstName }} {{ appointment.doctor.lastName }}</div>
                 <div class="doctor-specialization" [class.deleted-text]="appointment.deletedAt">{{ appointment.doctor.specialization.name }}</div>
               </div>
             </td>
@@ -349,7 +349,7 @@
           <h4>Are you sure you want to delete this appointment?</h4>
           <p>This action cannot be undone. All data associated with this appointment will be permanently removed.</p>
           <div class="appointment-info" *ngIf="selectedAppointment">
-            <strong>{{ selectedAppointment.patient.name }}</strong> with <strong>{{ selectedAppointment.doctor.user.name }}</strong><br>
+            <strong>{{ selectedAppointment.patient.name }}</strong> with <strong>Dr. {{ selectedAppointment.doctor.firstName }} {{ selectedAppointment.doctor.lastName }}</strong><br>
             {{ formatDateTime(selectedAppointment.appointmentDate, selectedAppointment.appointmentTime) }}
           </div>
         </div>

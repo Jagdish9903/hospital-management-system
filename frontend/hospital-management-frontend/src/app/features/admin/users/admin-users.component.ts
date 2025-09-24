@@ -59,6 +59,7 @@ export class AdminUsersComponent implements OnInit {
     { key: 'role', label: 'Role', sortable: true },
     { key: 'contact', label: 'Contact', sortable: false },
     { key: 'city', label: 'City', sortable: true },
+    { key: 'active', label: 'Status', sortable: true },
     { key: 'createdAt', label: 'Created', sortable: true },
     { key: 'actions', label: 'Actions', sortable: false }
   ];
@@ -66,7 +67,6 @@ export class AdminUsersComponent implements OnInit {
   roles = [
     { value: '', label: 'All Roles' },
     { value: 'ADMIN', label: 'Admin' },
-    { value: 'SUPERADMIN', label: 'Super Admin' },
     { value: 'PATIENT', label: 'Patient' }
   ];
 
@@ -403,5 +403,20 @@ export class AdminUsersComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+
+  toggleUserStatus(user: User): void {
+    const newStatus = !user.active;
+    this.adminService.updateUser(user.id, { active: newStatus }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          user.active = newStatus;
+          this.loadUsers();
+        }
+      },
+      error: (error) => {
+        console.error('Error updating user status:', error);
+      }
+    });
   }
 }

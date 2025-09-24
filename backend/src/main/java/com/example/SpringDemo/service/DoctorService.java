@@ -3,10 +3,8 @@ package com.example.SpringDemo.service;
 import com.example.SpringDemo.dto.DoctorRequest;
 import com.example.SpringDemo.entity.Doctor;
 import com.example.SpringDemo.entity.Specialization;
-import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.repository.DoctorRepository;
 import com.example.SpringDemo.repository.SpecializationRepository;
-import com.example.SpringDemo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,16 +22,14 @@ public class DoctorService {
     @Autowired
     private DoctorRepository doctorRepository;
     
-    @Autowired
-    private UserRepository userRepository;
     
     @Autowired
     private SpecializationRepository specializationRepository;
     
+    @Autowired
+    private DoctorSlotGeneratorService slotGeneratorService;
+    
     public Doctor createDoctor(DoctorRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
         Specialization specialization = specializationRepository.findById(request.getSpecializationId())
                 .orElseThrow(() -> new RuntimeException("Specialization not found"));
         
@@ -41,12 +37,26 @@ public class DoctorService {
             throw new RuntimeException("License number already exists");
         }
         
-        // Update user role to DOCTOR when creating a doctor record
-        user.setRole(User.Role.DOCTOR);
-        userRepository.save(user);
+        if (doctorRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
         
         Doctor doctor = new Doctor();
-        doctor.setUser(user);
+        doctor.setFirstName(request.getFirstName());
+        doctor.setLastName(request.getLastName());
+        doctor.setEmail(request.getEmail());
+        doctor.setContact(request.getContact());
+        doctor.setGender(request.getGender());
+        doctor.setEmergencyContactName(request.getEmergencyContactName());
+        doctor.setEmergencyContactNum(request.getEmergencyContactNum());
+        doctor.setState(request.getState());
+        doctor.setCity(request.getCity());
+        doctor.setAddress(request.getAddress());
+        doctor.setCountry(request.getCountry());
+        doctor.setCountryCode(request.getCountryCode());
+        doctor.setPostalCode(request.getPostalCode());
+        doctor.setBloodGroup(request.getBloodGroup());
+        doctor.setProfileUrl(request.getProfileUrl());
         doctor.setSpecialization(specialization);
         doctor.setLicenseNumber(request.getLicenseNumber());
         doctor.setYearsOfExp(request.getYearsOfExp());
@@ -55,17 +65,29 @@ public class DoctorService {
         doctor.setStatus(Doctor.Status.ACTIVE);
         doctor.setJoiningDate(request.getJoiningDate());
         doctor.setBio(request.getBio());
+        doctor.setActive(request.getActive() != null ? request.getActive() : true);
         
-        return doctorRepository.save(doctor);
+        // Set slot management fields
+        doctor.setSlotStartTime(request.getSlotStartTime());
+        doctor.setSlotEndTime(request.getSlotEndTime());
+        doctor.setAppointmentDuration(request.getAppointmentDuration());
+        doctor.setWorkingDays(request.getWorkingDays());
+        
+        Doctor savedDoctor = doctorRepository.save(doctor);
+        
+        // Generate slots for the next month
+        slotGeneratorService.generateSlotsForDoctor(savedDoctor);
+        
+        return savedDoctor;
     }
     
     public Page<Doctor> getAllDoctors(Pageable pageable) {
         return doctorRepository.findAll(pageable);
     }
     
-    public Page<Doctor> getAllDoctors(String name, String email, String specialization, String status, Pageable pageable) {
-        // Use the method that includes deleted records for display purposes
-        return doctorRepository.findDoctorsWithFiltersIncludingDeleted(name, email, specialization, status, pageable);
+    public Page<Doctor> getAllDoctors(String name, String email, Long specialization, String status, Pageable pageable) {
+        // Use the method that includes deleted records for display purposes with specialization ID
+        return doctorRepository.findDoctorsWithFiltersBySpecializationIdIncludingDeleted(name, email, specialization, status, pageable);
     }
     
     public List<Doctor> getActiveDoctors() {
@@ -98,12 +120,40 @@ public class DoctorService {
         Specialization specialization = specializationRepository.findById(request.getSpecializationId())
                 .orElseThrow(() -> new RuntimeException("Specialization not found"));
         
+        // Check if email is being changed and if it already exists
+        if (!doctor.getEmail().equals(request.getEmail()) && doctorRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+        
+        // Check if license number is being changed and if it already exists
+        if (!doctor.getLicenseNumber().equals(request.getLicenseNumber()) && doctorRepository.existsByLicenseNumber(request.getLicenseNumber())) {
+            throw new RuntimeException("License number already exists");
+        }
+        
+        doctor.setFirstName(request.getFirstName());
+        doctor.setLastName(request.getLastName());
+        doctor.setEmail(request.getEmail());
+        doctor.setContact(request.getContact());
+        doctor.setGender(request.getGender());
+        doctor.setEmergencyContactName(request.getEmergencyContactName());
+        doctor.setEmergencyContactNum(request.getEmergencyContactNum());
+        doctor.setState(request.getState());
+        doctor.setCity(request.getCity());
+        doctor.setAddress(request.getAddress());
+        doctor.setCountry(request.getCountry());
+        doctor.setCountryCode(request.getCountryCode());
+        doctor.setPostalCode(request.getPostalCode());
+        doctor.setBloodGroup(request.getBloodGroup());
+        doctor.setProfileUrl(request.getProfileUrl());
         doctor.setSpecialization(specialization);
         doctor.setLicenseNumber(request.getLicenseNumber());
         doctor.setYearsOfExp(request.getYearsOfExp());
         doctor.setQualification(request.getQualification());
         doctor.setConsultationFee(request.getConsultationFee());
         doctor.setBio(request.getBio());
+        if (request.getActive() != null) {
+            doctor.setActive(request.getActive());
+        }
         
         return doctorRepository.save(doctor);
     }
@@ -114,33 +164,76 @@ public class DoctorService {
         
         doctor.setDeletedAt(java.time.LocalDateTime.now());
         doctor.setDeletedBy(doctor.getDoctorId());
+        doctor.setActive(false);
         doctorRepository.save(doctor);
-        
-        // Also soft delete the associated user
-        User user = doctor.getUser();
-        if (user != null && user.getDeletedAt() == null) {
-            user.setDeletedAt(java.time.LocalDateTime.now());
-            user.setDeletedBy(doctor.getDoctorId());
-            userRepository.save(user);
-        }
     }
     
-    public void deleteDoctorByUserId(Long userId) {
-        Doctor doctor = doctorRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Doctor not found for user ID: " + userId));
-        
-        doctor.setDeletedAt(java.time.LocalDateTime.now());
-        doctor.setDeletedBy(doctor.getDoctorId());
-        doctorRepository.save(doctor);
-    }
     
     public Doctor updateDoctor(Long id, Map<String, Object> updateData) {
         Doctor doctor = doctorRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
         // Only update fields that are provided and not null
+        if (updateData.containsKey("firstName") && updateData.get("firstName") != null) {
+            doctor.setFirstName((String) updateData.get("firstName"));
+        }
+        if (updateData.containsKey("lastName") && updateData.get("lastName") != null) {
+            doctor.setLastName((String) updateData.get("lastName"));
+        }
+        if (updateData.containsKey("email") && updateData.get("email") != null) {
+            String newEmail = (String) updateData.get("email");
+            if (!doctor.getEmail().equals(newEmail) && doctorRepository.existsByEmail(newEmail)) {
+                throw new RuntimeException("Email already exists");
+            }
+            doctor.setEmail(newEmail);
+        }
+        if (updateData.containsKey("contact") && updateData.get("contact") != null) {
+            doctor.setContact((String) updateData.get("contact"));
+        }
+        if (updateData.containsKey("gender") && updateData.get("gender") != null) {
+            String genderStr = updateData.get("gender").toString();
+            try {
+                doctor.setGender(Doctor.Gender.valueOf(genderStr.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid gender: " + genderStr);
+            }
+        }
+        if (updateData.containsKey("emergencyContactName") && updateData.get("emergencyContactName") != null) {
+            doctor.setEmergencyContactName((String) updateData.get("emergencyContactName"));
+        }
+        if (updateData.containsKey("emergencyContactNum") && updateData.get("emergencyContactNum") != null) {
+            doctor.setEmergencyContactNum((String) updateData.get("emergencyContactNum"));
+        }
+        if (updateData.containsKey("state") && updateData.get("state") != null) {
+            doctor.setState((String) updateData.get("state"));
+        }
+        if (updateData.containsKey("city") && updateData.get("city") != null) {
+            doctor.setCity((String) updateData.get("city"));
+        }
+        if (updateData.containsKey("address") && updateData.get("address") != null) {
+            doctor.setAddress((String) updateData.get("address"));
+        }
+        if (updateData.containsKey("country") && updateData.get("country") != null) {
+            doctor.setCountry((String) updateData.get("country"));
+        }
+        if (updateData.containsKey("countryCode") && updateData.get("countryCode") != null) {
+            doctor.setCountryCode((String) updateData.get("countryCode"));
+        }
+        if (updateData.containsKey("postalCode") && updateData.get("postalCode") != null) {
+            doctor.setPostalCode((String) updateData.get("postalCode"));
+        }
+        if (updateData.containsKey("bloodGroup") && updateData.get("bloodGroup") != null) {
+            doctor.setBloodGroup((String) updateData.get("bloodGroup"));
+        }
+        if (updateData.containsKey("profileUrl") && updateData.get("profileUrl") != null) {
+            doctor.setProfileUrl((String) updateData.get("profileUrl"));
+        }
         if (updateData.containsKey("licenseNumber") && updateData.get("licenseNumber") != null) {
-            doctor.setLicenseNumber((String) updateData.get("licenseNumber"));
+            String newLicenseNumber = (String) updateData.get("licenseNumber");
+            if (!doctor.getLicenseNumber().equals(newLicenseNumber) && doctorRepository.existsByLicenseNumber(newLicenseNumber)) {
+                throw new RuntimeException("License number already exists");
+            }
+            doctor.setLicenseNumber(newLicenseNumber);
         }
         if (updateData.containsKey("yearsOfExp") && updateData.get("yearsOfExp") != null) {
             doctor.setYearsOfExp((Integer) updateData.get("yearsOfExp"));
@@ -166,6 +259,9 @@ public class DoctorService {
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Invalid status: " + statusStr);
             }
+        }
+        if (updateData.containsKey("active") && updateData.get("active") != null) {
+            doctor.setActive((Boolean) updateData.get("active"));
         }
         
         // Update audit fields

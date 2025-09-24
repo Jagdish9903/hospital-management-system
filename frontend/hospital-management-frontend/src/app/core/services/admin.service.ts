@@ -7,6 +7,8 @@ import { environment } from '../../../environments/environment';
 export interface User {
   id: number;
   name: string;
+  firstname: string;
+  lastname: string;
   email: string;
   username: string;
   role: string;
@@ -16,31 +18,52 @@ export interface User {
   city?: string;
   state?: string;
   country?: string;
+  countryCode?: string;
   postalCode?: string;
   bloodGroup?: string;
   emergencyContactName?: string;
   emergencyContactNum?: string;
+  profileUrl?: string;
+  active: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
 }
 
 export interface Doctor {
-  id: number;
   doctorId: number;
-  user: User;
+  firstName: string;
+  lastName: string;
+  email: string;
+  contact?: string;
+  gender?: string;
+  emergencyContactName?: string;
+  emergencyContactNum?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  country?: string;
+  countryCode?: string;
+  postalCode?: string;
+  bloodGroup?: string;
+  profileUrl?: string;
   specialization: {
-    id: number;
+    specializationId: number;
     name: string;
   };
   licenseNumber: string;
-  experience: number;
+  yearsOfExp: number;
+  qualification: string;
   consultationFee: number;
-  isActive: boolean;
-  qualification?: string;
+  status: string;
+  joiningDate: string;
   bio?: string;
-  yearsOfExp?: number;
-  status?: string;
+  active: boolean;
+  // Slot management fields
+  slotStartTime: string;
+  slotEndTime: string;
+  appointmentDuration: number;
+  workingDays: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
@@ -266,6 +289,10 @@ export class AdminService {
     return this.http.delete(`${this.apiUrl}/api/admin/doctors/${id}`);
   }
 
+  createDoctor(doctorData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/api/doctors`, doctorData);
+  }
+
   // Appointments management
   getAppointments(filters: SearchFilters): Observable<ApiResponse<PaginatedResponse<Appointment>>> {
     let params: any = { 
@@ -405,10 +432,6 @@ export class AdminService {
 
   getSpecializations(): Observable<ApiResponse<any[]>> {
     return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/api/doctors/specializations`);
-  }
-
-  createDoctor(doctorData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/doctors`, doctorData);
   }
 
   // Complaint details

@@ -1,6 +1,5 @@
 package com.example.SpringDemo.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,10 +25,45 @@ public class Doctor {
     @Column(name = "doctor_id")
     private Long doctorId;
     
-    @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonManagedReference
-    private User user;
+    @Column(nullable = false)
+    private String firstName;
+    
+    @Column(nullable = false)
+    private String lastName;
+    
+    @Column(unique = true, nullable = false)
+    private String email;
+    
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+    
+    private String contact;
+    
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+    
+    @Column(name = "emergency_contact_name")
+    private String emergencyContactName;
+    
+    @Column(name = "emergency_contact_num")
+    private String emergencyContactNum;
+    
+    private String state;
+    private String city;
+    private String address;
+    private String country;
+    
+    @Column(name = "country_code")
+    private String countryCode;
+    
+    @Column(name = "postal_code")
+    private String postalCode;
+    
+    @Column(name = "blood_group")
+    private String bloodGroup;
+    
+    @Column(name = "profile_url")
+    private String profileUrl;
     
     @ManyToOne
     @JoinColumn(name = "specialization_id", nullable = false)
@@ -53,6 +87,22 @@ public class Doctor {
     
     @Column(name = "joining_date", nullable = false)
     private LocalDate joiningDate;
+    
+    @Column(nullable = false)
+    private Boolean active = true;
+    
+    // Slot management fields
+    @Column(name = "slot_start_time")
+    private String slotStartTime; // e.g., "09:00"
+    
+    @Column(name = "slot_end_time")
+    private String slotEndTime; // e.g., "17:00"
+    
+    @Column(name = "appointment_duration")
+    private Integer appointmentDuration; // in minutes: 15, 30, 45, 60
+    
+    @Column(name = "working_days")
+    private String workingDays; // e.g., "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY"
     
     private String bio;
     
@@ -79,5 +129,14 @@ public class Doctor {
     
     public enum Status {
         ACTIVE, INACTIVE
+    }
+    
+    public enum Gender {
+        MALE, FEMALE, OTHER
+    }
+    
+    // Helper method to get full name
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 }

@@ -254,7 +254,7 @@ public class DataGenerator {
             appointment.setCreatedBy(1L); // System user
             
             appointmentRepository.save(appointment);
-            System.out.println("Created appointment for " + patient.getName() + " with " + doctor.getUser().getName() + " on " + date);
+            System.out.println("Created appointment for " + patient.getName() + " with " + doctor.getFullName() + " on " + date);
             
         } catch (Exception e) {
             System.err.println("Error creating appointment: " + e.getMessage());

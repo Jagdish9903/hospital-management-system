@@ -25,7 +25,7 @@ public class AdminComplaintController {
     private ComplaintService complaintService;
     
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<Complaint>>> getAllComplaints(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -52,7 +52,7 @@ public class AdminComplaintController {
     }
     
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getComplaintStats() {
         try {
             Object stats = complaintService.getComplaintStats();
@@ -63,7 +63,7 @@ public class AdminComplaintController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Complaint>> updateComplaint(@PathVariable Long id, @RequestBody Map<String, Object> updateData) {
         try {
             // Create a ComplaintRequest from the update data
@@ -82,7 +82,7 @@ public class AdminComplaintController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteComplaint(@PathVariable Long id) {
         try {
             complaintService.deleteComplaint(id);
@@ -93,7 +93,7 @@ public class AdminComplaintController {
     }
     
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Complaint>> updateComplaintStatus(@PathVariable Long id, @RequestBody String status) {
         try {
             Complaint updatedComplaint = complaintService.updateComplaintStatus(id, status);
@@ -104,7 +104,7 @@ public class AdminComplaintController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Complaint>> getComplaintById(@PathVariable Long id) {
         try {
             Complaint complaint = complaintService.getComplaintById(id);
@@ -115,7 +115,7 @@ public class AdminComplaintController {
     }
 
     @PutMapping("/{id}/assign")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> assignComplaint(@PathVariable Long id, @RequestBody Map<String, Long> request) {
         try {
             Long adminId = request.get("adminId");
@@ -127,7 +127,7 @@ public class AdminComplaintController {
     }
 
     @PutMapping("/{id}/resolution")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> updateComplaintResolution(@PathVariable Long id, @RequestBody Map<String, Object> request) {
         try {
             complaintService.updateComplaintResolution(id, request);
@@ -138,7 +138,7 @@ public class AdminComplaintController {
     }
 
     @PostMapping("/{id}/notes")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> addComplaintNote(@PathVariable Long id, @RequestBody Map<String, String> request) {
         try {
             String note = request.get("note");

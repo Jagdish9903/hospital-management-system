@@ -336,4 +336,8 @@ export class MyAppointmentsComponent implements OnInit {
   shouldShowActions(appointment: Appointment): boolean {
     return this.activeTab === 'upcoming' && this.isAppointmentUpcoming(appointment);
   }
+
+  getDoctorName(doctor: any): string {
+    return `Dr. ${doctor.firstName} ${doctor.lastName}`;
+  }
 }

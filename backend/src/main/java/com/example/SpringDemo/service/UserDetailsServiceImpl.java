@@ -18,9 +18,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        System.out.println("=== USER DETAILS SERVICE DEBUG ===");
+        System.out.println("Loading user by email: " + email);
+        
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + email));
         
-        return UserPrincipal.create(user);
+        System.out.println("User found in UserDetailsService:");
+        System.out.println("User ID: " + user.getId());
+        System.out.println("User Email: " + user.getEmail());
+        System.out.println("User Password Hash: " + user.getPasswordHash());
+        System.out.println("User Role: " + user.getRole());
+        System.out.println("User Active: " + user.getActive());
+        
+        UserPrincipal userPrincipal = UserPrincipal.create(user);
+        System.out.println("UserPrincipal created with password: " + userPrincipal.getPassword());
+        
+        return userPrincipal;
     }
 }

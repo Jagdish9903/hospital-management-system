@@ -21,10 +21,18 @@ public class AuthController {
     
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        System.out.println("=== AUTH CONTROLLER DEBUG ===");
+        System.out.println("Received login request for email: " + loginRequest.getEmail());
+        System.out.println("Password length: " + (loginRequest.getPassword() != null ? loginRequest.getPassword().length() : "null"));
+        
         try {
             LoginResponse response = authService.authenticateUser(loginRequest);
+            System.out.println("Login successful, returning response");
             return ResponseEntity.ok(ApiResponse.success("Login successful", response));
         } catch (Exception e) {
+            System.out.println("Login failed with exception: " + e.getClass().getSimpleName());
+            System.out.println("Exception message: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

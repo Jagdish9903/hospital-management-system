@@ -562,15 +562,15 @@ export class ComplaintTrackingComponent implements OnInit {
   formatAppointmentInfo(appointment: any): string {
     const date = new Date(appointment.appointmentDate);
     const formattedDate = date.toLocaleDateString();
-    const doctorName = appointment.doctor?.user ? 
-      `${appointment.doctor.user.firstname} ${appointment.doctor.user.lastname}` : 
+    const doctorName = appointment.doctor?.firstName && appointment.doctor?.lastName ? 
+      `Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}` : 
       'Unknown Doctor';
     return `Appointment #${appointment.id} - ${formattedDate} at ${appointment.appointmentTime} (Dr. ${doctorName})`;
   }
 
   formatDoctorName(doctor: any): string {
-    return doctor?.user ? 
-      `${doctor.user.firstname} ${doctor.user.lastname}` : 
+    return doctor?.firstName && doctor?.lastName ? 
+      `Dr. ${doctor.firstName} ${doctor.lastName}` : 
       'Unknown Doctor';
   }
 }

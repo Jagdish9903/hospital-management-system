@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login Test - Fixed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 200px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Login Test - Authentication Fix</h1>
+        
+        <div class="section">
+            <h2>1. Admin Login Test</h2>
+            <p>Test admin login with the fixed authentication system.</p>
+            <input type="email" id="adminEmail" placeholder="Admin Email" value="admin@hospital.com">
+            <input type="password" id="adminPassword" placeholder="Password" value="Password123">
+            <button onclick="loginAdmin()">Login as Admin</button>
+            <div id="adminLoginResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. Doctor Login Test (for comparison)</h2>
+            <p>Test doctor login to ensure it still works.</p>
+            <input type="email" id="doctorEmail" placeholder="Doctor Email" value="james.mitchell@doctor.com">
+            <input type="password" id="doctorPassword" placeholder="Password" value="Password123">
+            <button onclick="loginDoctor()">Login as Doctor</button>
+            <div id="doctorLoginResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. Test Admin API Access</h2>
+            <p>Test accessing admin-protected endpoints after login.</p>
+            <button onclick="testAdminAccess()" id="adminAccessBtn" disabled>Test Admin Access</button>
+            <div id="adminAccessResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. Test Doctor API Access</h2>
+            <p>Test accessing doctor-protected endpoints after login.</p>
+            <button onclick="testDoctorAccess()" id="doctorAccessBtn" disabled>Test Doctor Access</button>
+            <div id="doctorAccessResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        let doctorToken = '';
+        const baseUrl = 'http://localhost:8080/api';
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return {
+                    success: response.ok,
+                    data: data,
+                    status: response.status,
+                    statusText: response.statusText
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    data: null
+                };
+            }
+        }
+        
+        async function loginAdmin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const resultDiv = document.getElementById('adminLoginResult');
+            
+            resultDiv.textContent = 'Logging in as admin...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            if (result.success) {
+                adminToken = result.data.data.token;
+                resultDiv.textContent = `✅ Admin Login Successful!\n\nToken: ${adminToken}\n\nUser Info:\n${JSON.stringify(result.data.data, null, 2)}`;
+                resultDiv.className = 'result success';
+                document.getElementById('adminAccessBtn').disabled = false;
+            } else {
+                resultDiv.textContent = `❌ Admin Login Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function loginDoctor() {
+            const email = document.getElementById('doctorEmail').value;
+            const password = document.getElementById('doctorPassword').value;
+            const resultDiv = document.getElementById('doctorLoginResult');
+            
+            resultDiv.textContent = 'Logging in as doctor...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            
+            if (result.success) {
+                doctorToken = result.data.data.token;
+                resultDiv.textContent = `✅ Doctor Login Successful!\n\nToken: ${doctorToken}\n\nUser Info:\n${JSON.stringify(result.data.data, null, 2)}`;
+                resultDiv.className = 'result success';
+                document.getElementById('doctorAccessBtn').disabled = false;
+            } else {
+                resultDiv.textContent = `❌ Doctor Login Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testAdminAccess() {
+            const resultDiv = document.getElementById('adminAccessResult');
+            
+            resultDiv.textContent = 'Testing admin API access...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/admin/dashboard`, {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`
+                }
+            });
+            
+            if (result.success) {
+                resultDiv.textContent = `✅ Admin API Access Successful!\n\nResponse:\n${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `❌ Admin API Access Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testDoctorAccess() {
+            const resultDiv = document.getElementById('doctorAccessResult');
+            
+            resultDiv.textContent = 'Testing doctor API access...';
+            resultDiv.className = 'result info';
+            
+            const result = await makeRequest(`${baseUrl}/doctors/my-appointments`, {
+                headers: {
+                    'Authorization': `Bearer ${doctorToken}`
+                }
+            });
+            
+            if (result.success) {
+                resultDiv.textContent = `✅ Doctor API Access Successful!\n\nResponse:\n${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `❌ Doctor API Access Failed!\n\nError: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -56,10 +56,14 @@ export class LoginComponent implements OnInit {
     // Check if user is already logged in
     if (this.authService.isLoggedIn()) {
       const currentUser = this.authService.getCurrentUser();
-      if (currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN')) {
-        this.router.navigate(['/admin/dashboard']);
-      } else {
-        this.router.navigate(['/home']);
+      if (currentUser) {
+        if (currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN') {
+          this.router.navigate(['/admin/dashboard']);
+        } else if (currentUser.role === 'DOCTOR') {
+          this.router.navigate(['/doctor/dashboard']);
+        } else {
+          this.router.navigate(['/home']);
+        }
       }
     }
   }
@@ -84,6 +88,8 @@ export class LoginComponent implements OnInit {
             // Redirect based on user role
             if (response.data.role === 'ADMIN' || response.data.role === 'SUPERADMIN') {
               this.router.navigate(['/admin/dashboard']);
+            } else if (response.data.role === 'DOCTOR') {
+              this.router.navigate(['/doctor/dashboard']);
             } else {
               this.router.navigate(['/home']);
             }
@@ -119,9 +125,9 @@ export class LoginComponent implements OnInit {
 
   fillDemoCredentials(role: string) {
     const credentials = {
-      admin: { email: 'admin@hospital.com', password: 'password123' },
-      doctor: { email: 'doctor@hospital.com', password: 'password123' },
-      patient: { email: 'patient@hospital.com', password: 'password123' }
+      admin: { email: 'admin@hospital.com', password: 'Password123' },
+      doctor: { email: 'james.mitchell@doctor.com', password: 'Password123' },
+      patient: { email: 'john.smith@email.com', password: 'Password123' }
     };
     
     const credential = credentials[role as keyof typeof credentials];

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Slot System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Doctor Slot System Test</h1>
+    
+    <div class="section">
+        <h2>1. Generate Initial Slots for All Doctors</h2>
+        <p>This will generate slots for all active doctors for the next month based on their working hours and days.</p>
+        <button onclick="generateInitialSlots()">Generate Initial Slots</button>
+        <div id="initialSlotsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Generate Next Week Slots</h2>
+        <p>This will generate slots for the next 7 days for all active doctors.</p>
+        <button onclick="generateNextWeekSlots()">Generate Next Week Slots</button>
+        <div id="nextWeekSlotsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Test Doctor Authentication</h2>
+        <p>Login as a doctor to test the doctor-specific endpoints.</p>
+        <input type="text" id="doctorEmail" placeholder="Doctor Email" value="doctor1@example.com">
+        <input type="password" id="doctorPassword" placeholder="Password" value="password123">
+        <button onclick="loginDoctor()">Login as Doctor</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. Get Doctor Appointments</h2>
+        <p>Get appointments for the logged-in doctor using the new endpoint.</p>
+        <button onclick="getDoctorAppointments()" id="getAppointmentsBtn" disabled>Get My Appointments (New Endpoint)</button>
+        <button onclick="getDoctorAppointmentsOld()" id="getAppointmentsOldBtn" disabled>Get My Appointments (Old Endpoint)</button>
+        <div id="appointmentsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>5. Get Today's Appointments</h2>
+        <p>Get today's appointments for the logged-in doctor.</p>
+        <button onclick="getTodayAppointments()" id="getTodayBtn" disabled>Get Today's Appointments</button>
+        <div id="todayAppointmentsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>6. Get Available Slots</h2>
+        <p>Get available slots for a specific doctor and date.</p>
+        <input type="number" id="doctorId" placeholder="Doctor ID" value="1">
+        <input type="date" id="slotDate" value="">
+        <button onclick="getAvailableSlots()">Get Available Slots</button>
+        <div id="availableSlotsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>7. Manual Slot Generation</h2>
+        <p>Manually trigger slot generation for all doctors.</p>
+        <input type="number" id="slotDays" placeholder="Days to generate" value="30" min="1" max="90">
+        <button onclick="generateSlotsManually()">Generate Slots Manually</button>
+        <div id="manualSlotResult" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+        const baseUrl = 'http://localhost:8080/api';
+        
+        // Set today's date as default
+        document.getElementById('slotDate').value = new Date().toISOString().split('T')[0];
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function generateInitialSlots() {
+            const resultDiv = document.getElementById('initialSlotsResult');
+            resultDiv.textContent = 'Generating initial slots...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/doctor-slots/generate-initial-slots`, {
+                method: 'POST'
+            });
+            
+            if (result.success) {
+                resultDiv.textContent = `Success: ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function generateNextWeekSlots() {
+            const resultDiv = document.getElementById('nextWeekSlotsResult');
+            resultDiv.textContent = 'Generating next week slots...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/doctor-slots/generate-next-week`, {
+                method: 'POST'
+            });
+            
+            if (result.success) {
+                resultDiv.textContent = `Success: ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function loginDoctor() {
+            const email = document.getElementById('doctorEmail').value;
+            const password = document.getElementById('doctorPassword').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.textContent = 'Logging in...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/auth/login`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    role: 'DOCTOR'
+                })
+            });
+            
+            if (result.success && result.data.token) {
+                authToken = result.data.token;
+                resultDiv.textContent = `Login successful! Token: ${authToken.substring(0, 50)}...`;
+                resultDiv.className = 'result success';
+                
+                // Enable doctor-specific buttons
+                document.getElementById('getAppointmentsBtn').disabled = false;
+                document.getElementById('getAppointmentsOldBtn').disabled = false;
+                document.getElementById('getTodayBtn').disabled = false;
+            } else {
+                resultDiv.textContent = `Login failed: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function getDoctorAppointments() {
+            const resultDiv = document.getElementById('appointmentsResult');
+            resultDiv.textContent = 'Loading appointments from new endpoint...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/doctors/my-appointments?page=0&size=10&sortBy=appointmentDate&sortDir=desc`);
+            
+            if (result.success) {
+                resultDiv.textContent = `Appointments (New Endpoint): ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error (New Endpoint): ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function getDoctorAppointmentsOld() {
+            const resultDiv = document.getElementById('appointmentsResult');
+            resultDiv.textContent = 'Loading appointments from old endpoint...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/appointments/doctor/my-appointments?page=0&size=10&sortBy=appointmentDate&sortDir=desc`);
+            
+            if (result.success) {
+                resultDiv.textContent = `Appointments (Old Endpoint): ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error (Old Endpoint): ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function getTodayAppointments() {
+            const resultDiv = document.getElementById('todayAppointmentsResult');
+            resultDiv.textContent = 'Loading today\'s appointments...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/doctors/appointments/today?page=0&size=10`);
+            
+            if (result.success) {
+                resultDiv.textContent = `Today's Appointments: ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function getAvailableSlots() {
+            const doctorId = document.getElementById('doctorId').value;
+            const slotDate = document.getElementById('slotDate').value;
+            const resultDiv = document.getElementById('availableSlotsResult');
+            
+            resultDiv.textContent = 'Loading available slots...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/appointments/doctors/${doctorId}/slots?date=${slotDate}`);
+            
+            if (result.success) {
+                resultDiv.textContent = `Available Slots: ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Error: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function generateSlotsManually() {
+            const days = document.getElementById('slotDays').value;
+            const resultDiv = document.getElementById('manualSlotResult');
+            
+            resultDiv.textContent = 'Generating slots manually...';
+            resultDiv.className = 'result';
+            
+            const result = await makeRequest(`${baseUrl}/doctor-slots/generate-slots?days=${days}`, {
+                method: 'POST'
+            });
+            
+            if (result.success) {
+                resultDiv.textContent = `Manual Generation Success: ${JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = `Manual Generation Error: ${result.error || JSON.stringify(result.data, null, 2)}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>

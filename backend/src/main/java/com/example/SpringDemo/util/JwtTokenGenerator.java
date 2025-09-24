@@ -18,7 +18,7 @@ public class JwtTokenGenerator {
         superAdmin.setId(8L);
         superAdmin.setEmail("superadmin@hospital.com");
         superAdmin.setPasswordHash("$2a$10$y./11hZtBLzprDaWjebW/ezLPhfTzETs.MXpW73e3F05.4Q8ZhrEW");
-        superAdmin.setRole(User.Role.SUPERADMIN);
+        superAdmin.setRole(User.Role.ADMIN);
         
         UserPrincipal userPrincipal = UserPrincipal.create(superAdmin);
         return jwtConfig.generateToken(userPrincipal);

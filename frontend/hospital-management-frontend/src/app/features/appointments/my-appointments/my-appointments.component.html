@@ -98,7 +98,7 @@
                 <div class="appointment-end-time">{{ formatTime(appointment.endTime) }}</div>
               </td>
               <td class="doctor-cell">
-                <div class="doctor-name">{{ appointment.doctor.user.name || 'Dr. Unknown' }}</div>
+                <div class="doctor-name">{{ getDoctorName(appointment.doctor) || 'Dr. Unknown' }}</div>
                 <div class="doctor-specialization">{{ appointment.doctor.specialization.name || 'General' }}</div>
               </td>
               <td class="appointment-type-cell">
@@ -222,7 +222,7 @@
     </div>
     <div class="modal-body">
       <div class="reschedule-info">
-        <p><strong>Doctor:</strong> {{ selectedAppointment?.doctor?.user?.name }}</p>
+        <p><strong>Doctor:</strong> {{ getDoctorName(selectedAppointment?.doctor) }}</p>
         <p><strong>Current Date:</strong> {{ selectedAppointment?.appointmentDate }}</p>
         <p><strong>Current Time:</strong> {{ selectedAppointment?.appointmentTime }} - {{ selectedAppointment?.endTime }}</p>
       </div>

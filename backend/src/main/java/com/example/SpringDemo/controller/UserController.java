@@ -138,7 +138,7 @@ public class UserController {
     }
     
     @PutMapping("/{id}/role")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> updateUserRole(@PathVariable Long id, 
                                                            @RequestParam String role) {
         try {
@@ -150,7 +150,7 @@ public class UserController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);

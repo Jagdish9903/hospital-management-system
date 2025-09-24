@@ -25,7 +25,7 @@ public class AdminUserController {
     private UserService userService;
     
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<User>>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -53,7 +53,7 @@ public class AdminUserController {
     }
     
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getUserStats() {
         try {
             Object stats = userService.getUserStats();
@@ -64,7 +64,7 @@ public class AdminUserController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id, @RequestBody User userData) {
         try {
             User updatedUser = userService.updateUser(id, userData);
@@ -75,7 +75,7 @@ public class AdminUserController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         try {
             userService.deleteUser(id);
@@ -86,7 +86,7 @@ public class AdminUserController {
     }
     
     @GetMapping("/patients")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<User>>> getPatients() {
         try {
             List<User> patients = userService.getPatients();
@@ -102,7 +102,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/admins")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<User>>> getAdmins() {
         try {
             List<User> admins = userService.getAdmins();
@@ -113,7 +113,7 @@ public class AdminUserController {
     }
     
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> createUser(@Valid @RequestBody UserRequest request) {
         try {
             User user = userService.createUser(request);
