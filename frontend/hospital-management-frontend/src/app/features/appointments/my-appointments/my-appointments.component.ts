@@ -5,11 +5,12 @@ import { AdminService, Appointment } from '../../../core/services/admin.service'
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { Router } from '@angular/router';
+import { AppointmentDetailsModalComponent } from '../../../shared/components/appointment-details-modal/appointment-details-modal.component';
 
 @Component({
   selector: 'app-my-appointments',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppointmentDetailsModalComponent],
   templateUrl: './my-appointments.component.html',
   styleUrls: ['./my-appointments.component.css']
 })
@@ -36,6 +37,10 @@ export class MyAppointmentsComponent implements OnInit {
   today = new Date().toISOString().split('T')[0];
   isLoading = false;
   hasFilteredResults = true;
+  
+  // Modal properties
+  showAppointmentDetailsModal = false;
+  selectedAppointmentId: number | null = null;
   
   // Reschedule modal properties
   availableSlots: any[] = [];
@@ -141,6 +146,11 @@ export class MyAppointmentsComponent implements OnInit {
 
   bookNewAppointment(): void {
     this.router.navigate(['/appointments/schedule']);
+  }
+
+  viewAppointment(appointment: Appointment): void {
+    this.selectedAppointmentId = appointment.id;
+    this.showAppointmentDetailsModal = true;
   }
 
   rescheduleAppointment(appointment: Appointment): void {
@@ -289,6 +299,15 @@ export class MyAppointmentsComponent implements OnInit {
     this.showCancelModal = false;
     this.selectedAppointment = null;
     this.cancelReason = '';
+  }
+
+  onCloseAppointmentDetailsModal(): void {
+    this.showAppointmentDetailsModal = false;
+    this.selectedAppointmentId = null;
+  }
+
+  onAppointmentCancelled(): void {
+    this.loadAppointments();
   }
 
   confirmCancel(): void {

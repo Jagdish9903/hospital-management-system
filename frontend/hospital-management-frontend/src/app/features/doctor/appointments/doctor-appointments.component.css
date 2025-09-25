@@ -450,9 +450,16 @@
   color: #10b981;
 }
 
-.complete-btn:hover {
+.complete-btn:hover:not(.disabled) {
   background: #dcfce7;
   transform: scale(1.05);
+}
+
+.complete-btn.disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .cancel-btn {

@@ -15,17 +15,28 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Specialization *</label>
-            <select formControlName="specializationId" class="form-select">
+            <select formControlName="specializationId" class="form-select" 
+                    [class.error]="searchForm.get('specializationId')?.invalid && searchForm.get('specializationId')?.touched">
               <option value="">Choose specialization...</option>
               <option *ngFor="let spec of specializations" [value]="spec.specializationId">
                 {{ spec.name }}
               </option>
             </select>
+            <div *ngIf="searchForm.get('specializationId')?.invalid && searchForm.get('specializationId')?.touched" 
+                 class="error-message">
+              Please select a specialization
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Appointment Date *</label>
             <input type="date" formControlName="appointmentDate" class="form-input" 
-                   [min]="minDate" [max]="maxDate">
+                   [min]="minDate" [max]="maxDate"
+                   [class.error]="searchForm.get('appointmentDate')?.invalid && searchForm.get('appointmentDate')?.touched">
+            <div *ngIf="searchForm.get('appointmentDate')?.invalid && searchForm.get('appointmentDate')?.touched" 
+                 class="error-message">
+              <div *ngIf="searchForm.get('appointmentDate')?.errors?.['required']">Please select a date</div>
+              <div *ngIf="searchForm.get('appointmentDate')?.errors?.['pastDate']">Please select today or a future date</div>
+            </div>
           </div>
           <div class="form-group">
             <button type="submit" class="search-btn" [disabled]="!searchForm.valid || isLoading">

@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { AppointmentDetailsModalComponent } from '../../../shared/components/appointment-details-modal/appointment-details-modal.component';
 
 interface Appointment {
   id: number;
@@ -43,7 +44,7 @@ interface PaginatedResponse<T> {
   selector: 'app-doctor-appointments',
   templateUrl: './doctor-appointments.component.html',
   styleUrls: ['./doctor-appointments.component.css'],
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AppointmentDetailsModalComponent],
   standalone: true
 })
 export class DoctorAppointmentsComponent implements OnInit {
@@ -72,6 +73,10 @@ export class DoctorAppointmentsComponent implements OnInit {
   selectedType = '';
   selectedDateFrom = '';
   selectedDateTo = '';
+  
+  // Modal properties
+  showAppointmentDetailsModal = false;
+  selectedAppointmentId: number | null = null;
   
   // Table columns (removed doctor column since this is for doctor view)
   columns = [
@@ -243,22 +248,97 @@ export class DoctorAppointmentsComponent implements OnInit {
   }
 
   viewAppointment(appointment: Appointment): void {
-    console.log('View appointment:', appointment);
-    // Implement view appointment functionality
+    this.selectedAppointmentId = appointment.id;
+    this.showAppointmentDetailsModal = true;
+  }
+
+
+  cancelAppointment(appointment: Appointment): void {
+    this.selectedAppointmentId = appointment.id;
+    this.showAppointmentDetailsModal = true;
+  }
+
+  onCloseAppointmentDetailsModal(): void {
+    this.showAppointmentDetailsModal = false;
+    this.selectedAppointmentId = null;
+  }
+
+  onAppointmentCancelled(): void {
+    this.loadAppointments();
   }
 
   completeAppointment(appointment: Appointment): void {
-    console.log('Complete appointment:', appointment);
-    // TODO: Implement complete appointment API call
-    // For now, just reload the data
-    this.loadAppointments();
+    if (!this.canCompleteAppointment(appointment)) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.http.put(`http://localhost:8080/api/appointments/${appointment.id}/complete`, {})
+      .subscribe({
+        next: (response: any) => {
+          this.isLoading = false;
+          if (response.success) {
+            this.loadAppointments();
+            // Show success message
+            this.showToast('Appointment completed successfully', 'success');
+          } else {
+            this.showToast(response.message || 'Failed to complete appointment', 'error');
+          }
+        },
+        error: (error) => {
+          this.isLoading = false;
+          console.error('Error completing appointment:', error);
+          const errorMessage = error.error?.message || 'Failed to complete appointment';
+          this.showToast(errorMessage, 'error');
+        }
+      });
   }
 
-  cancelAppointment(appointment: Appointment): void {
-    console.log('Cancel appointment:', appointment);
-    // TODO: Implement cancel appointment API call
-    // For now, just reload the data
-    this.loadAppointments();
+  canCompleteAppointment(appointment: Appointment): boolean {
+    // Check if appointment is not already completed or cancelled
+    if (appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED') {
+      return false;
+    }
+
+    // Check if appointment time has passed
+    const appointmentDate = new Date(appointment.appointmentDate);
+    const appointmentTime = appointment.appointmentTime;
+    const [hours, minutes] = appointmentTime.split(':').map(Number);
+    appointmentDate.setHours(hours, minutes, 0, 0);
+    
+    const now = new Date();
+    return appointmentDate <= now;
+  }
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 4px;
+      color: white;
+      font-weight: 500;
+      z-index: 10000;
+      max-width: 300px;
+      word-wrap: break-word;
+      ${type === 'success' ? 'background-color: #10b981;' : ''}
+      ${type === 'error' ? 'background-color: #ef4444;' : ''}
+      ${type === 'info' ? 'background-color: #3b82f6;' : ''}
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 3000);
   }
 
   getStatusBadgeClass(status: string): string {

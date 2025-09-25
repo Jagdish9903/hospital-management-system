@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -160,6 +161,20 @@ public class ComplaintController {
         try {
             Object stats = complaintService.getComplaintStats();
             return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/{id}/feedback")
+    public ResponseEntity<ApiResponse<Complaint>> updateCustomerFeedback(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String feedback = request.get("feedback");
+            if (feedback == null || feedback.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Feedback is required"));
+            }
+            Complaint complaint = complaintService.updateCustomerFeedback(id, feedback);
+            return ResponseEntity.ok(ApiResponse.success("Feedback updated successfully", complaint));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

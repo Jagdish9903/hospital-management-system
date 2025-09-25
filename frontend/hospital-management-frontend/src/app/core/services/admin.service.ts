@@ -171,6 +171,7 @@ export interface SearchFilters {
   email?: string;
   role?: string;
   gender?: string;
+  active?: string;
   status?: string;
   patientName?: string;
   doctorName?: string;
@@ -275,7 +276,7 @@ export class AdminService {
     if (filters.name) params.name = filters.name;
     if (filters.email) params.email = filters.email;
     if (filters.specialization) params.specialization = filters.specialization;
-    if (filters.status) params.status = filters.status;
+    if (filters.active) params.active = filters.active;
     
     console.log('Fetching doctors with params:', params);
     return this.http.get<ApiResponse<PaginatedResponse<Doctor>>>(`${this.apiUrl}/api/admin/doctors`, { params });
@@ -290,7 +291,7 @@ export class AdminService {
   }
 
   createDoctor(doctorData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/api/doctors`, doctorData);
+    return this.http.post(`${this.apiUrl}/api/admin/doctors`, doctorData);
   }
 
   // Appointments management

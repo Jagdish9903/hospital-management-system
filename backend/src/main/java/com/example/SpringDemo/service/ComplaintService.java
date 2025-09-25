@@ -136,10 +136,42 @@ public class ComplaintService {
         Complaint complaint = complaintRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
         
-        complaint.setStatus(Complaint.Status.valueOf(status.toUpperCase()));
-        if (resolutionNotes != null) {
+        Complaint.Status newStatus = Complaint.Status.valueOf(status.toUpperCase());
+        Complaint.Status currentStatus = complaint.getStatus();
+        
+        // Validate status transition
+        if (isInvalidStatusTransition(currentStatus, newStatus)) {
+            throw new RuntimeException("Invalid status transition from " + currentStatus + " to " + newStatus + 
+                ". Resolved or Closed complaints cannot be changed to other statuses.");
+        }
+        
+        complaint.setStatus(newStatus);
+        if (resolutionNotes != null && !resolutionNotes.trim().isEmpty()) {
             complaint.setResolutionNotes(resolutionNotes);
         }
+        complaint.setUpdatedAt(LocalDateTime.now());
+        
+        return complaintRepository.save(complaint);
+    }
+    
+    private boolean isInvalidStatusTransition(Complaint.Status currentStatus, Complaint.Status newStatus) {
+        // If current status is RESOLVED or CLOSED, cannot change to any other status
+        if (currentStatus == Complaint.Status.RESOLVED || currentStatus == Complaint.Status.CLOSED) {
+            return newStatus != currentStatus;
+        }
+        return false;
+    }
+    
+    public Complaint updateCustomerFeedback(Long id, String feedback) {
+        Complaint complaint = complaintRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        
+        // Only allow feedback if complaint is resolved or closed
+        if (complaint.getStatus() != Complaint.Status.RESOLVED && complaint.getStatus() != Complaint.Status.CLOSED) {
+            throw new RuntimeException("Feedback can only be provided for resolved or closed complaints");
+        }
+        
+        complaint.setCustomerFeedback(feedback);
         complaint.setUpdatedAt(LocalDateTime.now());
         
         return complaintRepository.save(complaint);

@@ -62,8 +62,11 @@ public class Appointment {
     private String symptoms;
     private String notes;
     
-    @Column(name = "cancelled_by")
-    private Long cancelledBy;
+    @Column(name = "cancelled_by_user")
+    private Long cancelledByUser;
+    
+    @Column(name = "cancelled_by_doctor")
+    private Long cancelledByDoctor;
     
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;

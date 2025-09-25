@@ -171,10 +171,10 @@
                   </svg>
                 </button>
                 <button class="action-btn complete-btn" 
-                        [disabled]="appointment.deletedAt || appointment.status === 'COMPLETED'"
-                        [class.disabled]="appointment.deletedAt || appointment.status === 'COMPLETED'"
+                        [disabled]="appointment.deletedAt || appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED' || !canCompleteAppointment(appointment)"
+                        [class.disabled]="appointment.deletedAt || appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED' || !canCompleteAppointment(appointment)"
                         (click)="completeAppointment(appointment)" 
-                        title="Mark as Completed">
+                        [title]="!canCompleteAppointment(appointment) ? 'Cannot complete future appointment' : 'Mark as Completed'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20,6 9,17 4,12"/>
                   </svg>
@@ -246,3 +246,12 @@
     </div>
   </div>
 </div>
+
+<!-- Appointment Details Modal -->
+<app-appointment-details-modal
+  [appointmentId]="selectedAppointmentId"
+  [showModal]="showAppointmentDetailsModal"
+  [userRole]="'DOCTOR'"
+  (closeModal)="onCloseAppointmentDetailsModal()"
+  (appointmentCancelled)="onAppointmentCancelled()">
+</app-appointment-details-modal>

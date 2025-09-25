@@ -485,6 +485,16 @@
   transform: scale(1.05);
 }
 
+.cancel-btn {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.cancel-btn:hover {
+  background: #fde68a;
+  transform: scale(1.05);
+}
+
 .action-btn svg {
   width: 16px;
   height: 16px;

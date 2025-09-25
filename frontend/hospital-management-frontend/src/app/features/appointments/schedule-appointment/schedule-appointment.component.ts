@@ -8,6 +8,7 @@ import { AdminService, Specialization, DoctorSlot } from '../../../core/services
 import { User } from '../../../core/models/user.model';
 import { ToastService, ToastAction } from '../../../core/services/toast.service';
 import { environment } from '../../../../environments/environment';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 import jsPDF from 'jspdf';
 
 @Component({
@@ -28,6 +29,10 @@ export class ScheduleAppointmentComponent implements OnInit {
   currentUser: User | null = null;
   userProfile: any = null;
   
+  // Date restrictions
+  minDate: string = '';
+  maxDate: string = '';
+  
   isLoading = false;
   isBooking = false;
   showBookingForm = false;
@@ -37,9 +42,6 @@ export class ScheduleAppointmentComponent implements OnInit {
   itemsPerPage = 6;
   totalItems = 0;
   
-  // Date validation
-  minDate = new Date().toISOString().split('T')[0];
-  maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   constructor(
     private fb: FormBuilder,
@@ -51,7 +53,7 @@ export class ScheduleAppointmentComponent implements OnInit {
   ) {
     this.searchForm = this.fb.group({
       specializationId: ['', [Validators.required]],
-      appointmentDate: ['', [Validators.required]]
+      appointmentDate: ['', [Validators.required, CustomValidators.futureOrToday]]
     });
     
     this.bookingForm = this.fb.group({
@@ -61,9 +63,19 @@ export class ScheduleAppointmentComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.setDateRestrictions();
     this.loadSpecializations();
     this.loadCurrentUser();
     this.loadUserProfile();
+  }
+
+  setDateRestrictions(): void {
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setFullYear(today.getFullYear() + 1); // 1 year from now
+    
+    this.minDate = today.toISOString().split('T')[0];
+    this.maxDate = maxDate.toISOString().split('T')[0];
   }
 
   loadCurrentUser(): void {

@@ -29,6 +29,9 @@ public class DoctorService {
     @Autowired
     private DoctorSlotGeneratorService slotGeneratorService;
     
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    
     public Doctor createDoctor(DoctorRequest request) {
         Specialization specialization = specializationRepository.findById(request.getSpecializationId())
                 .orElseThrow(() -> new RuntimeException("Specialization not found"));
@@ -45,6 +48,8 @@ public class DoctorService {
         doctor.setFirstName(request.getFirstName());
         doctor.setLastName(request.getLastName());
         doctor.setEmail(request.getEmail());
+        // Use the provided password
+        doctor.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         doctor.setContact(request.getContact());
         doctor.setGender(request.getGender());
         doctor.setEmergencyContactName(request.getEmergencyContactName());
@@ -62,7 +67,6 @@ public class DoctorService {
         doctor.setYearsOfExp(request.getYearsOfExp());
         doctor.setQualification(request.getQualification());
         doctor.setConsultationFee(request.getConsultationFee());
-        doctor.setStatus(Doctor.Status.ACTIVE);
         doctor.setJoiningDate(request.getJoiningDate());
         doctor.setBio(request.getBio());
         doctor.setActive(request.getActive() != null ? request.getActive() : true);
@@ -85,9 +89,9 @@ public class DoctorService {
         return doctorRepository.findAll(pageable);
     }
     
-    public Page<Doctor> getAllDoctors(String name, String email, Long specialization, String status, Pageable pageable) {
+    public Page<Doctor> getAllDoctors(String name, String email, Long specialization, String active, Pageable pageable) {
         // Use the method that includes deleted records for display purposes with specialization ID
-        return doctorRepository.findDoctorsWithFiltersBySpecializationIdIncludingDeleted(name, email, specialization, status, pageable);
+        return doctorRepository.findDoctorsWithFiltersBySpecializationIdIncludingDeleted(name, email, specialization, active, pageable);
     }
     
     public List<Doctor> getActiveDoctors() {
@@ -252,16 +256,13 @@ public class DoctorService {
         if (updateData.containsKey("bio") && updateData.get("bio") != null) {
             doctor.setBio((String) updateData.get("bio"));
         }
-        if (updateData.containsKey("status") && updateData.get("status") != null) {
-            String statusStr = updateData.get("status").toString();
-            try {
-                doctor.setStatus(Doctor.Status.valueOf(statusStr.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid status: " + statusStr);
-            }
-        }
         if (updateData.containsKey("active") && updateData.get("active") != null) {
-            doctor.setActive((Boolean) updateData.get("active"));
+            Boolean newActiveStatus = (Boolean) updateData.get("active");
+            doctor.setActive(newActiveStatus);
+            
+            // Note: Slots are not deleted when doctor becomes inactive
+            // They are only filtered based on active status in the queries
+            System.out.println("Doctor " + doctor.getFirstName() + " " + doctor.getLastName() + " active status changed to: " + newActiveStatus);
         }
         
         // Update audit fields
@@ -275,8 +276,8 @@ public class DoctorService {
         Map<String, Object> stats = new HashMap<>();
         
         stats.put("totalDoctors", doctorRepository.count());
-        stats.put("activeDoctors", doctorRepository.countByStatus(Doctor.Status.ACTIVE));
-        stats.put("inactiveDoctors", doctorRepository.countByStatus(Doctor.Status.INACTIVE));
+        stats.put("activeDoctors", doctorRepository.countByActiveAndDeletedAtIsNull(true));
+        stats.put("inactiveDoctors", doctorRepository.countByActiveAndDeletedAtIsNull(false));
         
         return stats;
     }

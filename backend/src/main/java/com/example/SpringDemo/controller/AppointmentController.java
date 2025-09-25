@@ -2,6 +2,7 @@ package com.example.SpringDemo.controller;
 
 import com.example.SpringDemo.dto.ApiResponse;
 import com.example.SpringDemo.dto.AppointmentRequest;
+import com.example.SpringDemo.dto.AppointmentDetailsResponse;
 import com.example.SpringDemo.entity.Appointment;
 import com.example.SpringDemo.service.AppointmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -240,6 +241,27 @@ public class AppointmentController {
         try {
             Appointment appointment = appointmentService.cancelAppointment(id, reason);
             return ResponseEntity.ok(ApiResponse.success("Appointment cancelled successfully", appointment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/{id}/complete")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<ApiResponse<Appointment>> completeAppointment(@PathVariable Long id) {
+        try {
+            Appointment appointment = appointmentService.completeAppointment(id);
+            return ResponseEntity.ok(ApiResponse.success("Appointment completed successfully", appointment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/{id}/details")
+    public ResponseEntity<ApiResponse<AppointmentDetailsResponse>> getAppointmentDetails(@PathVariable Long id) {
+        try {
+            AppointmentDetailsResponse appointment = appointmentService.getAppointmentDetails(id);
+            return ResponseEntity.ok(ApiResponse.success("Appointment details retrieved successfully", appointment));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

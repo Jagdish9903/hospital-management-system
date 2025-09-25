@@ -28,7 +28,6 @@ export class ComplaintDetailsComponent implements OnInit {
     { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'RESOLVED', label: 'Resolved' },
     { value: 'CLOSED', label: 'Closed' },
-    { value: 'REOPENED', label: 'Reopened' }
   ];
   
   priorityOptions = [
@@ -188,8 +187,6 @@ export class ComplaintDetailsComponent implements OnInit {
         return 'badge--green';
       case 'CLOSED':
         return 'badge--gray';
-      case 'REOPENED':
-        return 'badge--orange';
       default:
         return 'badge--gray';
     }

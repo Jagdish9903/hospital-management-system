@@ -100,6 +100,6 @@ public class Complaint {
     }
     
     public enum Status {
-        OPEN, IN_PROGRESS, RESOLVED, CLOSED, REOPENED
+        OPEN, IN_PROGRESS, RESOLVED, CLOSED
     }
 }

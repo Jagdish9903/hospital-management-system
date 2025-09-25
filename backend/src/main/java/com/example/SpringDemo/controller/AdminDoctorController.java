@@ -25,6 +25,7 @@ public class AdminDoctorController {
     @Autowired
     private DoctorService doctorService;
     
+    
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<Doctor>>> getAllDoctors(
@@ -35,18 +36,18 @@ public class AdminDoctorController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) Long specialization,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String active) {
         
         System.out.println("=== ADMIN DOCTORS API DEBUG ===");
         System.out.println("Page: " + page + ", Size: " + size);
         System.out.println("Sort: " + sortBy + " " + sortDir);
-        System.out.println("Filters - Name: " + name + ", Email: " + email + ", Specialization: " + specialization + ", Status: " + status);
+        System.out.println("Filters - Name: " + name + ", Email: " + email + ", Specialization: " + specialization + ", Active: " + active);
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
             Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<Doctor> doctors = doctorService.getAllDoctors(name, email, specialization, status, pageable);
+        Page<Doctor> doctors = doctorService.getAllDoctors(name, email, specialization, active, pageable);
         System.out.println("Found " + doctors.getTotalElements() + " doctors");
         
         return ResponseEntity.ok(ApiResponse.success(doctors));
@@ -114,4 +115,5 @@ public class AdminDoctorController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    
 }

@@ -1,6 +1,7 @@
 package com.example.SpringDemo.service;
 
 import com.example.SpringDemo.dto.AppointmentRequest;
+import com.example.SpringDemo.dto.AppointmentDetailsResponse;
 import com.example.SpringDemo.entity.Appointment;
 import com.example.SpringDemo.entity.Doctor;
 import com.example.SpringDemo.entity.DoctorSlot;
@@ -79,11 +80,13 @@ public class AppointmentService {
         // Book the slot
         selectedSlot.setStatus(DoctorSlot.SlotStatus.BOOKED);
         doctorSlotRepository.save(selectedSlot);
+        System.out.println("Booked slot ID: " + selectedSlot.getSlotId() + " for new appointment");
         
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
         appointment.setDoctorSlot(selectedSlot);
+        System.out.println("Assigned slot ID: " + selectedSlot.getSlotId() + " to appointment");
         appointment.setAppointmentDate(request.getAppointmentDate());
         appointment.setAppointmentTime(request.getAppointmentTime());
         appointment.setEndTime(request.getEndTime());
@@ -140,6 +143,69 @@ public class AppointmentService {
         return doctor.getDoctorId();
     }
     
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        
+        // For doctors, the username is the email
+        String email = authentication.getName();
+        
+        // Try to find doctor first
+        try {
+            Doctor doctor = doctorRepository.findByEmail(email).orElse(null);
+            if (doctor != null) {
+                return doctor.getDoctorId();
+            }
+        } catch (Exception e) {
+            // Not a doctor, continue to check regular users
+        }
+        
+        // Try to find regular user
+        try {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                return user.getId();
+            }
+        } catch (Exception e) {
+            // User not found
+        }
+        
+        throw new RuntimeException("Unable to determine current user ID");
+    }
+    
+    private String getCurrentUserType() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        
+        String email = authentication.getName();
+        
+        // Try to find doctor first
+        try {
+            Doctor doctor = doctorRepository.findByEmail(email).orElse(null);
+            if (doctor != null) {
+                return "DOCTOR";
+            }
+        } catch (Exception e) {
+            // Not a doctor, continue to check regular users
+        }
+        
+        // Try to find regular user
+        try {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                return "USER";
+            }
+        } catch (Exception e) {
+            // User not found
+        }
+        
+        throw new RuntimeException("Unable to determine current user type");
+    }
+    
     public Appointment updateAppointmentStatusByDoctor(Long appointmentId, String status, String notes) {
         Appointment appointment = appointmentRepository.findByIdAndDeletedAtIsNull(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
@@ -176,6 +242,95 @@ public class AppointmentService {
         }
         
         return appointment;
+    }
+    
+    public AppointmentDetailsResponse getAppointmentDetails(Long appointmentId) {
+        Appointment appointment = appointmentRepository.findByIdAndDeletedAtIsNull(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        // Check if current user has permission to view this appointment
+        Long currentUserId = getCurrentUserId();
+        boolean canView = false;
+        
+        // Check if current user is the patient
+        if (appointment.getPatient().getId().equals(currentUserId)) {
+            canView = true;
+        }
+        // Check if current user is the doctor
+        else if (appointment.getDoctor().getDoctorId().equals(currentUserId)) {
+            canView = true;
+        }
+        // Check if current user is admin (you might want to add admin check here)
+        // For now, we'll allow all authenticated users to view details
+        
+        if (!canView) {
+            throw new RuntimeException("You don't have permission to view this appointment");
+        }
+        
+        // Build response DTO
+        AppointmentDetailsResponse response = new AppointmentDetailsResponse();
+        response.setId(appointment.getId());
+        response.setAppointmentDate(appointment.getAppointmentDate());
+        response.setAppointmentTime(appointment.getAppointmentTime());
+        response.setEndTime(appointment.getEndTime());
+        response.setStatus(appointment.getStatus());
+        response.setAppointmentType(appointment.getAppointmentType());
+        response.setConsultationFee(appointment.getConsultationFee());
+        response.setSymptoms(appointment.getSymptoms());
+        response.setNotes(appointment.getNotes());
+        response.setCancelledAt(appointment.getCancelledAt());
+        response.setCancellationReason(appointment.getCancellationReason());
+        response.setCreatedAt(appointment.getCreatedAt());
+        
+        // Set patient info
+        AppointmentDetailsResponse.PatientInfo patientInfo = new AppointmentDetailsResponse.PatientInfo();
+        patientInfo.setId(appointment.getPatient().getId());
+        patientInfo.setFirstName(appointment.getPatient().getFirstname());
+        patientInfo.setLastName(appointment.getPatient().getLastname());
+        patientInfo.setEmail(appointment.getPatient().getEmail());
+        patientInfo.setContact(appointment.getPatient().getContact());
+        patientInfo.setGender(appointment.getPatient().getGender() != null ? appointment.getPatient().getGender().toString() : null);
+        patientInfo.setBloodGroup(appointment.getPatient().getBloodGroup());
+        response.setPatient(patientInfo);
+        
+        // Set doctor info
+        AppointmentDetailsResponse.DoctorInfo doctorInfo = new AppointmentDetailsResponse.DoctorInfo();
+        doctorInfo.setId(appointment.getDoctor().getDoctorId());
+        doctorInfo.setFirstName(appointment.getDoctor().getFirstName());
+        doctorInfo.setLastName(appointment.getDoctor().getLastName());
+        doctorInfo.setSpecialization(appointment.getDoctor().getSpecialization().getName());
+        doctorInfo.setConsultationFee(appointment.getDoctor().getConsultationFee());
+        response.setDoctor(doctorInfo);
+        
+        // Set cancelled by info
+        response.setCancelledByUser(appointment.getCancelledByUser());
+        response.setCancelledByDoctor(appointment.getCancelledByDoctor());
+        
+        if (appointment.getCancelledByDoctor() != null) {
+            try {
+                Doctor doctor = doctorRepository.findById(appointment.getCancelledByDoctor()).orElse(null);
+                if (doctor != null) {
+                    response.setCancelledByName("Dr. " + doctor.getFirstName() + " " + doctor.getLastName());
+                    response.setCancelledByType("DOCTOR");
+                }
+            } catch (Exception e) {
+                response.setCancelledByName("Unknown Doctor");
+                response.setCancelledByType("DOCTOR");
+            }
+        } else if (appointment.getCancelledByUser() != null) {
+            try {
+                User user = userRepository.findById(appointment.getCancelledByUser()).orElse(null);
+                if (user != null) {
+                    response.setCancelledByName(user.getFirstname() + " " + user.getLastname());
+                    response.setCancelledByType("USER");
+                }
+            } catch (Exception e) {
+                response.setCancelledByName("Unknown User");
+                response.setCancelledByType("USER");
+            }
+        }
+        
+        return response;
     }
     
     public Page<Appointment> searchAppointments(Long patientId, Long doctorId, String status, 
@@ -228,13 +383,61 @@ public class AppointmentService {
         // Free up the slot
         if (appointment.getDoctorSlot() != null) {
             DoctorSlot slot = appointment.getDoctorSlot();
+            System.out.println("Before cancellation - Slot ID: " + slot.getSlotId() + ", Status: " + slot.getStatus());
             slot.setStatus(DoctorSlot.SlotStatus.AVAILABLE);
-            doctorSlotRepository.save(slot);
+            DoctorSlot savedSlot = doctorSlotRepository.save(slot);
+            System.out.println("After cancellation - Slot ID: " + savedSlot.getSlotId() + ", Status: " + savedSlot.getStatus());
+            
+            // Clear the doctor slot reference from the cancelled appointment
+            appointment.setDoctorSlot(null);
+            System.out.println("Cleared doctor slot reference from cancelled appointment ID: " + id);
+        } else {
+            System.out.println("No doctor slot found for appointment ID: " + id);
         }
         
         appointment.setStatus(Appointment.Status.CANCELLED);
         appointment.setCancellationReason(reason);
         appointment.setCancelledAt(LocalDateTime.now());
+        
+        // Set cancelled by - determine if current user is doctor or regular user
+        Long currentUserId = getCurrentUserId();
+        String currentUserType = getCurrentUserType();
+        
+        if ("DOCTOR".equals(currentUserType)) {
+            appointment.setCancelledByDoctor(currentUserId);
+        } else {
+            appointment.setCancelledByUser(currentUserId);
+        }
+        
+        return appointmentRepository.save(appointment);
+    }
+    
+    public Appointment completeAppointment(Long id) {
+        Appointment appointment = appointmentRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        if (appointment.getStatus() == Appointment.Status.CANCELLED) {
+            throw new RuntimeException("Cannot complete a cancelled appointment");
+        }
+        
+        if (appointment.getStatus() == Appointment.Status.COMPLETED) {
+            throw new RuntimeException("Appointment is already completed");
+        }
+        
+        // Check if appointment time has passed
+        LocalDate appointmentDate = appointment.getAppointmentDate();
+        LocalTime appointmentTime = appointment.getAppointmentTime();
+        LocalDateTime appointmentDateTime = LocalDateTime.of(appointmentDate, appointmentTime);
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        
+        if (appointmentDateTime.isAfter(currentDateTime)) {
+            throw new RuntimeException("Cannot complete appointment that is scheduled for the future");
+        }
+        
+        // Mark appointment as completed
+        appointment.setStatus(Appointment.Status.COMPLETED);
+        appointment.setUpdatedAt(LocalDateTime.now());
+        appointment.setUpdatedBy(getCurrentUserId());
         
         return appointmentRepository.save(appointment);
     }

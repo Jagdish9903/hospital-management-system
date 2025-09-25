@@ -81,9 +81,6 @@ public class Doctor {
     @Column(name = "consultation_fee", nullable = false)
     private BigDecimal consultationFee;
     
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status;
     
     @Column(name = "joining_date", nullable = false)
     private LocalDate joiningDate;
@@ -126,10 +123,6 @@ public class Doctor {
     
     @Column(name = "deleted_by")
     private Long deletedBy;
-    
-    public enum Status {
-        ACTIVE, INACTIVE
-    }
     
     public enum Gender {
         MALE, FEMALE, OTHER

@@ -101,10 +101,18 @@ public class DoctorSlotService {
     }
     
     public List<DoctorSlot> getAvailableSlotsBySpecializationAndDate(Long specializationId, LocalDate slotDate) {
+        // If it's today, filter out past time slots
+        if (slotDate.equals(LocalDate.now())) {
+            return doctorSlotRepository.findAvailableSlotsByDateAndSpecializationWithTimeFilter(slotDate, specializationId, LocalTime.now());
+        }
         return doctorSlotRepository.findAvailableSlotsByDateAndSpecialization(slotDate, specializationId);
     }
     
     public List<DoctorSlot> getAvailableSlotsByDate(LocalDate slotDate) {
+        // If it's today, filter out past time slots
+        if (slotDate.equals(LocalDate.now())) {
+            return doctorSlotRepository.findAvailableSlotsByDateWithTimeFilter(slotDate, LocalTime.now());
+        }
         return doctorSlotRepository.findAvailableSlotsByDate(slotDate);
     }
     

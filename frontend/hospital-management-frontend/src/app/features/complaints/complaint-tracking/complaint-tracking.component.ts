@@ -83,7 +83,6 @@ interface Complaint {
               <option value="IN_PROGRESS">In Progress</option>
               <option value="RESOLVED">Resolved</option>
               <option value="CLOSED">Closed</option>
-              <option value="REOPENED">Reopened</option>
             </select>
             <select [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)" class="filter-select">
               <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }} per page</option>

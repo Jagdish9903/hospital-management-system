@@ -194,6 +194,7 @@ public class DoctorSlotGeneratorService {
         System.out.println("=== CRON JOB COMPLETED ===");
     }
     
+    
     /**
      * Generate slots for next 7 days (for immediate use)
      */

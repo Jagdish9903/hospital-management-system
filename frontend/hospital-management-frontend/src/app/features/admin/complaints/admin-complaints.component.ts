@@ -79,7 +79,6 @@ export class AdminComplaintsComponent implements OnInit {
     { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'RESOLVED', label: 'Resolved' },
     { value: 'CLOSED', label: 'Closed' },
-    { value: 'REOPENED', label: 'Reopened' }
   ];
 
   priorities = [
@@ -323,8 +322,6 @@ export class AdminComplaintsComponent implements OnInit {
         return 'badge--green';
       case 'CLOSED':
         return 'badge--gray';
-      case 'REOPENED':
-        return 'badge--red';
       default:
         return 'badge--gray';
     }

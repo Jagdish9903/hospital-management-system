@@ -50,7 +50,7 @@
           </div>
           <div class="filter-group">
             <label class="filter-label">Status</label>
-            <select formControlName="status" class="filter-select">
+            <select formControlName="active" class="filter-select">
               <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
             </select>
           </div>
@@ -152,8 +152,8 @@
             <td class="doctor-qualification" [class.deleted-text]="doctor.deletedAt">{{ doctor.qualification }}</td>
             <td class="doctor-fee" [class.deleted-text]="doctor.deletedAt">{{ formatCurrency(doctor.consultationFee) }}</td>
             <td class="doctor-status">
-              <span class="badge" [class]="getStatusBadgeClass(doctor.status || '')" [class.deleted-badge]="doctor.deletedAt">
-                {{ doctor.status || 'Unknown' }}
+              <span class="badge" [class]="getStatusBadgeClass(doctor.active)" [class.deleted-badge]="doctor.deletedAt">
+                {{ doctor.active ? 'Active' : 'Inactive' }}
               </span>
             </td>
             <td class="doctor-active">
@@ -280,7 +280,8 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Email *</label>
-              <input type="email" formControlName="email" class="form-input" placeholder="Enter email address">
+              <input type="email" formControlName="email" class="form-input" placeholder="Enter email address" readonly>
+              <small class="form-help">Email cannot be changed after creation</small>
             </div>
             <div class="form-group">
               <label class="form-label">Contact</label>
@@ -409,9 +410,9 @@
             </div>
             <div class="form-group">
               <label class="form-label">Status *</label>
-              <select formControlName="status" class="form-select">
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
+              <select formControlName="active" class="form-select">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </select>
             </div>
           </div>
@@ -562,21 +563,59 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">First Name *</label>
-              <input type="text" formControlName="firstName" class="form-input" placeholder="Enter first name">
+              <input type="text" formControlName="firstName" class="form-input" 
+                     placeholder="Enter first name" 
+                     (input)="onTextInput($event, 'firstName')"
+                     [class.error]="addForm.get('firstName')?.invalid && addForm.get('firstName')?.touched">
+              <div *ngIf="addForm.get('firstName')?.invalid && addForm.get('firstName')?.touched" class="error-message">
+                {{ getErrorMessage('firstName', addForm) }}
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Last Name *</label>
-              <input type="text" formControlName="lastName" class="form-input" placeholder="Enter last name">
+              <input type="text" formControlName="lastName" class="form-input" 
+                     placeholder="Enter last name"
+                     (input)="onTextInput($event, 'lastName')"
+                     [class.error]="addForm.get('lastName')?.invalid && addForm.get('lastName')?.touched">
+              <div *ngIf="addForm.get('lastName')?.invalid && addForm.get('lastName')?.touched" class="error-message">
+                {{ getErrorMessage('lastName', addForm) }}
+              </div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Email *</label>
-              <input type="email" formControlName="email" class="form-input" placeholder="Enter email address">
+              <input type="email" formControlName="email" class="form-input" 
+                     placeholder="Enter email address (must end with @doctor.com)"
+                     [class.error]="addForm.get('email')?.invalid && addForm.get('email')?.touched">
+              <div *ngIf="addForm.get('email')?.invalid && addForm.get('email')?.touched" class="error-message">
+                {{ getErrorMessage('email', addForm) }}
+              </div>
             </div>
             <div class="form-group">
+              <label class="form-label">Password *</label>
+              <input type="password" formControlName="password" class="form-input" 
+                     placeholder="Enter password (min 6 characters)"
+                     [class.error]="addForm.get('password')?.invalid && addForm.get('password')?.touched">
+              <div *ngIf="addForm.get('password')?.invalid && addForm.get('password')?.touched" class="error-message">
+                {{ getErrorMessage('password', addForm) }}
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <label class="form-label">Contact</label>
-              <input type="text" formControlName="contact" class="form-input" placeholder="Enter contact number">
+              <input type="text" formControlName="contact" class="form-input" 
+                     placeholder="Enter contact number (10 digits, start with 6-9)"
+                     (input)="onPhoneInput($event, 'contact')"
+                     maxlength="10"
+                     [class.error]="addForm.get('contact')?.invalid && addForm.get('contact')?.touched">
+              <div *ngIf="addForm.get('contact')?.invalid && addForm.get('contact')?.touched" class="error-message">
+                {{ getErrorMessage('contact', addForm) }}
+              </div>
+            </div>
+            <div class="form-group">
+              <!-- Empty div for layout -->
             </div>
           </div>
           <div class="form-row">

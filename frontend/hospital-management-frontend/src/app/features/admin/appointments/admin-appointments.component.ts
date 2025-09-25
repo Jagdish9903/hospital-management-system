@@ -4,12 +4,14 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { AdminService, Appointment, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { AppointmentDetailsModalComponent } from '../../../shared/components/appointment-details-modal/appointment-details-modal.component';
+import { CancelAppointmentModalComponent } from '../../../shared/components/cancel-appointment-modal/cancel-appointment-modal.component';
 
 @Component({
   selector: 'app-admin-appointments',
   templateUrl: './admin-appointments.component.html',
   styleUrls: ['./admin-appointments.component.css'],
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AppointmentDetailsModalComponent, CancelAppointmentModalComponent],
   standalone: true
 })
 export class AdminAppointmentsComponent implements OnInit {
@@ -49,6 +51,12 @@ export class AdminAppointmentsComponent implements OnInit {
   showDeleteModal = false;
   editForm: FormGroup;
   isSubmitting = false;
+  
+  // Modal properties
+  showAppointmentDetailsModal = false;
+  selectedAppointmentId: number | null = null;
+  showCancelModal = false;
+  selectedAppointmentForCancel: Appointment | null = null;
   
   // Table columns
   columns = [
@@ -214,6 +222,11 @@ export class AdminAppointmentsComponent implements OnInit {
     this.showFilters = !this.showFilters;
   }
 
+  viewAppointment(appointment: Appointment): void {
+    this.selectedAppointmentId = appointment.id;
+    this.showAppointmentDetailsModal = true;
+  }
+
   editAppointment(appointment: Appointment): void {
     if (appointment.deletedAt) {
       return; // Don't allow editing deleted appointments
@@ -290,6 +303,15 @@ export class AdminAppointmentsComponent implements OnInit {
     this.showDeleteModal = false;
   }
 
+  onCloseAppointmentDetailsModal(): void {
+    this.showAppointmentDetailsModal = false;
+    this.selectedAppointmentId = null;
+  }
+
+  onAppointmentCancelled(): void {
+    this.loadAppointments();
+  }
+
   getStatusBadgeClass(status: string): string {
     switch (status) {
       case 'SCHEDULED':
@@ -351,5 +373,30 @@ export class AdminAppointmentsComponent implements OnInit {
       pages.push(i);
     }
     return pages;
+  }
+  
+  cancelAppointment(appointment: Appointment) {
+    this.selectedAppointmentForCancel = appointment;
+    this.showCancelModal = true;
+  }
+
+  onCloseCancelModal() {
+    this.showCancelModal = false;
+    this.selectedAppointmentForCancel = null;
+  }
+
+  onConfirmCancel(event: { appointmentId: number, reason: string }) {
+    this.adminService.cancelAppointment(event.appointmentId, event.reason).subscribe({
+      next: (response) => {
+        console.log('Appointment cancelled successfully:', response);
+        this.loadAppointments();
+        this.showCancelModal = false;
+        this.selectedAppointmentForCancel = null;
+      },
+      error: (error) => {
+        console.error('Error cancelling appointment:', error);
+        alert('Failed to cancel appointment. Please try again.');
+      }
+    });
   }
 }
