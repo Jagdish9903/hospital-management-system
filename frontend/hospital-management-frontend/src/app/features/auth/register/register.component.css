@@ -178,6 +178,7 @@
   justify-content: center;
   max-height: 100vh;
   overflow-y: auto;
+  padding-top: 550px;
 }
 
 .form-container {

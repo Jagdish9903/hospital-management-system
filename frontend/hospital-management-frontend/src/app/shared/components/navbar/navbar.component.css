@@ -13,7 +13,7 @@
 }
 
 .navbar-hidden {
-  transform: translateY(-100%);
+  display: none;
 }
 
 .navbar-container {

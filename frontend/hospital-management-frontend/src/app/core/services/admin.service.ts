@@ -13,6 +13,7 @@ export interface User {
   username: string;
   role: string;
   gender: string;
+  birthdate?: string;
   contact?: string;
   address?: string;
   city?: string;
@@ -96,11 +97,28 @@ export interface Complaint {
   category: string;
   status: string;
   priority: string;
+  contactPreference?: string;
   response?: string;
   patient?: User;
   assignedTo?: User;
   resolutionNotes?: string;
   resolution?: string;
+  customerFeedback?: string;
+  appointment?: {
+    id: number;
+    appointmentDate: string;
+    appointmentTime: string;
+    doctor: {
+      doctorId: number;
+      user: {
+        firstname: string;
+        lastname: string;
+      };
+      specialization: {
+        name: string;
+      };
+    };
+  };
   notes?: ComplaintNote[];
   createdAt: string;
   updatedAt: string;
@@ -247,7 +265,7 @@ export class AdminService {
     if (filters.email) params.email = filters.email;
     if (filters.role) params.role = filters.role;
     if (filters.gender) params.gender = filters.gender;
-    if (filters.status) params.status = filters.status;
+    if (filters.active) params.status = filters.active;
     
     console.log('Fetching users with params:', params);
     return this.http.get<ApiResponse<PaginatedResponse<User>>>(`${this.apiUrl}/api/admin/users`, { params });
@@ -385,6 +403,19 @@ export class AdminService {
     console.log('Fetching complaints with params:', params);
     console.log('Complaints API URL:', `${this.apiUrl}/api/admin/complaints`);
     return this.http.get<ApiResponse<PaginatedResponse<Complaint>>>(`${this.apiUrl}/api/admin/complaints`, { params });
+  }
+
+  getComplaintsAvailableToAdmin(filters: any): Observable<ApiResponse<PaginatedResponse<Complaint>>> {
+    let params: any = { 
+      page: filters.page, 
+      size: filters.size 
+    };
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
+    if (filters.assignedTo) params.assignedTo = filters.assignedTo;
+    
+    console.log('Fetching available complaints with params:', params);
+    return this.http.get<ApiResponse<PaginatedResponse<Complaint>>>(`${this.apiUrl}/api/admin/complaints/available`, { params });
   }
 
   updateComplaint(id: number, complaintData: any): Observable<any> {

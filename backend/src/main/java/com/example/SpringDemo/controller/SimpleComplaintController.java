@@ -86,7 +86,7 @@ public class SimpleComplaintController {
         }
     }
     
-    // Get past appointments for a patient - NO AUTHENTICATION REQUIRED
+    // Get past appointments for a patient - NO AUTHENTICATION REQUIRED (for past appointments only)
     @GetMapping("/patient/{patientId}/past-appointments")
     public ResponseEntity<ApiResponse<List<Appointment>>> getPastAppointments(@PathVariable Long patientId) {
         try {
@@ -96,6 +96,36 @@ public class SimpleComplaintController {
             return ResponseEntity.ok(ApiResponse.success(pastAppointments));
         } catch (Exception e) {
             System.out.println("Error getting past appointments: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    // Get all appointments for a patient - NO AUTHENTICATION REQUIRED (for demonstration purposes)
+    @GetMapping("/patient/{patientId}/all-appointments")
+    public ResponseEntity<ApiResponse<List<Appointment>>> getAllAppointments(@PathVariable Long patientId) {
+        try {
+            System.out.println("Getting all appointments for patient: " + patientId);
+            Map<String, Object> allAppointments = appointmentService.getAllAppointmentsByPatient(patientId);
+            
+            // Combine upcoming and past appointments
+            @SuppressWarnings("unchecked")
+            List<Appointment> upcoming = (List<Appointment>) allAppointments.get("upcoming");
+            @SuppressWarnings("unchecked")
+            List<Appointment> past = (List<Appointment>) allAppointments.get("past");
+            
+            List<Appointment> allAppointmentsList = new java.util.ArrayList<>();
+            if (upcoming != null) allAppointmentsList.addAll(upcoming);
+            if (past != null) allAppointmentsList.addAll(past);
+            
+            // Sort by appointment date (most recent first)
+            allAppointmentsList.sort((a, b) -> b.getAppointmentDate().compareTo(a.getAppointmentDate()));
+            
+            System.out.println("Found " + allAppointmentsList.size() + " total appointments (upcoming: " + 
+                (upcoming != null ? upcoming.size() : 0) + ", past: " + (past != null ? past.size() : 0) + ")");
+            return ResponseEntity.ok(ApiResponse.success(allAppointmentsList));
+        } catch (Exception e) {
+            System.out.println("Error getting all appointments: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

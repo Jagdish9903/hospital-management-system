@@ -5,8 +5,8 @@
       <h3 class="modal-title">Appointment Details</h3>
       <button class="modal-close" (click)="onCloseModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
@@ -22,9 +22,9 @@
       <div *ngIf="error && !isLoading" class="error-state">
         <div class="error-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
         </div>
         <p>{{ error }}</p>
@@ -46,8 +46,8 @@
           <div class="actions-section" *ngIf="canCancelAppointment()">
             <button class="btn-danger" (click)="onCancelAppointment()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
               Cancel Appointment
             </button>
@@ -110,7 +110,8 @@
             </div>
             <div class="info-item">
               <span class="info-label">Time:</span>
-              <span class="info-value">{{ formatTime(appointment.appointmentTime) }} - {{ formatTime(appointment.endTime) }}</span>
+              <span class="info-value">{{ formatTime(appointment.appointmentTime) }} - {{
+                formatTime(appointment.endTime) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Type:</span>
@@ -179,7 +180,9 @@
             </div>
             <div class="info-item" *ngIf="appointment.cancelledAt">
               <span class="info-label">Cancelled At:</span>
-              <span class="info-value">{{ formatDate(appointment.cancelledAt) }} at {{ formatTime(appointment.cancelledAt) }}</span>
+              <!-- <span class="info-value">{{ formatDate(appointment.cancelledAt) }} at {{ formatTime(appointment.cancelledAt) }}</span> -->
+              <span class="info-value">{{ formatDate(appointment.cancelledAt) }}</span>
+
             </div>
             <div class="info-item" *ngIf="appointment.cancelledByName">
               <span class="info-label">Cancelled By:</span>
@@ -199,7 +202,8 @@
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Created:</span>
-              <span class="info-value">{{ formatDate(appointment.createdAt) }} at {{ formatTime(appointment.createdAt) }}</span>
+              <span class="info-value">{{ formatDate(appointment.createdAt) }} at {{ formatTime(appointment.createdAt)
+                }}</span>
             </div>
           </div>
         </div>
@@ -219,28 +223,22 @@
       <h3 class="modal-title">Cancel Appointment</h3>
       <button class="modal-close" (click)="onCloseCancelModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Reason for cancellation:</label>
-        <textarea 
-          [(ngModel)]="cancelReason" 
-          placeholder="Please provide a reason for cancelling this appointment..." 
-          rows="3"
-          class="form-textarea">
+        <textarea [(ngModel)]="cancelReason" placeholder="Please provide a reason for cancelling this appointment..."
+          rows="3" class="form-textarea">
         </textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" (click)="onCloseCancelModal()">Keep Appointment</button>
-      <button 
-        class="btn-danger" 
-        (click)="confirmCancel()" 
-        [disabled]="!cancelReason.trim()">
+      <button class="btn-danger" (click)="confirmCancel()" [disabled]="!cancelReason.trim()">
         Cancel Appointment
       </button>
     </div>

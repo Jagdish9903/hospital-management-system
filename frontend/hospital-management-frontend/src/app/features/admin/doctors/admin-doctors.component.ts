@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService, Doctor, User, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { CustomValidators } from '../../../shared/validators/custom-validators';
 
@@ -76,9 +77,23 @@ export class AdminDoctorsComponent implements OnInit {
     { value: 'false', label: 'Inactive' }
   ];
 
+  countryCodes = [
+    { value: '+91', label: '+91 (India)' },
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+49', label: '+49 (Germany)' },
+    { value: '+33', label: '+33 (France)' },
+    { value: '+81', label: '+81 (Japan)' },
+    { value: '+86', label: '+86 (China)' },
+    { value: '+55', label: '+55 (Brazil)' },
+    { value: '+7', label: '+7 (Russia)' }
+  ];
+
   constructor(
     private adminService: AdminService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private toastService: ToastService
   ) {
     this.filterForm = this.fb.group({
       specialization: [''],
@@ -86,29 +101,29 @@ export class AdminDoctorsComponent implements OnInit {
     });
 
     this.editForm = this.fb.group({
-      firstName: ['', [Validators.required, CustomValidators.textOnly]],
-      lastName: ['', [Validators.required, CustomValidators.textOnly]],
+      firstName: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      lastName: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
       email: ['', [Validators.required, CustomValidators.email]],
-      contact: ['', [CustomValidators.indianPhoneNumber]],
-      gender: [''],
+      contact: ['', [Validators.required, CustomValidators.indianPhoneNumber]],
+      gender: ['', [Validators.required]],
       emergencyContactName: ['', [CustomValidators.textOnly]],
       emergencyContactNum: ['', [CustomValidators.indianPhoneNumber]],
-      state: ['', [CustomValidators.textOnly]],
-      city: ['', [CustomValidators.textOnly]],
-      address: [''],
-      country: ['', [CustomValidators.textOnly]],
-      countryCode: [''],
-      postalCode: ['', [CustomValidators.numbersOnly]],
+      state: ['', [Validators.required, CustomValidators.textOnly]],
+      city: ['', [Validators.required, CustomValidators.textOnly]],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      country: ['', [Validators.required, CustomValidators.textOnly]],
+      countryCode: ['', [Validators.required]],
+      postalCode: ['', [Validators.required, CustomValidators.postalCode]],
       bloodGroup: [''],
       profileUrl: [''],
       specializationId: ['', [Validators.required]],
-      licenseNumber: ['', [Validators.required]],
+      licenseNumber: ['', [Validators.required, CustomValidators.licenseNumber]],
       qualification: ['', [Validators.required, CustomValidators.textOnly]],
       bio: [''],
-      consultationFee: [0, [Validators.required, Validators.min(0)]],
-      yearsOfExp: [0, [Validators.required, Validators.min(0)]],
+      consultationFee: [0, [Validators.required, CustomValidators.consultationFee]],
+      yearsOfExp: [0, [Validators.required, Validators.min(0), Validators.max(50), CustomValidators.experienceValidForJoiningDate('joiningDate')]],
       active: [true, [Validators.required]],
-      joiningDate: ['', [Validators.required, CustomValidators.pastDate]],
+      joiningDate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.minDate(1960)]],
       // Slot management fields
       slotStartTime: ['09:00', [Validators.required]],
       slotEndTime: ['17:00', [Validators.required]],
@@ -117,29 +132,29 @@ export class AdminDoctorsComponent implements OnInit {
     });
 
     this.addForm = this.fb.group({
-      firstName: ['', [Validators.required, CustomValidators.textOnly]],
-      lastName: ['', [Validators.required, CustomValidators.textOnly]],
-      email: ['', [Validators.required, CustomValidators.doctorEmail]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      contact: ['', [CustomValidators.indianPhoneNumber]],
-      gender: [''],
+      firstName: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      lastName: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      email: ['', [Validators.required, CustomValidators.email]],
+      password: ['', [Validators.required, CustomValidators.passwordStrength]],
+      contact: ['', [Validators.required, CustomValidators.indianPhoneNumber]],
+      gender: ['', [Validators.required]],
       emergencyContactName: ['', [CustomValidators.textOnly]],
       emergencyContactNum: ['', [CustomValidators.indianPhoneNumber]],
-      state: ['', [CustomValidators.textOnly]],
-      city: ['', [CustomValidators.textOnly]],
-      address: [''],
-      country: ['', [CustomValidators.textOnly]],
-      countryCode: [''],
-      postalCode: ['', [CustomValidators.numbersOnly]],
+      state: ['', [Validators.required, CustomValidators.textOnly]],
+      city: ['', [Validators.required, CustomValidators.textOnly]],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      country: ['', [Validators.required, CustomValidators.textOnly]],
+      countryCode: ['', [Validators.required]],
+      postalCode: ['', [Validators.required, CustomValidators.postalCode]],
       bloodGroup: [''],
       profileUrl: [''],
       specializationId: ['', [Validators.required]],
-      licenseNumber: ['', [Validators.required]],
+      licenseNumber: ['', [Validators.required, CustomValidators.licenseNumber]],
       qualification: ['', [Validators.required, CustomValidators.textOnly]],
       bio: [''],
-      consultationFee: [0, [Validators.required, Validators.min(0)]],
-      yearsOfExp: [0, [Validators.required, Validators.min(0)]],
-      joiningDate: ['', [Validators.required, CustomValidators.pastDate]],
+      consultationFee: [0, [Validators.required, CustomValidators.consultationFee]],
+      yearsOfExp: [0, [Validators.required, Validators.min(0), Validators.max(50), CustomValidators.experienceValidForJoiningDate('joiningDate')]],
+      joiningDate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.minDate(1960)]],
       active: [true],
       // Slot management fields
       slotStartTime: ['09:00', [Validators.required]],
@@ -168,6 +183,35 @@ export class AdminDoctorsComponent implements OnInit {
     this.setDateRestrictions();
     this.loadDoctors();
     this.loadSpecializations();
+  }
+
+
+  // Working days helper methods
+  isWorkingDaySelected(day: string): boolean {
+    const workingDays = this.editForm.get('workingDays')?.value || '';
+    if (!workingDays) return false;
+    return workingDays.split(',').includes(day);
+  }
+
+  updateWorkingDaysEdit(event: any, day: string): void {
+    const isChecked = event.target.checked;
+    const currentDays = this.editForm.get('workingDays')?.value || '';
+    let newDays: string[] = [];
+    
+    if (currentDays) {
+      newDays = currentDays.split(',').filter((d: string) => d.trim() !== '');
+    }
+    
+    if (isChecked) {
+      if (!newDays.includes(day)) {
+        newDays.push(day);
+      }
+    } else {
+      newDays = newDays.filter((d: string) => d !== day);
+    }
+    
+    this.editForm.get('workingDays')?.setValue(newDays.join(','));
+    this.editForm.get('workingDays')?.markAsTouched();
   }
 
   setDateRestrictions(): void {
@@ -203,7 +247,7 @@ export class AdminDoctorsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading doctors:', error);
-        console.error('Error details:', error.error);
+        this.toastService.showError('Failed to load doctors: ' + (error.error?.message || error.message || 'Unknown error'));
         this.isLoading = false;
       }
     });
@@ -275,7 +319,7 @@ export class AdminDoctorsComponent implements OnInit {
       city: doctor.city || '',
       address: doctor.address || '',
       country: doctor.country || '',
-      countryCode: doctor.countryCode || '',
+      countryCode: doctor.countryCode || '+91',
       postalCode: doctor.postalCode || '',
       bloodGroup: doctor.bloodGroup || '',
       profileUrl: doctor.profileUrl || '',
@@ -293,9 +337,33 @@ export class AdminDoctorsComponent implements OnInit {
       appointmentDuration: doctor.appointmentDuration || 30,
       workingDays: doctor.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY'
     });
+    
+    // Debug form state
+    console.log('Edit form after patch:', this.editForm.value);
+    console.log('Edit form valid:', this.editForm.valid);
+    console.log('Edit form errors:', this.editForm.errors);
+    
+    // Mark all fields as touched to show validation errors
+    Object.keys(this.editForm.controls).forEach(key => {
+      this.editForm.get(key)?.markAsTouched();
+    });
   }
 
   updateDoctor(): void {
+    // Debug form validation
+    console.log('=== UPDATE DOCTOR DEBUG ===');
+    console.log('Form valid:', this.editForm.valid);
+    console.log('Form value:', this.editForm.value);
+    console.log('Form errors:', this.editForm.errors);
+    
+    // Check individual field validity
+    Object.keys(this.editForm.controls).forEach(key => {
+      const control = this.editForm.get(key);
+      if (control && control.invalid) {
+        console.log(`${key} is invalid:`, control.errors);
+      }
+    });
+    
     if (this.editForm.valid && this.selectedDoctor) {
       this.isSubmitting = true;
       const updateData = this.editForm.value;
@@ -314,9 +382,12 @@ export class AdminDoctorsComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error updating doctor:', error);
+          this.toastService.showError('Failed to update doctor: ' + (error.error?.message || error.message || 'Unknown error'));
           this.isSubmitting = false;
         }
       });
+    } else {
+      console.log('Form is invalid, cannot update doctor');
     }
   }
 
@@ -341,6 +412,7 @@ export class AdminDoctorsComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting doctor:', error);
+          this.toastService.showError('Failed to delete doctor: ' + (error.error?.message || error.message || 'Unknown error'));
           this.isSubmitting = false;
         }
       });
@@ -372,7 +444,7 @@ export class AdminDoctorsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading specializations:', error);
-        console.error('Error details:', error.error);
+        this.toastService.showError('Failed to load specializations: ' + (error.error?.message || error.message || 'Unknown error'));
       }
     });
   }
@@ -459,10 +531,11 @@ export class AdminDoctorsComponent implements OnInit {
           }
           this.isSubmitting = false;
         },
-        error: (error) => {
-          console.error('Error creating doctor:', error);
-          this.isSubmitting = false;
-        }
+      error: (error) => {
+        console.error('Error creating doctor:', error);
+        this.toastService.showError('Failed to create doctor: ' + (error.error?.message || error.message || 'Unknown error'));
+        this.isSubmitting = false;
+      }
       });
     } else {
       console.log('Form is invalid:', this.addForm.errors);
@@ -471,19 +544,14 @@ export class AdminDoctorsComponent implements OnInit {
     }
   }
 
-  closeAddModal(): void {
-    this.showAddModal = false;
-    this.addForm.reset();
-  }
-
   getStatusBadgeClass(active: boolean): string {
     return active ? 'badge--green' : 'badge--red';
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   }
 
@@ -522,6 +590,7 @@ export class AdminDoctorsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating doctor status:', error);
+        this.toastService.showError('Failed to update doctor status: ' + (error.error?.message || error.message || 'Unknown error'));
       }
     });
   }
@@ -530,47 +599,7 @@ export class AdminDoctorsComponent implements OnInit {
     return `Dr. ${doctor.firstName} ${doctor.lastName}`;
   }
 
-  updateWorkingDays(event: Event, day: string): void {
-    const checkbox = event.target as HTMLInputElement;
-    const currentDays = this.addForm.get('workingDays')?.value || '';
-    const daysArray = currentDays ? currentDays.split(',') : [];
-    
-    if (checkbox.checked) {
-      if (!daysArray.includes(day)) {
-        daysArray.push(day);
-      }
-    } else {
-      const index = daysArray.indexOf(day);
-      if (index > -1) {
-        daysArray.splice(index, 1);
-      }
-    }
-    
-    this.addForm.patchValue({
-      workingDays: daysArray.join(',')
-    });
-  }
 
-  updateWorkingDaysEdit(event: Event, day: string): void {
-    const checkbox = event.target as HTMLInputElement;
-    const currentDays = this.editForm.get('workingDays')?.value || '';
-    const daysArray = currentDays ? currentDays.split(',') : [];
-    
-    if (checkbox.checked) {
-      if (!daysArray.includes(day)) {
-        daysArray.push(day);
-      }
-    } else {
-      const index = daysArray.indexOf(day);
-      if (index > -1) {
-        daysArray.splice(index, 1);
-      }
-    }
-    
-    this.editForm.patchValue({
-      workingDays: daysArray.join(',')
-    });
-  }
 
   // Custom validator for doctor email
   doctorEmailValidator(control: any) {
@@ -580,24 +609,6 @@ export class AdminDoctorsComponent implements OnInit {
     return null;
   }
 
-  // Input restriction methods
-  onTextInput(event: any, controlName: string): void {
-    const value = event.target.value;
-    const textOnlyRegex = /^[a-zA-Z\s]*$/;
-    if (!textOnlyRegex.test(value)) {
-      event.target.value = value.replace(/[^a-zA-Z\s]/g, '');
-      this.addForm.get(controlName)?.setValue(event.target.value);
-    }
-  }
-
-  onNumberInput(event: any, controlName: string): void {
-    const value = event.target.value;
-    const numberOnlyRegex = /^\d*$/;
-    if (!numberOnlyRegex.test(value)) {
-      event.target.value = value.replace(/\D/g, '');
-      this.addForm.get(controlName)?.setValue(event.target.value);
-    }
-  }
 
   onPhoneInput(event: any, controlName: string): void {
     const value = event.target.value;
@@ -621,10 +632,23 @@ export class AdminDoctorsComponent implements OnInit {
       if (control.errors['pastDate']) return 'Please select a past date';
       if (control.errors['futureDate']) return 'Please select a future date';
       if (control.errors['tooOld']) return `Age cannot be more than ${control.errors['tooOld'].maxAge} years`;
+      if (control.errors['beforeMinDate']) return `Joining date cannot be before ${control.errors['beforeMinDate'].minYear}`;
+      if (control.errors['experienceLessThanJoining']) {
+        const error = control.errors['experienceLessThanJoining'];
+        return `Years of experience (${error.yearsOfExp}) cannot be less than years since joining date (${error.yearsSinceJoining})`;
+      }
       if (control.errors['minlength']) return `${this.getFieldLabel(controlName)} should be at least ${control.errors['minlength'].requiredLength} characters`;
       if (control.errors['maxlength']) return `${this.getFieldLabel(controlName)} should not exceed ${control.errors['maxlength'].requiredLength} characters`;
       if (control.errors['min']) return `${this.getFieldLabel(controlName)} should be at least ${control.errors['min'].min}`;
       if (control.errors['max']) return `${this.getFieldLabel(controlName)} should not exceed ${control.errors['max'].max}`;
+      if (control.errors['invalidLicenseNumber']) return 'License number should be 2-5 letters followed by 3-6 digits (e.g., CARD001, NEURO002)';
+      if (control.errors['invalidConsultationFee']) return 'Please enter a valid consultation fee between 0 and 10000';
+      // Password validation errors
+      if (control.errors['minLength']) return 'Password must be at least 8 characters long';
+      if (control.errors['noUppercase']) return 'Password must contain at least one uppercase letter';
+      if (control.errors['noLowercase']) return 'Password must contain at least one lowercase letter';
+      if (control.errors['noDigit']) return 'Password must contain at least one number';
+      if (control.errors['noSpecialChar']) return 'Password must contain at least one special character';
     }
     return '';
   }
@@ -634,6 +658,7 @@ export class AdminDoctorsComponent implements OnInit {
       'firstName': 'First Name',
       'lastName': 'Last Name',
       'email': 'Email',
+      'password': 'Password',
       'contact': 'Contact Number',
       'emergencyContactName': 'Emergency Contact Name',
       'emergencyContactNum': 'Emergency Contact Number',
@@ -652,5 +677,205 @@ export class AdminDoctorsComponent implements OnInit {
       'workingDays': 'Working Days'
     };
     return labels[controlName] || controlName;
+  }
+
+  // Input event handlers for live validation and character restrictions
+  onTextInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const textOnlyValue = value.replace(/[^a-zA-Z\s]/g, '');
+    if (value !== textOnlyValue) {
+      target.value = textOnlyValue;
+      this.addForm.get(controlName)?.setValue(textOnlyValue);
+      this.editForm.get(controlName)?.setValue(textOnlyValue);
+    }
+  }
+
+  onNumberInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    if (value !== numberOnlyValue) {
+      target.value = numberOnlyValue;
+      this.addForm.get(controlName)?.setValue(numberOnlyValue);
+      this.editForm.get(controlName)?.setValue(numberOnlyValue);
+    }
+  }
+
+  onEmailInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value.toLowerCase();
+    if (target.value !== value) {
+      target.value = value;
+      this.addForm.get('email')?.setValue(value);
+      this.editForm.get('email')?.setValue(value);
+    }
+  }
+
+  onEmailKeyPress(event: KeyboardEvent): void {
+    const inputChar = String.fromCharCode(event.charCode);
+    if (/[A-Z]/.test(inputChar)) {
+      event.preventDefault();
+      const target = event.target as HTMLInputElement;
+      const currentValue = target.value;
+      const newValue = currentValue + inputChar.toLowerCase();
+      target.value = newValue;
+      this.addForm.get('email')?.setValue(newValue);
+      this.editForm.get('email')?.setValue(newValue);
+    }
+  }
+
+  onPostalCodeInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 6);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('postalCode')?.setValue(limitedValue);
+      this.editForm.get('postalCode')?.setValue(limitedValue);
+    }
+  }
+
+  onContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('contact')?.setValue(limitedValue);
+      this.editForm.get('contact')?.setValue(limitedValue);
+    }
+  }
+
+  onEmergencyContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('emergencyContactNum')?.setValue(limitedValue);
+      this.editForm.get('emergencyContactNum')?.setValue(limitedValue);
+    }
+  }
+
+  onLicenseNumberInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const licenseValue = value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+    if (target.value !== licenseValue) {
+      target.value = licenseValue;
+      this.addForm.get('licenseNumber')?.setValue(licenseValue);
+      this.editForm.get('licenseNumber')?.setValue(licenseValue);
+    }
+  }
+
+  onConsultationFeeInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/[^0-9.]/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 6);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('consultationFee')?.setValue(limitedValue);
+      this.editForm.get('consultationFee')?.setValue(limitedValue);
+    }
+  }
+
+
+  // Prevent non-text characters in name fields
+  onNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Prevent non-digit characters in number fields
+  onNumberKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[0-9]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Get maximum date for joining date (today)
+  getMaxDate(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }
+
+  // Check if form has been modified
+  isFormModified(): boolean {
+    if (!this.selectedDoctor) return false;
+    
+    const currentValues = this.editForm.value;
+    const originalValues = {
+      firstName: this.selectedDoctor.firstName,
+      lastName: this.selectedDoctor.lastName,
+      contact: this.selectedDoctor.contact || '',
+      gender: this.selectedDoctor.gender || '',
+      emergencyContactName: this.selectedDoctor.emergencyContactName || '',
+      emergencyContactNum: this.selectedDoctor.emergencyContactNum || '',
+      state: this.selectedDoctor.state || '',
+      city: this.selectedDoctor.city || '',
+      address: this.selectedDoctor.address || '',
+      country: this.selectedDoctor.country || '',
+      countryCode: this.selectedDoctor.countryCode || '+91',
+      postalCode: this.selectedDoctor.postalCode || '',
+      bloodGroup: this.selectedDoctor.bloodGroup || '',
+      profileUrl: this.selectedDoctor.profileUrl || '',
+      specializationId: this.selectedDoctor.specialization.specializationId,
+      licenseNumber: this.selectedDoctor.licenseNumber,
+      qualification: this.selectedDoctor.qualification,
+      bio: this.selectedDoctor.bio || '',
+      consultationFee: this.selectedDoctor.consultationFee,
+      yearsOfExp: this.selectedDoctor.yearsOfExp,
+      active: this.selectedDoctor.active,
+      joiningDate: this.selectedDoctor.joiningDate,
+      slotStartTime: this.selectedDoctor.slotStartTime || '09:00',
+      slotEndTime: this.selectedDoctor.slotEndTime || '17:00',
+      appointmentDuration: this.selectedDoctor.appointmentDuration || 30,
+      workingDays: this.selectedDoctor.workingDays || 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY'
+    };
+
+    return JSON.stringify(currentValues) !== JSON.stringify(originalValues);
+  }
+
+  // Working days helper methods for add form
+  isWorkingDaySelectedAdd(day: string): boolean {
+    const workingDays = this.addForm.get('workingDays')?.value || '';
+    if (!workingDays) return false;
+    return workingDays.split(',').includes(day);
+  }
+
+  updateWorkingDays(event: any, day: string): void {
+    const isChecked = event.target.checked;
+    const currentDays = this.addForm.get('workingDays')?.value || '';
+    let newDays: string[] = [];
+    
+    if (currentDays) {
+      newDays = currentDays.split(',').filter((d: string) => d.trim() !== '');
+    }
+    
+    if (isChecked) {
+      if (!newDays.includes(day)) {
+        newDays.push(day);
+      }
+    } else {
+      newDays = newDays.filter((d: string) => d !== day);
+    }
+    
+    this.addForm.get('workingDays')?.setValue(newDays.join(','));
+    this.addForm.get('workingDays')?.markAsTouched();
+  }
+
+  closeAddModal(): void {
+    this.showAddModal = false;
+    this.addForm.reset();
   }
 }

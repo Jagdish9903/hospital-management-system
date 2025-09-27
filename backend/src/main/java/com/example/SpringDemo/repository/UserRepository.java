@@ -95,7 +95,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "(:gender IS NULL OR u.gender = :gender) AND " +
            "(:city IS NULL OR LOWER(u.city) LIKE LOWER(CONCAT('%', :city, '%'))) AND " +
            "(:state IS NULL OR LOWER(u.state) LIKE LOWER(CONCAT('%', :state, '%'))) AND " +
-           "(:status IS NULL OR (:status = 'active' AND u.deletedAt IS NULL) OR (:status = 'inactive' AND u.deletedAt IS NOT NULL))")
+           "(:status IS NULL OR (:status = 'true' AND u.active = true) OR (:status = 'false' AND u.active = false))")
     Page<User> findUsersWithFiltersIncludingDeleted(@Param("name") String name,
                                                    @Param("email") String email,
                                                    @Param("username") String username,

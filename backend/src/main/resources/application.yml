@@ -39,7 +39,7 @@ spring:
 
 jwt:
   secret: mySecretKey123456789012345678901234567890
-  expiration: 86400000 # 24 hours in milliseconds
+  expiration: 604800000 # 7 days in milliseconds (1 week)
 
 # Swagger/OpenAPI Configuration
 springdoc:

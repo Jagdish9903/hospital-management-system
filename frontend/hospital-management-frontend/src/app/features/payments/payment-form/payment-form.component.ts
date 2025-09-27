@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { AdminService } from '../../../core/services/admin.service';
@@ -55,22 +55,44 @@ import { User } from '../../../core/models/user.model';
           <div *ngIf="selectedMethod === 'UPI'" class="payment-form upi-form">
             <h3>UPI Payment Details</h3>
             <div class="form-group">
-              <label class="form-label">UPI ID</label>
-              <input type="text" formControlName="upiId" class="form-input" 
-                     placeholder="Enter your UPI ID (e.g., yourname@paytm)">
+              <label class="form-label">UPI ID <span class="required">*</span></label>
+              <input type="text" 
+                     formControlName="upiId" 
+                     class="form-input" 
+                     [class.error]="paymentForm.get('upiId')?.invalid && paymentForm.get('upiId')?.touched"
+                     placeholder="Enter your UPI ID (e.g., yourname@paytm)"
+                     (input)="onUpiIdInput($event)">
               <div *ngIf="paymentForm.get('upiId')?.invalid && paymentForm.get('upiId')?.touched" 
                    class="form-error">
-                Please enter a valid UPI ID
+                <div *ngIf="paymentForm.get('upiId')?.errors?.['required']">
+                  UPI ID is required
+                </div>
+                <div *ngIf="paymentForm.get('upiId')?.errors?.['invalidUpiFormat']">
+                  Please enter a valid UPI ID (e.g., name&#64;bank or mobile&#64;bank)
+                </div>
               </div>
             </div>
             
             <div class="form-group">
-              <label class="form-label">Mobile Number</label>
-              <input type="tel" formControlName="mobileNumber" class="form-input" 
-                     placeholder="Enter your mobile number">
+              <label class="form-label">Mobile Number <span class="required">*</span></label>
+              <input type="tel" 
+                     formControlName="mobileNumber" 
+                     class="form-input" 
+                     [class.error]="paymentForm.get('mobileNumber')?.invalid && paymentForm.get('mobileNumber')?.touched"
+                     placeholder="Enter your 10-digit mobile number"
+                     maxlength="10"
+                     (input)="onMobileInput($event)">
               <div *ngIf="paymentForm.get('mobileNumber')?.invalid && paymentForm.get('mobileNumber')?.touched" 
                    class="form-error">
-                Please enter a valid 10-digit mobile number
+                <div *ngIf="paymentForm.get('mobileNumber')?.errors?.['required']">
+                  Mobile number is required
+                </div>
+                <div *ngIf="paymentForm.get('mobileNumber')?.errors?.['minlength'] || paymentForm.get('mobileNumber')?.errors?.['maxlength']">
+                  Mobile number must be exactly 10 digits
+                </div>
+                <div *ngIf="paymentForm.get('mobileNumber')?.errors?.['invalidMobileFormat']">
+                  Mobile number must start with 6, 7, 8, or 9
+                </div>
               </div>
             </div>
           </div>
@@ -79,54 +101,160 @@ import { User } from '../../../core/models/user.model';
           <div *ngIf="selectedMethod === 'CARD'" class="payment-form card-form">
             <h3>Card Payment Details</h3>
             <div class="form-group">
-              <label class="form-label">Cardholder Name</label>
-              <input type="text" formControlName="cardholderName" class="form-input" 
-                     placeholder="Enter cardholder name">
+              <label class="form-label">Cardholder Name <span class="required">*</span></label>
+              <input type="text" 
+                     formControlName="cardholderName" 
+                     class="form-input" 
+                     [class.error]="paymentForm.get('cardholderName')?.invalid && paymentForm.get('cardholderName')?.touched"
+                     placeholder="Enter cardholder name as on card"
+                     maxlength="30"
+                     (input)="onCardholderNameInput($event)"
+                     (keypress)="onCardholderNameKeyPress($event)">
               <div *ngIf="paymentForm.get('cardholderName')?.invalid && paymentForm.get('cardholderName')?.touched" 
                    class="form-error">
-                Please enter a valid cardholder name
+                <div *ngIf="paymentForm.get('cardholderName')?.errors?.['required']">
+                  Cardholder name is required
+                </div>
+                <div *ngIf="paymentForm.get('cardholderName')?.errors?.['minlength']">
+                  Name must be at least 2 characters long
+                </div>
+                <div *ngIf="paymentForm.get('cardholderName')?.errors?.['maxlength']">
+                  Name cannot exceed 30 characters
+                </div>
+                <div *ngIf="paymentForm.get('cardholderName')?.errors?.['pattern']">
+                  Name should contain only letters and spaces
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Card Number</label>
-              <input type="text" formControlName="cardNumber" class="form-input" 
-                     placeholder="1234 5678 9012 3456" maxlength="19">
+              <label class="form-label">Card Number <span class="required">*</span></label>
+              <input type="text" 
+                     formControlName="cardNumber" 
+                     class="form-input" 
+                     [class.error]="paymentForm.get('cardNumber')?.invalid && paymentForm.get('cardNumber')?.touched"
+                     placeholder="1234 5678 9012 3456" 
+                     maxlength="19"
+                     (input)="onCardNumberInput($event)">
               <div *ngIf="paymentForm.get('cardNumber')?.invalid && paymentForm.get('cardNumber')?.touched" 
                    class="form-error">
-                Please enter a valid 16-digit card number
+                <div *ngIf="paymentForm.get('cardNumber')?.errors?.['required']">
+                  Card number is required
+                </div>
+                <div *ngIf="paymentForm.get('cardNumber')?.errors?.['minlength'] || paymentForm.get('cardNumber')?.errors?.['maxlength']">
+                  Card number must be exactly 16 digits
+                </div>
+                <div *ngIf="paymentForm.get('cardNumber')?.errors?.['pattern']">
+                  Please enter a valid card number
+                </div>
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Expiry Date</label>
-                <input type="text" formControlName="expiryDate" class="form-input" 
-                       placeholder="MM/YY" maxlength="5">
-                <div *ngIf="paymentForm.get('expiryDate')?.invalid && paymentForm.get('expiryDate')?.touched" 
-                     class="form-error">
-                  Please enter expiry date in MM/YY format
+            <!-- NEW: Expiry inputs — four small boxed inputs (two for MM as digits, two for YY as digits) -->
+            <div class="form-row expiry-row">
+              <div class="form-group expiry-group">
+                <label class="form-label">Expiry (MM / YY) <span class="required">*</span></label>
+                <div class="expiry-inputs">
+                  <input
+                    #expiryInput
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="1"
+                    class="expiry-box"
+                    placeholder="M"
+                    [class.error]="isExpiryTouchedAndInvalid()"
+                    formControlName="expiryM1"
+                    (input)="onExpiryInput($event, 0)"
+                    (keydown)="onExpiryKeydown($event, 0)"
+                  />
+                  <input
+                    #expiryInput
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="1"
+                    class="expiry-box"
+                    placeholder="M"
+                    [class.error]="isExpiryTouchedAndInvalid()"
+                    formControlName="expiryM2"
+                    (input)="onExpiryInput($event, 1)"
+                    (keydown)="onExpiryKeydown($event, 1)"
+                  />
+                  <div class="expiry-sep">/</div>
+                  <input
+                    #expiryInput
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="1"
+                    class="expiry-box"
+                    placeholder="Y"
+                    [class.error]="isExpiryTouchedAndInvalid()"
+                    formControlName="expiryY1"
+                    (input)="onExpiryInput($event, 2)"
+                    (keydown)="onExpiryKeydown($event, 2)"
+                  />
+                  <input
+                    #expiryInput
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="1"
+                    class="expiry-box"
+                    placeholder="Y"
+                    [class.error]="isExpiryTouchedAndInvalid()"
+                    formControlName="expiryY2"
+                    (input)="onExpiryInput($event, 3)"
+                    (keydown)="onExpiryKeydown($event, 3)"
+                  />
+                </div>
+
+                <div *ngIf="isExpiryTouchedAndInvalid()" class="form-error expiry-error">
+                  <div *ngIf="paymentForm.errors?.['expiredDate']">
+                    Card expiry cannot be in the past.
+                  </div>
+                  <div *ngIf="paymentForm.errors?.['invalidExpiryFormat']">
+                    Please enter a valid expiry month (01-12) and year.
+                  </div>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">CVV</label>
-                <input type="text" formControlName="cvv" class="form-input" 
-                       placeholder="123" maxlength="4">
+              <div class="form-group cvv-group">
+                <label class="form-label">CVV <span class="required">*</span></label>
+                <input type="text" 
+                       formControlName="cvv" 
+                       class="form-input" 
+                       [class.error]="paymentForm.get('cvv')?.invalid && paymentForm.get('cvv')?.touched"
+                       placeholder="123" 
+                       maxlength="3"
+                       (input)="onCvvInput($event)">
                 <div *ngIf="paymentForm.get('cvv')?.invalid && paymentForm.get('cvv')?.touched" 
                      class="form-error">
-                  Please enter a valid CVV
+                  <div *ngIf="paymentForm.get('cvv')?.errors?.['required']">
+                    CVV is required
+                  </div>
+                  <div *ngIf="paymentForm.get('cvv')?.errors?.['minlength'] || paymentForm.get('cvv')?.errors?.['maxlength']">
+                    CVV must be exactly 3 digits
+                  </div>
+                  <div *ngIf="paymentForm.get('cvv')?.errors?.['pattern']">
+                    CVV should contain only numbers
+                  </div>
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Billing Address</label>
-              <textarea formControlName="billingAddress" class="form-textarea" 
-                        placeholder="Enter your billing address" rows="3"></textarea>
+              <label class="form-label">Billing Address <span class="required">*</span></label>
+              <textarea formControlName="billingAddress" 
+                        class="form-textarea" 
+                        [class.error]="paymentForm.get('billingAddress')?.invalid && paymentForm.get('billingAddress')?.touched"
+                        placeholder="Enter your billing address" 
+                        rows="3"></textarea>
               <div *ngIf="paymentForm.get('billingAddress')?.invalid && paymentForm.get('billingAddress')?.touched" 
                    class="form-error">
-                Please enter your billing address
+                <div *ngIf="paymentForm.get('billingAddress')?.errors?.['required']">
+                  Billing address is required
+                </div>
+                <div *ngIf="paymentForm.get('billingAddress')?.errors?.['minlength']">
+                  Address must be at least 10 characters long
+                </div>
               </div>
             </div>
           </div>
@@ -171,6 +299,10 @@ export class PaymentFormComponent implements OnInit {
   appointmentData: any = null;
   currentUser: User | null = null;
   isProcessing = false;
+  currentDate = new Date();
+
+  // To manage auto-focus of the 4 expiry boxes
+  @ViewChildren('expiryInput') expiryInputs!: QueryList<ElementRef>;
 
   constructor(
     private fb: FormBuilder,
@@ -190,7 +322,7 @@ export class PaymentFormComponent implements OnInit {
   loadData(): void {
     this.selectedMethod = sessionStorage.getItem('selectedPaymentMethod') || '';
     const appointmentData = sessionStorage.getItem('pendingAppointment');
-    
+
     if (appointmentData) {
       this.appointmentData = JSON.parse(appointmentData);
     } else {
@@ -209,29 +341,299 @@ export class PaymentFormComponent implements OnInit {
     }
   }
 
+  onNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  onCardholderNameInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    
+    // Remove any non-letter and non-space characters
+    value = value.replace(/[^a-zA-Z\s]/g, '');
+    
+    // Convert to uppercase
+    value = value.toUpperCase();
+    
+    // Limit to 30 characters
+    if (value.length > 30) {
+      value = value.substring(0, 30);
+    }
+    
+    // Update the input value and form control
+    target.value = value;
+    this.paymentForm.get('cardholderName')?.setValue(value);
+  }
+
+  onCardholderNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
   initializeForm(): void {
     if (this.selectedMethod === 'UPI') {
       this.paymentForm = this.fb.group({
-        upiId: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/)]],
-        mobileNumber: ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]]
+        upiId: ['', [Validators.required, this.upiValidator]],
+        mobileNumber: ['', [
+          Validators.required,
+          Validators.minLength(10),
+          Validators.maxLength(10),
+          this.mobileNumberValidator
+        ]]
       });
     } else if (this.selectedMethod === 'CARD') {
       this.paymentForm = this.fb.group({
-        cardholderName: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z\s]+$/)]],
-        cardNumber: ['', [Validators.required, Validators.pattern(/^\d{16}$/)]],
-        expiryDate: ['', [Validators.required, Validators.pattern(/^(0[1-9]|1[0-2])\/([0-9]{2})$/)]],
-        cvv: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]],
+        cardholderName: ['', [
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(30),
+          Validators.pattern(/^[a-zA-Z\s]+$/)
+        ]],
+        cardNumber: ['', [
+          Validators.required,
+          Validators.minLength(16),
+          Validators.maxLength(16),
+          Validators.pattern(/^\d{16}$/)
+        ]],
+        // Replaced select-based expiry with 4 single-digit boxes: expiryM1, expiryM2, expiryY1, expiryY2
+        expiryM1: ['', [Validators.required, Validators.pattern(/^\d$/)]],
+        expiryM2: ['', [Validators.required, Validators.pattern(/^\d$/)]],
+        expiryY1: ['', [Validators.required, Validators.pattern(/^\d$/)]],
+        expiryY2: ['', [Validators.required, Validators.pattern(/^\d$/)]],
+
+        cvv: ['', [
+          Validators.required,
+          Validators.minLength(3),
+          Validators.maxLength(3),
+          Validators.pattern(/^\d{3}$/)
+        ]],
         billingAddress: ['', [Validators.required, Validators.minLength(10)]]
       });
+
+      // Add validator to check if expiry date is not in the past (uses the 4 expiry digit controls)
+      this.paymentForm.addValidators(this.expiryDateValidator.bind(this));
     }
+  }
+
+  // Custom Validators
+  upiValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+
+    // UPI ID format: username@bank (e.g., name@paytm, mobile@bank)
+    const upiPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
+
+    if (!upiPattern.test(control.value)) {
+      return { invalidUpiFormat: true };
+    }
+
+    return null;
+  }
+
+  mobileNumberValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+
+    const mobilePattern = /^[6-9]\d{9}$/;
+
+    if (!mobilePattern.test(control.value)) {
+      return { invalidMobileFormat: true };
+    }
+
+    return null;
+  }
+
+  /**
+   * expiryDateValidator:
+   * - Reads digits from expiryM1/M2 and expiryY1/Y2
+   * - Builds MM and YY (two-digit month and two-digit year)
+   * - Validates format (01-12 month) and that the expiry is current month or a future month/year
+   */
+  expiryDateValidator = (group: AbstractControl): ValidationErrors | null => {
+    const m1 = group.get('expiryM1')?.value;
+    const m2 = group.get('expiryM2')?.value;
+    const y1 = group.get('expiryY1')?.value;
+    const y2 = group.get('expiryY2')?.value;
+
+    // If any digit missing, don't mark as expired yet — let per-field validators handle required
+    if ([m1, m2, y1, y2].some(v => v === null || v === undefined || v === '')) {
+      // but we can still check format - leave to field validators
+      return null;
+    }
+
+    const monthStr = `${m1}${m2}`;
+    const yearStr = `${y1}${y2}`;
+
+    // Basic numeric check
+    if (!/^\d{2}$/.test(monthStr) || !/^\d{2}$/.test(yearStr)) {
+      return { invalidExpiryFormat: true };
+    }
+
+    const month = parseInt(monthStr, 10);
+    const twoDigitYear = parseInt(yearStr, 10);
+
+    if (month < 1 || month > 12) {
+      return { invalidExpiryFormat: true };
+    }
+
+    // Convert two-digit year to full year (assume 2000-2099)
+    const fullYear = 2000 + twoDigitYear;
+
+    const currentYear = this.currentDate.getFullYear();
+    const currentMonth = this.currentDate.getMonth() + 1;
+
+    // If the expiry year is before current year -> expired
+    if (fullYear < currentYear) {
+      return { expiredDate: true };
+    }
+
+    // If same year and month less than current -> expired
+    if (fullYear === currentYear && month < currentMonth) {
+      return { expiredDate: true };
+    }
+
+    return null;
+  }
+
+  // Input handlers
+  onUpiIdInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    // Remove spaces and convert to lowercase
+    value = value.replace(/\s/g, '').toLowerCase();
+    target.value = value;
+    this.paymentForm.get('upiId')?.setValue(value);
+  }
+
+  onMobileInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    // Remove non-numeric characters
+    value = value.replace(/\D/g, '');
+    // Limit to 10 digits
+    if (value.length > 10) {
+      value = value.substring(0, 10);
+    }
+    target.value = value;
+    this.paymentForm.get('mobileNumber')?.setValue(value);
+  }
+
+  onCardNumberInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    // Remove non-numeric characters
+    value = value.replace(/\D/g, '');
+    // Add spaces every 4 digits for display
+    value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+    // Limit to 16 digits (19 with spaces)
+    if (value.replace(/\s/g, '').length > 16) {
+      value = value.substring(0, 19);
+    }
+    target.value = value;
+    // Store without spaces in form control
+    this.paymentForm.get('cardNumber')?.setValue(value.replace(/\s/g, ''));
+  }
+
+  onCvvInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    // Remove non-numeric characters
+    value = value.replace(/\D/g, '');
+    // Limit to 3 digits
+    if (value.length > 3) {
+      value = value.substring(0, 3);
+    }
+    target.value = value;
+    this.paymentForm.get('cvv')?.setValue(value);
+  }
+
+  /**
+   * Expiry input behaviour:
+   * - Accept only digits
+   * - Auto-move to next input when a digit is entered
+   * - Move back on backspace if empty
+   * - After every input change, update the form-level validators
+   */
+  onExpiryInput(event: Event, index: number): void {
+    const target = event.target as HTMLInputElement;
+    const raw = target.value || '';
+    // allow only digits and single character
+    let value = raw.replace(/\D/g, '').slice(0, 1);
+    target.value = value;
+    const controlNames = ['expiryM1', 'expiryM2', 'expiryY1', 'expiryY2'];
+    const controlName = controlNames[index];
+    this.paymentForm.get(controlName)?.setValue(value);
+
+    // If value entered and not the last box, focus next
+    if (value && index < controlNames.length - 1) {
+      const inputs = this.expiryInputs.toArray();
+      const next = inputs[index + 1];
+      if (next) {
+        try { (next.nativeElement as HTMLInputElement).focus(); } catch { }
+      }
+    }
+
+    // Manually trigger validation for the group
+    this.paymentForm.updateValueAndValidity({ onlySelf: false, emitEvent: true });
+  }
+
+  onExpiryKeydown(event: KeyboardEvent, index: number): void {
+    const key = event.key;
+    const controlNames = ['expiryM1', 'expiryM2', 'expiryY1', 'expiryY2'];
+
+    // On Backspace: if current input is empty, move focus to previous input
+    if (key === 'Backspace') {
+      const current = (event.target as HTMLInputElement).value;
+      if (!current && index > 0) {
+        const inputs = this.expiryInputs.toArray();
+        const prev = inputs[index - 1];
+        if (prev) {
+          try {
+            (prev.nativeElement as HTMLInputElement).focus();
+            // Also clear previous control if user keeps pressing backspace
+            this.paymentForm.get(controlNames[index - 1])?.setValue('');
+            (prev.nativeElement as HTMLInputElement).value = '';
+          } catch { }
+        }
+      }
+      // allow backspace to proceed
+      return;
+    }
+
+    // Prevent non-digit keys (allow navigation keys)
+    if (!/^\d$/.test(key) && !['ArrowLeft', 'ArrowRight', 'Tab'].includes(key)) {
+      event.preventDefault();
+    }
+  }
+
+  // Helper to know whether expiry is invalid and touched (for displaying errors nicely)
+  isExpiryTouchedAndInvalid(): boolean {
+    const touched = ['expiryM1', 'expiryM2', 'expiryY1', 'expiryY2'].some(name => this.paymentForm.get(name)?.touched);
+    const invalid = !!this.paymentForm.errors;
+    return touched && invalid;
+  }
+
+  // Get valid years (current year + next 20 years) — kept for backward compatibility if needed elsewhere
+  getValidYears(): number[] {
+    const currentYear = this.currentDate.getFullYear();
+    const years = [];
+    for (let i = 0; i <= 20; i++) {
+      years.push(currentYear + i);
+    }
+    return years;
   }
 
   processPayment(): void {
     if (this.paymentForm.valid && this.appointmentData && this.currentUser) {
       this.isProcessing = true;
 
-      // Create payment with appointment data (payment-first flow)
-      const paymentData = {
+      // Build paymentData from form values
+      const paymentData: any = {
         patientId: this.currentUser.id,
         amount: this.appointmentData.consultationFee,
         method: this.selectedMethod,
@@ -247,6 +649,23 @@ export class PaymentFormComponent implements OnInit {
         ...this.paymentForm.value
       };
 
+      // For card payments, combine expiry digits into expiryDate MM/YY
+      if (this.selectedMethod === 'CARD') {
+        const m1 = this.paymentForm.get('expiryM1')?.value || '';
+        const m2 = this.paymentForm.get('expiryM2')?.value || '';
+        const y1 = this.paymentForm.get('expiryY1')?.value || '';
+        const y2 = this.paymentForm.get('expiryY2')?.value || '';
+        const mm = `${m1}${m2}`;
+        const yy = `${y1}${y2}`;
+
+        paymentData.expiryDate = `${mm}/${yy}`;
+        // Remove the 4 individual fields from payload (optional)
+        delete paymentData.expiryM1;
+        delete paymentData.expiryM2;
+        delete paymentData.expiryY1;
+        delete paymentData.expiryY2;
+      }
+
       this.adminService.createPaymentWithAppointment(paymentData).subscribe({
         next: (paymentResponse) => {
           if (paymentResponse.success) {
@@ -257,18 +676,18 @@ export class PaymentFormComponent implements OnInit {
                 next: (appointmentResponse) => {
                   if (appointmentResponse.success) {
                     this.isProcessing = false;
-                    
+
                     // Store success data for the success page
                     sessionStorage.setItem('paymentSuccess', JSON.stringify({
                       appointment: appointmentResponse.data,
                       payment: paymentResponse.data,
                       appointmentData: this.appointmentData
                     }));
-                    
+
                     // Clear session data
                     sessionStorage.removeItem('pendingAppointment');
                     sessionStorage.removeItem('selectedPaymentMethod');
-                    
+
                     // Navigate to success page
                     this.router.navigate(['/payments/success']);
                   } else {
@@ -296,7 +715,18 @@ export class PaymentFormComponent implements OnInit {
           console.error('Payment error:', error);
         }
       });
+    } else {
+      // Touch all controls so validation messages show
+      this.markAllControlsTouched();
     }
+  }
+
+  private markAllControlsTouched(): void {
+    Object.keys(this.paymentForm.controls).forEach(key => {
+      this.paymentForm.get(key)?.markAsTouched();
+    });
+    // Force update to show any form-level errors
+    this.paymentForm.updateValueAndValidity();
   }
 
   parseTimeString(timeStr: string) {

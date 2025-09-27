@@ -6,8 +6,10 @@ import com.example.SpringDemo.dto.LoginResponse;
 import com.example.SpringDemo.dto.PatientRegistrationRequest;
 import com.example.SpringDemo.entity.User;
 import com.example.SpringDemo.entity.Doctor;
+import com.example.SpringDemo.entity.Session;
 import com.example.SpringDemo.repository.UserRepository;
 import com.example.SpringDemo.repository.DoctorRepository;
+import com.example.SpringDemo.repository.SessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,9 @@ public class AuthService {
     
     @Autowired
     private JwtConfig jwtConfig;
+    
+    @Autowired
+    private SessionRepository sessionRepository;
     
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
         System.out.println("=== AUTH SERVICE DEBUG ===");
@@ -81,6 +86,9 @@ public class AuthService {
             // since doctors are not loaded by UserDetailsService
             String jwt = jwtConfig.generateTokenForDoctor(doctor);
 
+            // Create session for doctor
+            createSessionForDoctor(doctor, jwt);
+
             return new LoginResponse(jwt, "Bearer", doctor.getDoctorId(),
                                    doctor.getEmail().split("@")[0], // Use email prefix as username
                                    doctor.getEmail(), "DOCTOR", doctor.getFullName());
@@ -118,6 +126,9 @@ public class AuthService {
         
         // Generate JWT token directly for users (similar to doctors)
         String jwt = jwtConfig.generateTokenForUser(user);
+        
+        // Create session for user
+        createSessionForUser(user, jwt);
         
         // Update last login
         user.setLastLoginAt(LocalDateTime.now());
@@ -164,5 +175,76 @@ public class AuthService {
         user.setEmergencyContactNum(request.getEmergencyContactNum());
         
         return userRepository.save(user);
+    }
+    
+    private void createSessionForUser(User user, String jwt) {
+        // Invalidate any existing active sessions for this user
+        invalidateUserSessions(user.getId());
+        
+        // Create new session
+        Session session = new Session();
+        session.setUser(user);
+        session.setUserType("USER");
+        session.setSessionToken(jwt);
+        session.setIsActive(true);
+        session.setExpiresAt(LocalDateTime.now().plusDays(7)); // 1 week from now
+        session.setCreatedBy(user.getId());
+        
+        sessionRepository.save(session);
+        System.out.println("Session created for user: " + user.getEmail());
+    }
+    
+    private void createSessionForDoctor(Doctor doctor, String jwt) {
+        // Invalidate any existing active sessions for this doctor
+        invalidateDoctorSessions(doctor.getDoctorId());
+        
+        // Create new session for doctor
+        Session session = new Session();
+        session.setUser(null); // No user for doctors
+        session.setDoctorId(doctor.getDoctorId());
+        session.setUserType("DOCTOR");
+        session.setSessionToken(jwt);
+        session.setIsActive(true);
+        session.setExpiresAt(LocalDateTime.now().plusDays(7)); // 1 week from now
+        session.setCreatedBy(doctor.getDoctorId());
+        
+        sessionRepository.save(session);
+        System.out.println("Session created for doctor: " + doctor.getEmail());
+    }
+    
+    private void invalidateUserSessions(Long userId) {
+        // Invalidate all active sessions for the user
+        sessionRepository.findByUserIdAndIsActiveTrueAndDeletedAtIsNull(userId)
+            .forEach(session -> {
+                session.setIsActive(false);
+                session.setUpdatedAt(LocalDateTime.now());
+                sessionRepository.save(session);
+            });
+    }
+    
+    private void invalidateDoctorSessions(Long doctorId) {
+        // Invalidate all active sessions for the doctor
+        sessionRepository.findByDoctorIdAndIsActiveTrueAndDeletedAtIsNull(doctorId)
+            .forEach(session -> {
+                session.setIsActive(false);
+                session.setUpdatedAt(LocalDateTime.now());
+                sessionRepository.save(session);
+            });
+    }
+    
+    public void logout(String jwtToken) {
+        try {
+            // Find and invalidate the session
+            sessionRepository.findBySessionTokenAndIsActiveTrueAndDeletedAtIsNull(jwtToken)
+                .ifPresent(session -> {
+                    session.setIsActive(false);
+                    session.setUpdatedAt(LocalDateTime.now());
+                    sessionRepository.save(session);
+                    System.out.println("Session invalidated for logout: " + session.getId());
+                });
+        } catch (Exception e) {
+            System.err.println("Error during logout: " + e.getMessage());
+            throw new RuntimeException("Logout failed");
+        }
     }
 }

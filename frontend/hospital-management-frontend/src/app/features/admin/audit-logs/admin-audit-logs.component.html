@@ -70,11 +70,23 @@
         <div class="filter-row">
           <div class="filter-group">
             <label class="filter-label">Date From</label>
-            <input type="datetime-local" formControlName="dateFrom" class="filter-input">
+            <input 
+              type="datetime-local" 
+              formControlName="dateFrom" 
+              class="filter-input"
+              [max]="maxFromDate"
+              (change)="onFromDateChange($event)"
+            >
           </div>
           <div class="filter-group">
             <label class="filter-label">Date To</label>
-            <input type="datetime-local" formControlName="dateTo" class="filter-input">
+            <input 
+              type="datetime-local" 
+              formControlName="dateTo" 
+              class="filter-input"
+              [min]="minToDate"
+              (change)="onToDateChange($event)"
+            >
           </div>
         </div>
         <div class="filter-actions">

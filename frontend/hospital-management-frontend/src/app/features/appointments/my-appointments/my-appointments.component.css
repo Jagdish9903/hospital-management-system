@@ -213,7 +213,7 @@
 
 .appointments-table td {
   padding: 16px 12px;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 /* Table Cell Styles */
@@ -269,6 +269,7 @@
 
 .appointment-type-cell {
   min-width: 100px;
+  text-align: center;
 }
 
 .appointment-type {
@@ -284,6 +285,7 @@
 
 .appointment-status-cell {
   min-width: 100px;
+  text-align: center;
 }
 
 .appointment-status {

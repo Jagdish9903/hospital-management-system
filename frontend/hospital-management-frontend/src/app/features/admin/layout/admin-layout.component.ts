@@ -57,8 +57,15 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/auth/login']);
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/auth/login']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        this.router.navigate(['/auth/login']);
+      }
+    });
   }
 
   private updateActiveMenu(): void {

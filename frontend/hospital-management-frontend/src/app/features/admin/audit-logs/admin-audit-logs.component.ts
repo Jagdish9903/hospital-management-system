@@ -44,6 +44,10 @@ export class AdminAuditLogsComponent implements OnInit {
   selectedDateTo = '';
   selectedStatus = '';
   
+  // Date validation properties
+  minToDate = '';
+  maxFromDate = '';
+  
   // View Details
   selectedAuditLog: AuditLog | null = null;
   
@@ -89,6 +93,9 @@ export class AdminAuditLogsComponent implements OnInit {
       dateTo: [''],
       status: ['']
     });
+
+    // Setup date validation
+    this.setupDateValidation();
 
     // Setup search debounce
     this.searchSubject.pipe(
@@ -289,6 +296,69 @@ export class AdminAuditLogsComponent implements OnInit {
       return JSON.parse(jsonString);
     } catch {
       return jsonString;
+    }
+  }
+
+  // Date validation methods
+  setupDateValidation(): void {
+    // Listen to dateFrom changes
+    this.filterForm.get('dateFrom')?.valueChanges.subscribe(dateFrom => {
+      if (dateFrom) {
+        this.minToDate = dateFrom;
+        // If toDate is before fromDate, clear it
+        const toDate = this.filterForm.get('dateTo')?.value;
+        if (toDate && toDate < dateFrom) {
+          this.filterForm.get('dateTo')?.setValue('');
+        }
+      } else {
+        this.minToDate = '';
+      }
+    });
+
+    // Listen to dateTo changes
+    this.filterForm.get('dateTo')?.valueChanges.subscribe(dateTo => {
+      if (dateTo) {
+        this.maxFromDate = dateTo;
+        // If fromDate is after toDate, clear it
+        const fromDate = this.filterForm.get('dateFrom')?.value;
+        if (fromDate && fromDate > dateTo) {
+          this.filterForm.get('dateFrom')?.setValue('');
+        }
+      } else {
+        this.maxFromDate = '';
+      }
+    });
+  }
+
+  onFromDateChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const fromDate = target.value;
+    
+    if (fromDate) {
+      this.minToDate = fromDate;
+      // Clear toDate if it's before fromDate
+      const toDate = this.filterForm.get('dateTo')?.value;
+      if (toDate && toDate < fromDate) {
+        this.filterForm.get('dateTo')?.setValue('');
+      }
+    } else {
+      this.minToDate = '';
+    }
+  }
+
+  onToDateChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const toDate = target.value;
+    
+    if (toDate) {
+      this.maxFromDate = toDate;
+      // Clear fromDate if it's after toDate
+      const fromDate = this.filterForm.get('dateFrom')?.value;
+      if (fromDate && fromDate > toDate) {
+        this.filterForm.get('dateFrom')?.setValue('');
+      }
+    } else {
+      this.maxFromDate = '';
     }
   }
 }

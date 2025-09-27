@@ -60,20 +60,8 @@ interface Complaint {
         <p>Loading your complaints...</p>
       </div>
 
-      <!-- No Complaints State -->
-      <div *ngIf="!isLoading && complaints.length === 0" class="no-complaints-state">
-        <div class="no-complaints-content">
-          <svg class="no-complaints-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-            <circle cx="12" cy="13" r="3"/>
-          </svg>
-          <h3>No Complaints Found</h3>
-          <p>You haven't submitted any complaints yet. <a routerLink="/complaints">Register a complaint</a> to get started.</p>
-        </div>
-      </div>
-
       <!-- Complaints List -->
-      <div *ngIf="!isLoading && complaints.length > 0" class="complaints-list">
+      <div *ngIf="!isLoading" class="complaints-list">
         <div class="complaints-header">
           <h2>Your Complaints ({{ totalElements }})</h2>
           <div class="filter-controls">
@@ -90,8 +78,21 @@ interface Complaint {
           </div>
         </div>
 
+        <!-- No Complaints State -->
+        <div *ngIf="complaints.length === 0" class="no-complaints-state">
+          <div class="no-complaints-content">
+            <svg class="no-complaints-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+            <h3>No Complaints Found</h3>
+            <p *ngIf="statusFilter">No complaints found for the selected filter. Try changing your filter criteria.</p>
+            <p *ngIf="!statusFilter">You haven't submitted any complaints yet. <a routerLink="/complaints">Register a complaint</a> to get started.</p>
+          </div>
+        </div>
+
         <!-- Table Container -->
-        <div class="table-container">
+        <div *ngIf="complaints.length > 0" class="table-container">
           <table class="complaints-table">
             <thead>
               <tr>
@@ -104,12 +105,6 @@ interface Complaint {
                 <th class="sortable" (click)="onSortChange('category')">
                   Category
                   <span class="sort-indicator" *ngIf="sortBy === 'category'">
-                    {{ sortDir === 'asc' ? '↑' : '↓' }}
-                  </span>
-                </th>
-                <th class="sortable" (click)="onSortChange('priority')">
-                  Priority
-                  <span class="sort-indicator" *ngIf="sortBy === 'priority'">
                     {{ sortDir === 'asc' ? '↑' : '↓' }}
                   </span>
                 </th>
@@ -137,11 +132,6 @@ interface Complaint {
                 <td class="complaint-category-cell">
                   <span class="complaint-category">{{ formatEnum(complaint.category) }}</span>
                 </td>
-                <td class="complaint-priority-cell">
-                  <span class="complaint-priority priority-{{ complaint.priority.toLowerCase() }}">
-                    {{ formatEnum(complaint.priority) }}
-                  </span>
-                </td>
                 <td class="complaint-status-cell">
                   <span class="complaint-status" [class]="'status-' + complaint.status.toLowerCase().replace('_', '-')">
                     {{ formatEnum(complaint.status) }}
@@ -167,7 +157,7 @@ interface Complaint {
         </div>
 
         <!-- Pagination Controls -->
-        <div class="pagination-container">
+        <div *ngIf="complaints.length > 0" class="pagination-container">
           <div class="pagination-info">
             Showing {{ (currentPage * pageSize) + 1 }} to {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} complaints
           </div>
@@ -326,35 +316,16 @@ interface Complaint {
               <div class="customer-feedback">{{ selectedComplaint.customerFeedback }}</div>
             </div>
 
-            <!-- Status Timeline -->
-            <div class="complaint-detail-section">
-              <h3>Status Timeline</h3>
-              <div class="status-timeline">
-                <div class="timeline-item">
-                  <div class="timeline-marker status-open"></div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Complaint Submitted</div>
-                    <div class="timeline-date">{{ formatDate(selectedComplaint.createdAt) }}</div>
-                  </div>
-                </div>
-                <div *ngIf="selectedComplaint.status !== 'OPEN'" class="timeline-item">
-                  <div class="timeline-marker" [class]="'status-' + selectedComplaint.status.toLowerCase().replace('_', '-')"></div>
-                  <div class="timeline-content">
-                    <div class="timeline-title">Status: {{ formatEnum(selectedComplaint.status) }}</div>
-                    <div class="timeline-date">{{ formatDate(selectedComplaint.updatedAt) }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Feedback Form -->
           <div *ngIf="showFeedbackForm" class="feedback-form">
-            <h3>Provide Feedback</h3>
             <div class="feedback-form-content">
+              <h3>Provide Your Feedback</h3>
+              <p class="feedback-description">Please share your thoughts about how this complaint was resolved.</p>
               <textarea 
                 [(ngModel)]="feedbackText" 
-                placeholder="Please share your feedback about how this complaint was resolved..."
+                placeholder="Enter your feedback here..."
                 class="feedback-textarea"
                 rows="4"
                 maxlength="1000">
@@ -371,7 +342,8 @@ interface Complaint {
             </div>
           </div>
 
-          <div class="modal-footer">
+          <!-- Modal Footer -->
+          <div class="modal-footer" *ngIf="!showFeedbackForm">
             <button class="btn-secondary" (click)="closeComplaintDetail()">Close</button>
             <button *ngIf="selectedComplaint.status === 'RESOLVED' || selectedComplaint.status === 'CLOSED'" 
                     class="btn-primary" (click)="provideFeedback()">
@@ -532,6 +504,11 @@ export class ComplaintTrackingComponent implements OnInit {
         }
         
         this.toastService.showSuccess('Feedback submitted successfully!');
+        
+        // Auto-close the modal after successful submission
+        setTimeout(() => {
+          this.closeComplaintDetail();
+        }, 1500);
       },
       error: (error) => {
         this.isSubmittingFeedback = false;

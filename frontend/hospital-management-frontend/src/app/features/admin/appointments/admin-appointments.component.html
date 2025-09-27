@@ -24,7 +24,7 @@
         </svg>
         <input 
           type="text" 
-          placeholder="Search appointments by patient, doctor, or symptoms..."
+          placeholder="Search appointments by patient or doctor name..."
           class="search-input"
           (input)="onSearch($event)"
         />
@@ -55,11 +55,23 @@
           </div>
           <div class="filter-group">
             <label class="filter-label">Date From</label>
-            <input type="date" formControlName="dateFrom" class="filter-input">
+            <input 
+              type="date" 
+              formControlName="dateFrom" 
+              class="filter-input"
+              [max]="maxFromDate"
+              (change)="onFromDateChange($event)"
+            >
           </div>
           <div class="filter-group">
             <label class="filter-label">Date To</label>
-            <input type="date" formControlName="dateTo" class="filter-input">
+            <input 
+              type="date" 
+              formControlName="dateTo" 
+              class="filter-input"
+              [min]="minToDate"
+              (change)="onToDateChange($event)"
+            >
           </div>
         </div>
         <div class="filter-actions">
@@ -173,26 +185,6 @@
             <td class="appointment-fee" [class.deleted-text]="appointment.deletedAt">{{ formatCurrency(appointment.consultationFee || 0) }}</td>
             <td class="appointment-actions">
               <div class="action-buttons">
-                <button class="action-btn view-btn" 
-                        [disabled]="appointment.deletedAt"
-                        [class.disabled]="appointment.deletedAt"
-                        (click)="viewAppointment(appointment)" 
-                        title="View Details">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-                <button class="action-btn edit-btn" 
-                        [disabled]="appointment.deletedAt"
-                        [class.disabled]="appointment.deletedAt"
-                        (click)="editAppointment(appointment)" 
-                        title="Edit Appointment">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
                 <button class="action-btn cancel-btn" 
                         [disabled]="appointment.deletedAt || appointment.status === 'CANCELLED'"
                         [class.disabled]="appointment.deletedAt || appointment.status === 'CANCELLED'"

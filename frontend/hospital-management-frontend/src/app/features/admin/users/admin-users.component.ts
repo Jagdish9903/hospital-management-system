@@ -1,9 +1,11 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AdminService, User, SearchFilters, PaginatedResponse } from '../../../core/services/admin.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-admin-users',
@@ -81,50 +83,74 @@ export class AdminUsersComponent implements OnInit {
     { value: 'OTHER', label: 'Other' }
   ];
 
+  statuses = [
+    { value: '', label: 'All Status' },
+    { value: 'true', label: 'Active' },
+    { value: 'false', label: 'Inactive' }
+  ];
+
+  countryCodes = [
+    { value: '+91', label: '+91 (India)' },
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+49', label: '+49 (Germany)' },
+    { value: '+33', label: '+33 (France)' },
+    { value: '+81', label: '+81 (Japan)' },
+    { value: '+86', label: '+86 (China)' },
+    { value: '+55', label: '+55 (Brazil)' },
+    { value: '+7', label: '+7 (Russia)' }
+  ];
+
   constructor(
     private adminService: AdminService,
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private toastService: ToastService
   ) {
     this.filterForm = this.fb.group({
       role: [''],
       gender: [''],
-      status: ['']
+      active: ['']
     });
 
     this.editForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      contact: [''],
-      address: [''],
-      city: [''],
-      state: [''],
-      country: [''],
-      postalCode: [''],
-      bloodGroup: [''],
-      emergencyContactName: [''],
-      emergencyContactNum: ['']
+      firstname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      lastname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      email: ['', [Validators.required, CustomValidators.email]], // Email is disabled in edit mode
+      contact: ['', [CustomValidators.indianPhoneNumber]],
+      countryCode: ['+91', [Validators.required]],
+      gender: [''],
+      birthdate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.maxAge(100)]],
+      address: ['', [Validators.minLength(10)]],
+      city: ['', [CustomValidators.textOnly]],
+      state: ['', [CustomValidators.textOnly]],
+      country: ['', [CustomValidators.textOnly]],
+      postalCode: ['', [CustomValidators.postalCode]],
+      bloodGroup: ['', [CustomValidators.bloodGroup]],
+      emergencyContactName: ['', [CustomValidators.textOnly]],
+      emergencyContactNum: ['', [CustomValidators.indianPhoneNumber]]
     });
 
     this.addForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      firstname: ['', [Validators.required, Validators.minLength(2)]],
-      lastname: ['', [Validators.required, Validators.minLength(2)]],
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['', [Validators.required]],
-      contact: [''],
-      gender: [''],
-      birthdate: [''],
-      address: [''],
-      city: [''],
-      state: [''],
-      country: [''],
-      postalCode: [''],
-      bloodGroup: [''],
-      emergencyContactName: [''],
-      emergencyContactNum: ['']
+      firstname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      lastname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      username: ['', [Validators.required, CustomValidators.username]],
+      email: ['', [Validators.required, CustomValidators.email]],
+      password: ['', [Validators.required, CustomValidators.passwordStrength]],
+      // role is set to 'PATIENT' automatically, no need for form field
+      contact: ['', [Validators.required, CustomValidators.indianPhoneNumber]],
+      countryCode: ['+91', [Validators.required]],
+      gender: ['', [Validators.required]],
+      birthdate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.maxAge(100)]],
+      address: ['', [Validators.required, Validators.minLength(10)]],
+      city: ['', [Validators.required, CustomValidators.textOnly]],
+      state: ['', [Validators.required, CustomValidators.textOnly]],
+      country: ['', [Validators.required, CustomValidators.textOnly]],
+      postalCode: ['', [Validators.required, CustomValidators.postalCode]],
+      bloodGroup: ['', [CustomValidators.bloodGroup]],
+      emergencyContactName: ['', [CustomValidators.textOnly]],
+      emergencyContactNum: ['', [CustomValidators.indianPhoneNumber]]
     });
 
     // Setup search debounce
@@ -170,7 +196,7 @@ export class AdminUsersComponent implements OnInit {
       email: this.searchTerm || undefined,
       role: this.selectedRole || undefined,
       gender: this.selectedGender || undefined,
-      status: this.selectedStatus || undefined
+      active: this.selectedStatus || undefined
     };
 
     this.adminService.getUsers(filters).subscribe({
@@ -188,7 +214,7 @@ export class AdminUsersComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading users:', error);
-        console.error('Error details:', error.error);
+        this.toastService.showError('Failed to load users: ' + (error.error?.message || error.message || 'Unknown error'));
         this.isLoading = false;
       }
     });
@@ -226,7 +252,7 @@ export class AdminUsersComponent implements OnInit {
   applyFilters(): void {
     this.selectedRole = this.filterForm.get('role')?.value || '';
     this.selectedGender = this.filterForm.get('gender')?.value || '';
-    this.selectedStatus = this.filterForm.get('status')?.value || '';
+    this.selectedStatus = this.filterForm.get('active')?.value || '';
     this.currentPage = 0;
     this.loadUsers();
   }
@@ -251,9 +277,13 @@ export class AdminUsersComponent implements OnInit {
     this.selectedUser = user;
     this.showEditModal = true;
     this.editForm.patchValue({
-      name: user.name,
+      firstname: user.firstname || '',
+      lastname: user.lastname || '',
       email: user.email,
       contact: user.contact || '',
+      countryCode: user.countryCode || '+91',
+      gender: user.gender || '',
+      birthdate: user.birthdate || '',
       address: user.address || '',
       city: user.city || '',
       state: user.state || '',
@@ -270,9 +300,20 @@ export class AdminUsersComponent implements OnInit {
       this.isSubmitting = true;
       const updateData = this.editForm.value;
       
+      
       this.adminService.updateUser(this.selectedUser.id, updateData).subscribe({
         next: (response) => {
           if (response.success) {
+            // Update the selectedUser object with the new data
+            this.selectedUser = { ...this.selectedUser, ...updateData };
+            // Update the name field if firstname or lastname was updated
+            if (updateData.firstname || updateData.lastname) {
+              const firstName = updateData.firstname || this.selectedUser?.firstname || '';
+              const lastName = updateData.lastname || this.selectedUser?.lastname || '';
+              if (this.selectedUser) {
+                this.selectedUser.name = `${firstName} ${lastName}`.trim();
+              }
+            }
             this.loadUsers();
             this.closeEditModal();
           }
@@ -280,6 +321,7 @@ export class AdminUsersComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error updating user:', error);
+          this.toastService.showError('Failed to update user: ' + (error.error?.message || error.message || 'Unknown error'));
           this.isSubmitting = false;
         }
       });
@@ -307,6 +349,7 @@ export class AdminUsersComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting user:', error);
+          this.toastService.showError('Failed to delete user: ' + (error.error?.message || error.message || 'Unknown error'));
           this.isSubmitting = false;
         }
       });
@@ -333,6 +376,9 @@ export class AdminUsersComponent implements OnInit {
     if (this.addForm.valid) {
       this.isSubmitting = true;
       const userData = this.addForm.value;
+      // Set role to PATIENT automatically and create full name from first and last name
+      userData.role = 'PATIENT';
+      userData.name = `${userData.firstname} ${userData.lastname}`;
       
       this.adminService.createUser(userData).subscribe({
         next: (response) => {
@@ -344,6 +390,7 @@ export class AdminUsersComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error creating user:', error);
+          this.toastService.showError('Failed to create user: ' + (error.error?.message || error.message || 'Unknown error'));
           this.isSubmitting = false;
         }
       });
@@ -406,6 +453,11 @@ export class AdminUsersComponent implements OnInit {
   }
 
   toggleUserStatus(user: User): void {
+    // Prevent changing status of admin users
+    if (this.isAdminUser(user)) {
+      return;
+    }
+    
     const newStatus = !user.active;
     this.adminService.updateUser(user.id, { active: newStatus }).subscribe({
       next: (response) => {
@@ -416,7 +468,163 @@ export class AdminUsersComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error updating user status:', error);
+        this.toastService.showError('Failed to update user status: ' + (error.error?.message || error.message || 'Unknown error'));
       }
     });
+  }
+
+  // Input event handlers for live validation and character restrictions
+  onTextInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const textOnlyValue = value.replace(/[^a-zA-Z\s]/g, '');
+    if (value !== textOnlyValue) {
+      target.value = textOnlyValue;
+      this.addForm.get(controlName)?.setValue(textOnlyValue);
+      this.editForm.get(controlName)?.setValue(textOnlyValue);
+    }
+  }
+
+  onNumberInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    if (value !== numberOnlyValue) {
+      target.value = numberOnlyValue;
+      this.addForm.get(controlName)?.setValue(numberOnlyValue);
+      this.editForm.get(controlName)?.setValue(numberOnlyValue);
+    }
+  }
+
+  onEmailInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value.toLowerCase();
+    if (target.value !== value) {
+      target.value = value;
+      this.addForm.get('email')?.setValue(value);
+      this.editForm.get('email')?.setValue(value);
+    }
+  }
+
+  onEmailKeyPress(event: KeyboardEvent): void {
+    const inputChar = String.fromCharCode(event.charCode);
+    if (/[A-Z]/.test(inputChar)) {
+      event.preventDefault();
+      const target = event.target as HTMLInputElement;
+      const currentValue = target.value;
+      const newValue = currentValue + inputChar.toLowerCase();
+      target.value = newValue;
+      this.addForm.get('email')?.setValue(newValue);
+      this.editForm.get('email')?.setValue(newValue);
+    }
+  }
+
+  onPostalCodeInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 6);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('postalCode')?.setValue(limitedValue);
+      this.editForm.get('postalCode')?.setValue(limitedValue);
+    }
+  }
+
+  onContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('contact')?.setValue(limitedValue);
+      this.editForm.get('contact')?.setValue(limitedValue);
+    }
+  }
+
+  onEmergencyContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.addForm.get('emergencyContactNum')?.setValue(limitedValue);
+      this.editForm.get('emergencyContactNum')?.setValue(limitedValue);
+    }
+  }
+
+  onUsernameInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const usernameValue = value.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (target.value !== usernameValue) {
+      target.value = usernameValue;
+      this.addForm.get('username')?.setValue(usernameValue);
+    }
+  }
+
+  // Prevent non-text characters in name fields
+  onNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Prevent non-digit characters in number fields
+  onNumberKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[0-9]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Get maximum date for birth date (today)
+  getMaxDate(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }
+
+  // Check if current user can edit/delete the target user
+  canEditUser(user: User): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return false;
+    
+    // Admin users cannot edit other admin users
+    if (user.role === 'ADMIN') {
+      return false;
+    }
+    
+    return true;
+  }
+
+  canDeleteUser(user: User): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return false;
+    
+    // Admin users cannot delete other admin users
+    if (user.role === 'ADMIN') {
+      return false;
+    }
+    
+    return true;
+  }
+
+  // Check if user is admin (for styling purposes)
+  isAdminUser(user: User): boolean {
+    return user.role === 'ADMIN';
+  }
+
+  // Get display name for user (firstname + lastname)
+  getUserDisplayName(user: User): string {
+    if (user.firstname && user.lastname) {
+      return `${user.firstname} ${user.lastname}`;
+    }
+    // Fallback to name field if firstname/lastname not available
+    return user.name || 'Unknown User';
   }
 }

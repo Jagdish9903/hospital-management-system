@@ -21,6 +21,9 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     @Query("SELECT s FROM Session s WHERE s.user.id = :userId AND s.isActive = true AND s.deletedAt IS NULL")
     List<Session> findByUserIdAndIsActiveTrueAndDeletedAtIsNull(@Param("userId") Long userId);
     
+    @Query("SELECT s FROM Session s WHERE s.doctorId = :doctorId AND s.isActive = true AND s.deletedAt IS NULL")
+    List<Session> findByDoctorIdAndIsActiveTrueAndDeletedAtIsNull(@Param("doctorId") Long doctorId);
+    
     @Query("SELECT s FROM Session s WHERE s.isActive = true AND s.deletedAt IS NULL")
     List<Session> findByIsActiveTrueAndDeletedAtIsNull();
     
@@ -52,4 +55,7 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     
     @Query("SELECT s FROM Session s WHERE s.expiresAt < :currentTime AND s.isActive = true AND s.deletedAt IS NULL")
     List<Session> findExpiredActiveSessions(@Param("currentTime") LocalDateTime currentTime);
+    
+    @Query("SELECT s FROM Session s WHERE s.isActive = false AND s.updatedAt < :cutoffDate AND s.deletedAt IS NULL")
+    List<Session> findByIsActiveFalseAndUpdatedAtBeforeAndDeletedAtIsNull(@Param("cutoffDate") LocalDateTime cutoffDate);
 }

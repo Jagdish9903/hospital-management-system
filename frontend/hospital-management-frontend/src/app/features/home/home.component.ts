@@ -156,7 +156,7 @@ export class HomeComponent implements OnInit {
     {
       type: 'payment',
       title: 'Payment received',
-      description: '$150.00 - Consultation fee',
+      description: '₹150.00 - Consultation fee',
       time: '4 hours ago',
       icon: 'payment'
     },
@@ -193,12 +193,23 @@ export class HomeComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
-    this.snackBar.open('Logged out successfully', 'Close', {
-      duration: 3000,
-      panelClass: ['success-snackbar']
+    this.authService.logout().subscribe({
+      next: () => {
+        this.snackBar.open('Logged out successfully', 'Close', {
+          duration: 3000,
+          panelClass: ['success-snackbar']
+        });
+        this.router.navigate(['/login']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        this.snackBar.open('Logged out successfully', 'Close', {
+          duration: 3000,
+          panelClass: ['success-snackbar']
+        });
+        this.router.navigate(['/login']);
+      }
     });
-    this.router.navigate(['/login']);
   }
 
   navigateTo(route: string) {

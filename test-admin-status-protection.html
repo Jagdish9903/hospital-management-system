@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Status Protection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>Admin Status Protection Test</h1>
+    <p>This test verifies that admin users cannot change the active status of other admin users (including themselves).</p>
+    
+    <div class="test-section">
+        <h3>Test Admin Status Protection</h3>
+        <button onclick="testAdminStatusProtection()">Test Admin Status Protection</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        let authToken = '';
+
+        function log(message, type = 'info') {
+            const element = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            element.innerHTML += `[${timestamp}] ${message}\n`;
+            element.className = `result ${type}`;
+        }
+
+        async function testAdminStatusProtection() {
+            document.getElementById('result').innerHTML = '';
+            
+            // Login as admin
+            log('🔐 Logging in as admin...');
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@hospital.com', password: 'admin123' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.data.token;
+                    log('✅ Admin login successful!', 'success');
+                } else {
+                    log('❌ Admin login failed', 'error');
+                    return;
+                }
+            } catch (error) {
+                log('❌ Admin login error: ' + error.message, 'error');
+                return;
+            }
+
+            // Get all users to find admin users
+            log('👥 Fetching all users to identify admin users...');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users?page=0&size=100`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const users = data.data.content;
+                    const adminUsers = users.filter(user => user.role === 'ADMIN');
+                    
+                    log(`✅ Found ${adminUsers.length} admin users:`, 'info');
+                    adminUsers.forEach(admin => {
+                        log(`   - ${admin.name} (${admin.email}) - Role: ${admin.role} - Active: ${admin.active}`, 'info');
+                    });
+
+                    // Test attempting to change status of each admin user
+                    for (const adminUser of adminUsers) {
+                        await testStatusChangeAttempt(adminUser);
+                    }
+
+                } else {
+                    log('❌ Failed to fetch users', 'error');
+                }
+            } catch (error) {
+                log('❌ Error fetching users: ' + error.message, 'error');
+            }
+
+            log('🎉 Admin status protection test completed!', 'success');
+        }
+
+        async function testStatusChangeAttempt(adminUser) {
+            log(`\n🔒 Testing status change attempt for admin: ${adminUser.name} (${adminUser.email})`);
+            
+            try {
+                // Attempt to change the status (this should be prevented by frontend)
+                const newStatus = !adminUser.active;
+                const response = await fetch(`${API_BASE}/api/admin/users/${adminUser.id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ active: newStatus })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // If the API call succeeded, this means the backend doesn't have protection
+                    log(`⚠️  WARNING: Backend allowed status change for admin user ${adminUser.name}!`, 'warning');
+                    log(`   Status changed from ${adminUser.active} to ${newStatus}`, 'warning');
+                    log(`   This should be prevented by backend security!`, 'warning');
+                } else {
+                    log(`✅ Backend correctly prevented status change for admin user ${adminUser.name}`, 'success');
+                    log(`   Response: ${data.message || 'Status change not allowed'}`, 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ Error attempting status change for ${adminUser.name}: ${error.message}`, 'error');
+            }
+        }
+
+        // Additional test: Verify frontend behavior
+        function testFrontendBehavior() {
+            log('\n🖥️  Frontend Behavior Test (Manual Verification Required):', 'info');
+            log('1. Open the admin dashboard in your browser', 'info');
+            log('2. Navigate to User Management', 'info');
+            log('3. Look for admin users in the user list', 'info');
+            log('4. Verify that the active status toggle is disabled for admin users', 'info');
+            log('5. Verify that a tooltip shows "Cannot change active status of admin users"', 'info');
+            log('6. Verify that edit and delete buttons are also disabled for admin users', 'info');
+        }
+
+        // Run frontend behavior test on page load
+        window.onload = function() {
+            testFrontendBehavior();
+        };
+    </script>
+</body>
+</html>

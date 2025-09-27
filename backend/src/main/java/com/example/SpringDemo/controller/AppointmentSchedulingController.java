@@ -6,6 +6,7 @@ import com.example.SpringDemo.entity.Specialization;
 import com.example.SpringDemo.service.AppointmentService;
 import com.example.SpringDemo.service.DoctorSlotService;
 import com.example.SpringDemo.service.DoctorService;
+import com.example.SpringDemo.service.DoctorSlotGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,9 @@ public class AppointmentSchedulingController {
     
     @Autowired
     private AppointmentService appointmentService;
+    
+    @Autowired
+    private DoctorSlotGeneratorService doctorSlotGeneratorService;
     
     @GetMapping("/specializations")
     public ResponseEntity<ApiResponse<List<Specialization>>> getSpecializations() {
@@ -141,6 +145,16 @@ public class AppointmentSchedulingController {
         try {
             doctorSlotService.generateSlotsForNextMonth();
             return ResponseEntity.ok(ApiResponse.success("Slots generated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/ensure-slot-coverage")
+    public ResponseEntity<ApiResponse<String>> ensureSlotCoverage() {
+        try {
+            doctorSlotGeneratorService.ensureSlotCoverage();
+            return ResponseEntity.ok(ApiResponse.success("Slot coverage ensured successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

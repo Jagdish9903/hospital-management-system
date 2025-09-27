@@ -17,7 +17,7 @@
         </svg>
         <input 
           type="text" 
-          placeholder="Search appointments by patient name or email..."
+          placeholder="Search appointments by patient name..."
           class="search-input"
           (input)="onSearch($event)"
         />
@@ -48,11 +48,23 @@
           </div>
           <div class="filter-group">
             <label class="filter-label">Date From</label>
-            <input type="date" formControlName="dateFrom" class="filter-input">
+            <input 
+              type="date" 
+              formControlName="dateFrom" 
+              class="filter-input"
+              [max]="maxFromDate"
+              (change)="onFromDateChange($event)"
+            >
           </div>
           <div class="filter-group">
             <label class="filter-label">Date To</label>
-            <input type="date" formControlName="dateTo" class="filter-input">
+            <input 
+              type="date" 
+              formControlName="dateTo" 
+              class="filter-input"
+              [min]="minToDate"
+              (change)="onToDateChange($event)"
+            >
           </div>
         </div>
         <div class="filter-actions">

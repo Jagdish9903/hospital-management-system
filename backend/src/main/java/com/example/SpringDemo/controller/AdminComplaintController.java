@@ -51,6 +51,34 @@ public class AdminComplaintController {
         return ResponseEntity.ok(ApiResponse.success(complaints));
     }
     
+    @GetMapping("/available")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<Complaint>>> getAvailableComplaints(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long assignedTo) {
+        
+        System.out.println("=== ADMIN AVAILABLE COMPLAINTS API DEBUG ===");
+        System.out.println("Page: " + page + ", Size: " + size);
+        System.out.println("Sort: " + sortBy + " " + sortDir);
+        System.out.println("Filters - Title: " + title + ", Category: " + category + ", Status: " + status + ", Priority: " + priority + ", AssignedTo: " + assignedTo);
+        
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? 
+            Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Complaint> complaints = complaintService.getAvailableComplaints(title, category, status, priority, assignedTo, pageable);
+        System.out.println("Found " + complaints.getTotalElements() + " available complaints");
+        
+        return ResponseEntity.ok(ApiResponse.success(complaints));
+    }
+    
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getComplaintStats() {

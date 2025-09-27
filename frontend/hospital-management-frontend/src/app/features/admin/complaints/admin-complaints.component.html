@@ -24,7 +24,7 @@
         </svg>
         <input 
           type="text" 
-          placeholder="Search complaints by title, description, or patient..."
+          placeholder="Search complaints by title..."
           class="search-input"
           (input)="onSearch($event)"
         />
@@ -43,19 +43,19 @@
         <div class="filter-row">
           <div class="filter-group">
             <label class="filter-label">Category</label>
-            <select formControlName="category" class="filter-select">
+            <select formControlName="category" class="filter-select" (change)="onFilterChange()">
               <option *ngFor="let category of categories" [value]="category.value">{{ category.label }}</option>
             </select>
           </div>
           <div class="filter-group">
             <label class="filter-label">Status</label>
-            <select formControlName="status" class="filter-select">
+            <select formControlName="status" class="filter-select" (change)="onFilterChange()">
               <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
             </select>
           </div>
           <div class="filter-group">
             <label class="filter-label">Priority</label>
-            <select formControlName="priority" class="filter-select">
+            <select formControlName="priority" class="filter-select" (change)="onFilterChange()">
               <option *ngFor="let priority of priorities" [value]="priority.value">{{ priority.label }}</option>
             </select>
           </div>
@@ -64,8 +64,14 @@
           <button type="button" class="apply-filters-btn" (click)="applyFilters()">
             Apply Filters
           </button>
+          <button type="button" class="available-to-me-btn" (click)="filterAvailableToMe()">
+            Complaints Available to Me
+          </button>
           <button type="button" class="clear-filters-btn" (click)="clearFilters()">
             Clear All
+          </button>
+          <button type="button" class="debug-btn" (click)="debugFormState()" style="background: #f0f0f0; color: #333; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; margin-left: 10px;">
+            Debug Form
           </button>
         </div>
       </form>
@@ -186,33 +192,6 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-                <button class="action-btn edit-btn" 
-                        [disabled]="complaint.deletedAt"
-                        [class.disabled]="complaint.deletedAt"
-                        (click)="editComplaint(complaint)" 
-                        title="Edit Complaint">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-                <button class="action-btn status-btn" 
-                        (click)="updateComplaintStatus(complaint, 'IN_PROGRESS')" 
-                        title="Mark In Progress"
-                        *ngIf="complaint.status === 'OPEN'">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12,6 12,12 16,14"/>
-                  </svg>
-                </button>
-                <button class="action-btn status-btn" 
-                        (click)="updateComplaintStatus(complaint, 'RESOLVED')" 
-                        title="Mark Resolved"
-                        *ngIf="complaint.status === 'IN_PROGRESS'">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20,6 9,17 4,12"/>
                   </svg>
                 </button>
                 <button class="action-btn delete-btn" 

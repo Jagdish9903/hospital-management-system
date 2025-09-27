@@ -196,7 +196,8 @@
 }
 
 .apply-filters-btn,
-.clear-filters-btn {
+.clear-filters-btn,
+.available-to-me-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 600;
@@ -212,6 +213,16 @@
 
 .apply-filters-btn:hover {
   background: #2563eb;
+}
+
+.available-to-me-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+}
+
+.available-to-me-btn:hover {
+  background: #059669;
 }
 
 .clear-filters-btn {

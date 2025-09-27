@@ -44,7 +44,18 @@ export class RegisterComponent implements OnInit {
   showPassword = false;
   showConfirmPassword = false;
   formSubmitted = false;
-
+  countryCodes = [
+    { value: '+91', label: '+91 (India)' },
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+49', label: '+49 (Germany)' },
+    { value: '+33', label: '+33 (France)' },
+    { value: '+81', label: '+81 (Japan)' },
+    { value: '+86', label: '+86 (China)' },
+    { value: '+55', label: '+55 (Brazil)' },
+    { value: '+7', label: '+7 (Russia)' }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -54,15 +65,14 @@ export class RegisterComponent implements OnInit {
   ) {
     this.registerForm = this.fb.group({
       // Personal Information
-      firstName: ['', [Validators.required, Validators.minLength(2)]],
-      lastName: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      phoneNumber: ['', [Validators.required]],
-      dateOfBirth: ['', [Validators.required]],
-      role: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]],
-      acceptTerms: [false, [Validators.requiredTrue]]
+      firstName: ['', [Validators.required, Validators.minLength(2), this.textOnlyValidator]],
+      lastName: ['', [Validators.required, Validators.minLength(2), this.textOnlyValidator]],
+      email: ['', [Validators.required, this.customEmailValidator]],
+      phoneNumber: ['', [Validators.required, this.phoneNumberValidator]],
+      countryCode: ['+91', [Validators.required]],
+      dateOfBirth: ['', [Validators.required, this.dateRangeValidator]],
+      password: ['', [Validators.required, Validators.minLength(8), this.passwordStrengthValidator]],
+      confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
   }
 
@@ -87,11 +97,12 @@ export class RegisterComponent implements OnInit {
         lastname: formData.lastName,
         email: formData.email,
         contact: formData.phoneNumber,
-        countryCode: '+1',
+        countryCode: '+91',
         address: 'Default Address',
         username: formData.email.split('@')[0],
         password: formData.password,
-        confirmPassword: formData.confirmPassword
+        confirmPassword: formData.confirmPassword,
+        role: 'PATIENT' // Always set to PATIENT
       };
       
       this.authService.register(registrationData).subscribe({
@@ -141,15 +152,177 @@ export class RegisterComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  private markFormGroupTouched() {
+  // Prevent non-text characters in name fields
+  onNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Enhanced phone number input handler
+  onPhoneKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[0-9]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Email input handler to prevent uppercase letters
+  onEmailInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const inputValue = target.value;
+    const lowerCaseValue = inputValue.toLowerCase();
+    
+    if (inputValue !== lowerCaseValue) {
+      target.value = lowerCaseValue;
+      this.registerForm.get('email')?.setValue(lowerCaseValue);
+      this.registerForm.get('email')?.updateValueAndValidity();
+    }
+  }
+
+  // Live validation for email uppercase - auto convert to lowercase
+  onEmailKeyPress(event: KeyboardEvent): void {
+    const inputChar = String.fromCharCode(event.charCode);
+    if (/[A-Z]/.test(inputChar)) {
+      event.preventDefault();
+      // Auto-convert to lowercase instead of showing error
+      const target = event.target as HTMLInputElement;
+      const currentValue = target.value;
+      const newValue = currentValue + inputChar.toLowerCase();
+      target.value = newValue;
+      this.registerForm.get('email')?.setValue(newValue);
+      this.registerForm.get('email')?.updateValueAndValidity();
+    }
+  }
+
+  private showTempErrorMessage(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 2000,
+      panelClass: ['warning-snackbar']
+    });
+  }
+
+  private markFormGroupTouched(): void {
     Object.keys(this.registerForm.controls).forEach(key => {
       const control = this.registerForm.get(key);
       control?.markAsTouched();
     });
   }
 
+  // Custom validator for text-only fields (names)
+  textOnlyValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    const pattern = /^[a-zA-Z\s]+$/;
+    return pattern.test(control.value) ? null : { textOnly: true };
+  }
 
-  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+  // Enhanced phone number validator
+  phoneNumberValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const phoneNumber = control.value.toString();
+    
+    // Check if it contains only digits
+    if (!/^[0-9]+$/.test(phoneNumber)) {
+      return { digitOnly: true };
+    }
+    
+    // Check exact length (must be 10 digits)
+    if (phoneNumber.length !== 10) {
+      return { invalidLength: true };
+    }
+    
+    // Check if first digit is between 6-9
+    const firstDigit = parseInt(phoneNumber.charAt(0));
+    if (firstDigit < 6 || firstDigit > 9) {
+      return { invalidFirstDigit: true };
+    }
+    
+    return null;
+  }
+
+  // Simplified email validator (removed length validation)
+  customEmailValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const email = control.value.toLowerCase();
+    
+    // Check if email contains uppercase (for live validation)
+    if (control.value !== email) {
+      return { hasUppercase: true };
+    }
+    
+    // Basic email pattern validation
+    const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    const isValid = emailPattern.test(email);
+    
+    if (!isValid) {
+      return { invalidEmail: true };
+    }
+    
+    return null;
+  }
+
+  // Date range validator (must be between today and 100 years ago)
+  dateRangeValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const selectedDate = new Date(control.value);
+    const today = new Date();
+    const hundredYearsAgo = new Date();
+    hundredYearsAgo.setFullYear(today.getFullYear() - 100);
+    
+    // Reset time to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    hundredYearsAgo.setHours(0, 0, 0, 0);
+    
+    if (selectedDate >= today) {
+      return { futureDate: true };
+    }
+    
+    if (selectedDate < hundredYearsAgo) {
+      return { tooOld: true };
+    }
+    
+    return null;
+  }
+
+  // Strong password validator
+  passwordStrengthValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    
+    const password = control.value;
+    const errors: ValidationErrors = {};
+    
+    // Check for uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      errors['noUppercase'] = true;
+    }
+    
+    // Check for lowercase letter
+    if (!/[a-z]/.test(password)) {
+      errors['noLowercase'] = true;
+    }
+    
+    // Check for digit
+    if (!/[0-9]/.test(password)) {
+      errors['noDigit'] = true;
+    }
+    
+    // Check for special character
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      errors['noSpecialChar'] = true;
+    }
+    
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
+
+  // Password match validator
+  passwordMatchValidator = (control: AbstractControl): ValidationErrors | null => {
     const password = control.get('password');
     const confirmPassword = control.get('confirmPassword');
     
@@ -165,5 +338,4 @@ export class RegisterComponent implements OnInit {
     
     return null;
   }
-
 }

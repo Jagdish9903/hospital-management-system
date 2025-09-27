@@ -23,10 +23,16 @@ public class Session {
     private Long id;
     
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
     
-    @Column(name = "session_token", unique = true, nullable = false)
+    @Column(name = "doctor_id")
+    private Long doctorId;
+    
+    @Column(name = "user_type", nullable = false)
+    private String userType; // "USER" or "DOCTOR"
+    
+    @Column(name = "session_token", unique = true, nullable = false, length = 1000)
     private String sessionToken;
     
     @Column(name = "is_active", nullable = false)

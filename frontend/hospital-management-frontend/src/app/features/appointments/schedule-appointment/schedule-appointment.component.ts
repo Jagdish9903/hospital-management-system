@@ -42,6 +42,32 @@ export class ScheduleAppointmentComponent implements OnInit {
   itemsPerPage = 6;
   totalItems = 0;
   
+  // Appointment types
+  appointmentTypes = [
+    { value: 'CONSULTATION', label: 'Consultation' },
+    { value: 'FOLLOW_UP', label: 'Follow-up' },
+    { value: 'EMERGENCY', label: 'Emergency' }
+  ];
+  
+  // Get appointment type description
+  getAppointmentTypeDescription(type: string): string {
+    switch (type) {
+      case 'CONSULTATION':
+        return 'Initial consultation with the doctor';
+      case 'FOLLOW_UP':
+        return 'Follow-up appointment for ongoing treatment';
+      case 'EMERGENCY':
+        return 'Urgent medical attention required';
+      default:
+        return '';
+    }
+  }
+  
+  // Check if appointment type requires special handling
+  isEmergencyAppointment(): boolean {
+    return this.bookingForm.value.appointmentType === 'EMERGENCY';
+  }
+  
 
   constructor(
     private fb: FormBuilder,
@@ -57,6 +83,7 @@ export class ScheduleAppointmentComponent implements OnInit {
     });
     
     this.bookingForm = this.fb.group({
+      appointmentType: ['CONSULTATION', [Validators.required]],
       symptoms: ['', [Validators.required, Validators.minLength(10)]],
       notes: ['', [Validators.maxLength(500)]]
     });
@@ -291,7 +318,7 @@ export class ScheduleAppointmentComponent implements OnInit {
         appointmentDate: this.searchForm.value.appointmentDate,
         appointmentTime: parseTimeString(this.selectedSlot.startTime),
         endTime: parseTimeString(this.selectedSlot.endTime),
-        appointmentType: 'CONSULTATION',
+        appointmentType: this.bookingForm.value.appointmentType,
         consultationFee: this.selectedDoctor.consultationFee,
         symptoms: this.bookingForm.value.symptoms,
         notes: this.bookingForm.value.notes || ''

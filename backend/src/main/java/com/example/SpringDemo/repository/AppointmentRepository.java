@@ -162,4 +162,23 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
                                                                  @Param("dateTo") String dateTo,
                                                                  @Param("dateToParsed") LocalDate dateToParsed,
                                                                  Pageable pageable);
+    
+    // Method with OR logic for patient and doctor name search
+    @Query("SELECT a FROM Appointment a JOIN a.patient p JOIN a.doctor d WHERE " +
+           "(:searchTerm IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(CONCAT(d.firstName, ' ', d.lastName)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) AND " +
+           "(:status IS NULL OR a.status = :statusEnum) AND " +
+           "(:appointmentType IS NULL OR a.appointmentType = :appointmentTypeEnum) AND " +
+           "(:dateFrom IS NULL OR a.appointmentDate >= :dateFromParsed) AND " +
+           "(:dateTo IS NULL OR a.appointmentDate <= :dateToParsed)")
+    Page<Appointment> findAppointmentsWithSearchIncludingDeleted(@Param("searchTerm") String searchTerm,
+                                                                @Param("status") String status,
+                                                                @Param("statusEnum") Appointment.Status statusEnum,
+                                                                @Param("appointmentType") String appointmentType,
+                                                                @Param("appointmentTypeEnum") Appointment.AppointmentType appointmentTypeEnum,
+                                                                @Param("dateFrom") String dateFrom,
+                                                                @Param("dateFromParsed") LocalDate dateFromParsed,
+                                                                @Param("dateTo") String dateTo,
+                                                                @Param("dateToParsed") LocalDate dateToParsed,
+                                                                Pageable pageable);
 }

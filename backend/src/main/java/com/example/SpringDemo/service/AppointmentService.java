@@ -668,6 +668,13 @@ public class AppointmentService {
             }
         }
         
+        // If both patientName and doctorName are the same (indicating a general search), use the OR logic method
+        if (patientName != null && doctorName != null && patientName.equals(doctorName)) {
+            return appointmentRepository.findAppointmentsWithSearchIncludingDeleted(patientName, status, statusEnum,
+                                                                                   appointmentType, appointmentTypeEnum, 
+                                                                                   dateFrom, dateFromParsed, dateTo, dateToParsed, pageable);
+        }
+        
         // Use the method that includes deleted records for display purposes
         return appointmentRepository.findAppointmentsWithFiltersIncludingDeleted(patientName, doctorName, status, statusEnum,
                                                                                 appointmentType, appointmentTypeEnum, 

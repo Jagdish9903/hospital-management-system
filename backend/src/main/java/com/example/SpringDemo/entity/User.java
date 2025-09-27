@@ -26,6 +26,7 @@ public class User {
     @Column(nullable = false)
     private String name;
     
+    @Column(name = "birthdate")
     private LocalDate birthdate;
     
     @Column(nullable = false)

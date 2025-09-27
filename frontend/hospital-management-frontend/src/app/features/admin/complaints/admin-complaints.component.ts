@@ -22,6 +22,7 @@ export class AdminComplaintsComponent implements OnInit {
   isLoading = false;
   searchTerm = '';
   searchSubject = new Subject<string>();
+  currentAdmin: any = null;
   
   // Make Math available in template
   Math = Math;
@@ -117,10 +118,31 @@ export class AdminComplaintsComponent implements OnInit {
       this.currentPage = 0;
       this.loadComplaints();
     });
+
+    // Subscribe to form changes to keep state in sync
+    this.filterForm.valueChanges.subscribe(value => {
+      console.log('Form value changed:', value);
+    });
   }
 
   ngOnInit(): void {
+    this.currentAdmin = this.authService.getCurrentUser();
+    this.syncFormWithState();
     this.loadComplaints();
+  }
+
+  // Sync form values with current state
+  syncFormWithState(): void {
+    this.filterForm.patchValue({
+      category: this.selectedCategory,
+      status: this.selectedStatus,
+      priority: this.selectedPriority
+    });
+    console.log('Form synced with state:', {
+      category: this.selectedCategory,
+      status: this.selectedStatus,
+      priority: this.selectedPriority
+    });
   }
 
   loadComplaints(): void {
@@ -203,6 +225,27 @@ export class AdminComplaintsComponent implements OnInit {
     this.selectedStatus = this.filterForm.get('status')?.value || '';
     this.selectedPriority = this.filterForm.get('priority')?.value || '';
     this.currentPage = 0;
+    console.log('Applying filters:', {
+      category: this.selectedCategory,
+      status: this.selectedStatus,
+      priority: this.selectedPriority
+    });
+    this.loadComplaints();
+  }
+
+  // Add method to handle individual filter changes
+  onFilterChange(): void {
+    this.selectedCategory = this.filterForm.get('category')?.value || '';
+    this.selectedStatus = this.filterForm.get('status')?.value || '';
+    this.selectedPriority = this.filterForm.get('priority')?.value || '';
+    
+    console.log('Filter changed:', {
+      category: this.selectedCategory,
+      status: this.selectedStatus,
+      priority: this.selectedPriority
+    });
+    
+    this.currentPage = 0;
     this.loadComplaints();
   }
 
@@ -212,7 +255,60 @@ export class AdminComplaintsComponent implements OnInit {
     this.selectedStatus = '';
     this.selectedPriority = '';
     this.currentPage = 0;
+    console.log('Filters cleared');
     this.loadComplaints();
+  }
+
+  // Debug method to check form state
+  debugFormState(): void {
+    console.log('Current form state:', {
+      formValue: this.filterForm.value,
+      selectedCategory: this.selectedCategory,
+      selectedStatus: this.selectedStatus,
+      selectedPriority: this.selectedPriority
+    });
+  }
+
+  filterAvailableToMe(): void {
+    if (!this.currentAdmin) return;
+    
+    // Set filter to show only complaints available to current admin
+    this.filterForm.patchValue({
+      category: '',
+      status: '',
+      priority: '',
+      assignedTo: this.currentAdmin.id // This will be handled in the API call
+    });
+    
+    this.currentPage = 0;
+    this.loadComplaintsAvailableToMe();
+  }
+
+  loadComplaintsAvailableToMe(): void {
+    this.isLoading = true;
+    
+    const params = {
+      page: this.currentPage,
+      size: this.pageSize,
+      sortBy: this.sortBy,
+      sortDir: this.sortDir,
+      assignedTo: this.currentAdmin?.id || 'unassigned'
+    };
+
+    this.adminService.getComplaintsAvailableToAdmin(params).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.complaints = response.data.content;
+          this.totalElements = response.data.totalElements;
+          this.totalPages = response.data.totalPages;
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading available complaints:', error);
+        this.isLoading = false;
+      }
+    });
   }
 
   toggleFilters(): void {

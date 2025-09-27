@@ -159,7 +159,18 @@ public class DoctorService {
             doctor.setActive(request.getActive());
         }
         
-        return doctorRepository.save(doctor);
+        // Update slot management fields
+        doctor.setSlotStartTime(request.getSlotStartTime());
+        doctor.setSlotEndTime(request.getSlotEndTime());
+        doctor.setAppointmentDuration(request.getAppointmentDuration());
+        doctor.setWorkingDays(request.getWorkingDays());
+        
+        Doctor savedDoctor = doctorRepository.save(doctor);
+        
+        // Handle slot configuration changes for existing doctor
+        slotGeneratorService.handleWorkingDaysUpdate(savedDoctor);
+        
+        return savedDoctor;
     }
     
     public void deleteDoctor(Long id) {
@@ -265,11 +276,37 @@ public class DoctorService {
             System.out.println("Doctor " + doctor.getFirstName() + " " + doctor.getLastName() + " active status changed to: " + newActiveStatus);
         }
         
+        // Handle slot-related updates
+        boolean slotConfigChanged = false;
+        if (updateData.containsKey("slotStartTime") && updateData.get("slotStartTime") != null) {
+            doctor.setSlotStartTime((String) updateData.get("slotStartTime"));
+            slotConfigChanged = true;
+        }
+        if (updateData.containsKey("slotEndTime") && updateData.get("slotEndTime") != null) {
+            doctor.setSlotEndTime((String) updateData.get("slotEndTime"));
+            slotConfigChanged = true;
+        }
+        if (updateData.containsKey("appointmentDuration") && updateData.get("appointmentDuration") != null) {
+            doctor.setAppointmentDuration((Integer) updateData.get("appointmentDuration"));
+            slotConfigChanged = true;
+        }
+        if (updateData.containsKey("workingDays") && updateData.get("workingDays") != null) {
+            doctor.setWorkingDays((String) updateData.get("workingDays"));
+            slotConfigChanged = true;
+        }
+        
         // Update audit fields
         doctor.setUpdatedAt(java.time.LocalDateTime.now());
         doctor.setUpdatedBy(doctor.getDoctorId());
         
-        return doctorRepository.save(doctor);
+        Doctor savedDoctor = doctorRepository.save(doctor);
+        
+        // Handle slot configuration changes
+        if (slotConfigChanged) {
+            slotGeneratorService.handleWorkingDaysUpdate(savedDoctor);
+        }
+        
+        return savedDoctor;
     }
     
     public Object getDoctorStats() {

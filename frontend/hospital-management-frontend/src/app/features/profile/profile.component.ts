@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { environment } from '../../../environments/environment';
+import { CustomValidators } from '../../shared/validators/custom-validators';
 
 interface UserProfile {
   id: number;
@@ -83,28 +84,19 @@ interface UserProfile {
               </h3>
               <div class="form-grid">
                 <div class="form-group">
-                  <label class="form-label">Full Name *</label>
-                  <input 
-                    type="text" 
-                    class="form-input" 
-                    formControlName="name"
-                    placeholder="Enter your full name"
-                  >
-                  <div class="error-message" *ngIf="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
-                    Full name is required
-                  </div>
-                </div>
-
-                <div class="form-group">
                   <label class="form-label">First Name *</label>
                   <input 
                     type="text" 
                     class="form-input" 
                     formControlName="firstname"
                     placeholder="Enter your first name"
+                    (input)="onTextInput($event, 'firstname')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
                   <div class="error-message" *ngIf="profileForm.get('firstname')?.invalid && profileForm.get('firstname')?.touched">
-                    First name is required
+                    <div *ngIf="profileForm.get('firstname')?.errors?.['required']">First name is required</div>
+                    <div *ngIf="profileForm.get('firstname')?.errors?.['minlength']">First name must be at least 2 characters</div>
+                    <div *ngIf="profileForm.get('firstname')?.errors?.['invalidText']">First name should contain only letters and spaces</div>
                   </div>
                 </div>
 
@@ -115,9 +107,13 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="lastname"
                     placeholder="Enter your last name"
+                    (input)="onTextInput($event, 'lastname')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
                   <div class="error-message" *ngIf="profileForm.get('lastname')?.invalid && profileForm.get('lastname')?.touched">
-                    Last name is required
+                    <div *ngIf="profileForm.get('lastname')?.errors?.['required']">Last name is required</div>
+                    <div *ngIf="profileForm.get('lastname')?.errors?.['minlength']">Last name must be at least 2 characters</div>
+                    <div *ngIf="profileForm.get('lastname')?.errors?.['invalidText']">Last name should contain only letters and spaces</div>
                   </div>
                 </div>
 
@@ -127,7 +123,12 @@ interface UserProfile {
                     type="date" 
                     class="form-input" 
                     formControlName="birthdate"
+                    [max]="getMaxDate()"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('birthdate')?.invalid && profileForm.get('birthdate')?.touched">
+                    <div *ngIf="profileForm.get('birthdate')?.errors?.['futureDate']">Birth date cannot be in the future</div>
+                    <div *ngIf="profileForm.get('birthdate')?.errors?.['tooOld']">Please enter a valid birth date</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -166,30 +167,28 @@ interface UserProfile {
                 Contact Information
               </h3>
               <div class="form-grid">
-                <div class="form-group">
+                <div class="form-group full-width">
                   <label class="form-label">Phone Number</label>
                   <div class="input-group">
                     <select class="form-select country-code" formControlName="countryCode">
-                      <option value="">Code</option>
-                      <option value="+1">+1 (US)</option>
-                      <option value="+44">+44 (UK)</option>
-                      <option value="+91">+91 (India)</option>
-                      <option value="+86">+86 (China)</option>
-                      <option value="+81">+81 (Japan)</option>
+                      <option *ngFor="let code of countryCodes" [value]="code.value">{{ code.label }}</option>
                     </select>
                     <input 
                       type="tel" 
-                      class="form-input" 
+                      class="form-input phone-input" 
                       formControlName="contact"
                       placeholder="Enter phone number"
+                      (input)="onContactInput($event)" 
+                      (keypress)="onNumberKeyPress($event)"
+                      maxlength="10"
                     >
                   </div>
                   <div class="error-message" *ngIf="profileForm.get('contact')?.invalid && profileForm.get('contact')?.touched">
-                    Please enter a valid phone number
+                    <div *ngIf="profileForm.get('contact')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
                   </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group full-width">
                   <label class="form-label">Email Address</label>
                   <input 
                     type="email" 
@@ -221,6 +220,9 @@ interface UserProfile {
                     formControlName="address"
                     placeholder="Enter your street address"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('address')?.invalid && profileForm.get('address')?.touched">
+                    <div *ngIf="profileForm.get('address')?.errors?.['minlength']">Address must be at least 10 characters</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -230,7 +232,12 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="city"
                     placeholder="Enter city"
+                    (input)="onTextInput($event, 'city')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('city')?.invalid && profileForm.get('city')?.touched">
+                    <div *ngIf="profileForm.get('city')?.errors?.['invalidText']">City should contain only letters and spaces</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -240,7 +247,12 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="state"
                     placeholder="Enter state or province"
+                    (input)="onTextInput($event, 'state')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('state')?.invalid && profileForm.get('state')?.touched">
+                    <div *ngIf="profileForm.get('state')?.errors?.['invalidText']">State should contain only letters and spaces</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -250,7 +262,12 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="country"
                     placeholder="Enter country"
+                    (input)="onTextInput($event, 'country')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('country')?.invalid && profileForm.get('country')?.touched">
+                    <div *ngIf="profileForm.get('country')?.errors?.['invalidText']">Country should contain only letters and spaces</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -260,7 +277,13 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="postalCode"
                     placeholder="Enter postal code"
+                    (input)="onPostalCodeInput($event)" 
+                    (keypress)="onNumberKeyPress($event)"
+                    maxlength="6"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('postalCode')?.invalid && profileForm.get('postalCode')?.touched">
+                    <div *ngIf="profileForm.get('postalCode')?.errors?.['invalidPostalCode']">Please enter a valid 6-digit postal code</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -281,7 +304,12 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="emergencyContactName"
                     placeholder="Enter emergency contact name"
+                    (input)="onTextInput($event, 'emergencyContactName')" 
+                    (keypress)="onNameKeyPress($event)"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('emergencyContactName')?.invalid && profileForm.get('emergencyContactName')?.touched">
+                    <div *ngIf="profileForm.get('emergencyContactName')?.errors?.['invalidText']">Emergency contact name should contain only letters and spaces</div>
+                  </div>
                 </div>
 
                 <div class="form-group">
@@ -291,7 +319,13 @@ interface UserProfile {
                     class="form-input" 
                     formControlName="emergencyContactNum"
                     placeholder="Enter emergency contact number"
+                    (input)="onEmergencyContactInput($event)" 
+                    (keypress)="onNumberKeyPress($event)"
+                    maxlength="10"
                   >
+                  <div class="error-message" *ngIf="profileForm.get('emergencyContactNum')?.invalid && profileForm.get('emergencyContactNum')?.touched">
+                    <div *ngIf="profileForm.get('emergencyContactNum')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -326,6 +360,18 @@ export class ProfileComponent implements OnInit {
   userProfile: UserProfile | null = null;
   profileForm: FormGroup;
   isLoading = false;
+  countryCodes = [
+    { value: '+91', label: '+91 (India)' },
+    { value: '+1', label: '+1 (USA/Canada)' },
+    { value: '+44', label: '+44 (UK)' },
+    { value: '+61', label: '+61 (Australia)' },
+    { value: '+49', label: '+49 (Germany)' },
+    { value: '+33', label: '+33 (France)' },
+    { value: '+81', label: '+81 (Japan)' },
+    { value: '+86', label: '+86 (China)' },
+    { value: '+55', label: '+55 (Brazil)' },
+    { value: '+7', label: '+7 (Russia)' }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -334,21 +380,20 @@ export class ProfileComponent implements OnInit {
     private toastService: ToastService
   ) {
     this.profileForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      firstname: ['', [Validators.required, Validators.minLength(2)]],
-      lastname: ['', [Validators.required, Validators.minLength(2)]],
-      birthdate: [''],
-      contact: ['', [Validators.pattern(/^[0-9+\-\s()]+$/)]],
-      countryCode: [''],
+      firstname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      lastname: ['', [Validators.required, Validators.minLength(2), CustomValidators.textOnly]],
+      birthdate: ['', [CustomValidators.pastDate, CustomValidators.maxAge(100)]],
+      contact: ['', [CustomValidators.indianPhoneNumber]],
+      countryCode: ['+91', [Validators.required]],
       gender: [''],
-      address: [''],
-      city: [''],
-      state: [''],
-      country: [''],
-      postalCode: [''],
-      bloodGroup: [''],
-      emergencyContactName: [''],
-      emergencyContactNum: ['', [Validators.pattern(/^[0-9+\-\s()]+$/)]],
+      address: ['', [Validators.minLength(10)]],
+      city: ['', [CustomValidators.textOnly]],
+      state: ['', [CustomValidators.textOnly]],
+      country: ['', [CustomValidators.textOnly]],
+      postalCode: ['', [CustomValidators.postalCode]],
+      bloodGroup: ['', [CustomValidators.bloodGroup]],
+      emergencyContactName: ['', [CustomValidators.textOnly]],
+      emergencyContactNum: ['', [CustomValidators.indianPhoneNumber]],
       profileUrl: ['']
     });
   }
@@ -466,7 +511,6 @@ export class ProfileComponent implements OnInit {
   populateForm(): void {
     if (this.userProfile) {
       this.profileForm.patchValue({
-        name: this.userProfile.name || '',
         firstname: this.userProfile.firstname || '',
         lastname: this.userProfile.lastname || '',
         birthdate: this.userProfile.birthdate || '',
@@ -684,5 +728,83 @@ export class ProfileComponent implements OnInit {
         });
       }
     });
+  }
+
+  // Input event handlers for live validation and character restrictions
+  onTextInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const textOnlyValue = value.replace(/[^a-zA-Z\s]/g, '');
+    if (value !== textOnlyValue) {
+      target.value = textOnlyValue;
+      this.profileForm.get(controlName)?.setValue(textOnlyValue);
+    }
+  }
+
+  onNumberInput(event: Event, controlName: string): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    if (value !== numberOnlyValue) {
+      target.value = numberOnlyValue;
+      this.profileForm.get(controlName)?.setValue(numberOnlyValue);
+    }
+  }
+
+  onPostalCodeInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 6);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.profileForm.get('postalCode')?.setValue(limitedValue);
+    }
+  }
+
+  onContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.profileForm.get('contact')?.setValue(limitedValue);
+    }
+  }
+
+  onEmergencyContactInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    const numberOnlyValue = value.replace(/\D/g, '');
+    const limitedValue = numberOnlyValue.substring(0, 10);
+    if (target.value !== limitedValue) {
+      target.value = limitedValue;
+      this.profileForm.get('emergencyContactNum')?.setValue(limitedValue);
+    }
+  }
+
+  // Prevent non-text characters in name fields
+  onNameKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[a-zA-Z\s]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Prevent non-digit characters in number fields
+  onNumberKeyPress(event: KeyboardEvent): void {
+    const pattern = /^[0-9]*$/;
+    const inputChar = String.fromCharCode(event.charCode);
+    if (!pattern.test(inputChar) && event.charCode !== 0) {
+      event.preventDefault();
+    }
+  }
+
+  // Get maximum date for birth date (today)
+  getMaxDate(): string {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   }
 }

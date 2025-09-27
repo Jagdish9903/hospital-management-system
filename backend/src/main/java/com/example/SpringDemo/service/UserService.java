@@ -170,9 +170,23 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
+        
+        // Prevent changing active status of admin users
+        if (userDetails.getActive() != null && user.getRole() == User.Role.ADMIN) {
+            throw new RuntimeException("Cannot change active status of admin users");
+        }
+        
         if (userDetails.getName() != null) user.setName(userDetails.getName());
         if (userDetails.getFirstname() != null) user.setFirstname(userDetails.getFirstname());
         if (userDetails.getLastname() != null) user.setLastname(userDetails.getLastname());
+        
+        // Auto-update name field when firstname or lastname is updated
+        if (userDetails.getFirstname() != null || userDetails.getLastname() != null) {
+            String firstName = user.getFirstname() != null ? user.getFirstname() : "";
+            String lastName = user.getLastname() != null ? user.getLastname() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            user.setName(fullName);
+        }
         if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
         if (userDetails.getContact() != null) user.setContact(userDetails.getContact());
         if (userDetails.getCountryCode() != null) user.setCountryCode(userDetails.getCountryCode());
@@ -182,10 +196,12 @@ public class UserService {
         if (userDetails.getCountry() != null) user.setCountry(userDetails.getCountry());
         if (userDetails.getPostalCode() != null) user.setPostalCode(userDetails.getPostalCode());
         if (userDetails.getGender() != null) user.setGender(userDetails.getGender());
+        if (userDetails.getBirthdate() != null) user.setBirthdate(userDetails.getBirthdate());
         if (userDetails.getBloodGroup() != null) user.setBloodGroup(userDetails.getBloodGroup());
         if (userDetails.getEmergencyContactName() != null) user.setEmergencyContactName(userDetails.getEmergencyContactName());
         if (userDetails.getEmergencyContactNum() != null) user.setEmergencyContactNum(userDetails.getEmergencyContactNum());
         if (userDetails.getProfileUrl() != null) user.setProfileUrl(userDetails.getProfileUrl());
+        if (userDetails.getActive() != null) user.setActive(userDetails.getActive());
         
         user.setUpdatedAt(LocalDateTime.now());
         user.setUpdatedBy(user.getId());
@@ -197,10 +213,23 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
+        // Prevent changing active status of admin users
+        if (userDetails.containsKey("active") && user.getRole() == User.Role.ADMIN) {
+            throw new RuntimeException("Cannot change active status of admin users");
+        }
+        
         // Update fields from Map
         if (userDetails.containsKey("name")) user.setName((String) userDetails.get("name"));
         if (userDetails.containsKey("firstname")) user.setFirstname((String) userDetails.get("firstname"));
         if (userDetails.containsKey("lastname")) user.setLastname((String) userDetails.get("lastname"));
+        
+        // Auto-update name field when firstname or lastname is updated
+        if (userDetails.containsKey("firstname") || userDetails.containsKey("lastname")) {
+            String firstName = user.getFirstname() != null ? user.getFirstname() : "";
+            String lastName = user.getLastname() != null ? user.getLastname() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            user.setName(fullName);
+        }
         if (userDetails.containsKey("birthdate")) {
             Object birthdateObj = userDetails.get("birthdate");
             if (birthdateObj instanceof LocalDate) {
@@ -238,6 +267,14 @@ public class UserService {
         if (userDetails.containsKey("emergencyContactName")) user.setEmergencyContactName((String) userDetails.get("emergencyContactName"));
         if (userDetails.containsKey("emergencyContactNum")) user.setEmergencyContactNum((String) userDetails.get("emergencyContactNum"));
         if (userDetails.containsKey("profileUrl")) user.setProfileUrl((String) userDetails.get("profileUrl"));
+        if (userDetails.containsKey("active")) {
+            Object activeObj = userDetails.get("active");
+            if (activeObj instanceof Boolean) {
+                user.setActive((Boolean) activeObj);
+            } else if (activeObj instanceof String) {
+                user.setActive(Boolean.parseBoolean((String) activeObj));
+            }
+        }
         
         user.setUpdatedAt(LocalDateTime.now());
         user.setUpdatedBy(user.getId());

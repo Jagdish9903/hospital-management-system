@@ -46,4 +46,19 @@ public class AuthController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(@RequestHeader("Authorization") String token) {
+        try {
+            if (token != null && token.startsWith("Bearer ")) {
+                String jwtToken = token.substring(7);
+                authService.logout(jwtToken);
+                return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Invalid token format"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

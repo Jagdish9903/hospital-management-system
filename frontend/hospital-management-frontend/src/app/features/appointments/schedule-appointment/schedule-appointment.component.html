@@ -81,7 +81,7 @@
             <p class="doctor-experience" [class.deleted-text]="doctorData.doctor.deletedAt">{{ doctorData.doctor.yearsOfExp }} years experience</p>
           </div>
           <div class="doctor-fee">
-            <span class="fee-amount">${{ doctorData.doctor.consultationFee }}</span>
+            <span class="fee-amount">₹{{ doctorData.doctor.consultationFee }}</span>
             <span class="fee-label">per consultation</span>
           </div>
         </div>
@@ -185,20 +185,47 @@
             <span class="summary-value">{{ selectedSlot ? formatTime(selectedSlot.startTime) : 'Not selected' }}</span>
           </div>
           <div class="summary-item">
+            <span class="summary-label">Type:</span>
+            <span class="summary-value">{{ bookingForm.value.appointmentType || 'Consultation' }}</span>
+          </div>
+          <div class="summary-item">
             <span class="summary-label">Fee:</span>
-            <span class="summary-value">${{ selectedDoctor?.consultationFee || '0' }}</span>
+            <span class="summary-value">₹{{ selectedDoctor?.consultationFee || '0' }}</span>
           </div>
         </div>
 
         <form [formGroup]="bookingForm" (ngSubmit)="bookAppointment()" class="booking-form">
           <div class="form-group">
+            <label class="form-label">Appointment Type *</label>
+            <select formControlName="appointmentType" class="form-select">
+              <option *ngFor="let type of appointmentTypes" [value]="type.value">{{ type.label }}</option>
+            </select>
+            <div *ngIf="bookingForm.get('appointmentType')?.invalid && bookingForm.get('appointmentType')?.touched" 
+                 class="form-error">
+              Please select an appointment type
+            </div>
+            <div class="form-help" *ngIf="bookingForm.value.appointmentType">
+              {{ getAppointmentTypeDescription(bookingForm.value.appointmentType) }}
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Symptoms *</label>
             <textarea formControlName="symptoms" class="form-textarea" 
-                      placeholder="Please describe your symptoms in detail..." rows="4"></textarea>
+                      [placeholder]="isEmergencyAppointment() ? 'Please describe your emergency symptoms in detail...' : 'Please describe your symptoms in detail...'" 
+                      rows="4"></textarea>
             <div *ngIf="bookingForm.get('symptoms')?.invalid && bookingForm.get('symptoms')?.touched" 
                  class="form-error">
               Please describe your symptoms (minimum 10 characters)
             </div>
+            <!-- <div *ngIf="isEmergencyAppointment()" class="emergency-warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Emergency appointments are prioritized and may have different scheduling requirements.</span>
+            </div> -->
           </div>
 
           <div class="form-group">

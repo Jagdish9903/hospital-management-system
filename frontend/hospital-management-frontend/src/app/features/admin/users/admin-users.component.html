@@ -55,10 +55,8 @@
           </div>
           <div class="filter-group">
             <label class="filter-label">Status</label>
-            <select formControlName="status" class="filter-select">
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+            <select formControlName="active" class="filter-select">
+              <option *ngFor="let status of statuses" [value]="status.value">{{ status.label }}</option>
             </select>
           </div>
         </div>
@@ -147,7 +145,7 @@
                   </svg>
                 </div>
                 <div class="user-details">
-                  <div class="user-name-text" [class.deleted-text]="user.deletedAt">{{ user.name }}</div>
+                  <div class="user-name-text" [class.deleted-text]="user.deletedAt">{{ getUserDisplayName(user) }}</div>
                   <div class="user-username" [class.deleted-text]="user.deletedAt">{{ '@' + user.username }}</div>
                 </div>
               </div>
@@ -166,7 +164,8 @@
                   <input type="checkbox" 
                          [checked]="user.active" 
                          (change)="toggleUserStatus(user)"
-                         [disabled]="isSubmitting">
+                         [disabled]="isSubmitting || isAdminUser(user)"
+                         [title]="isAdminUser(user) ? 'Cannot change active status of admin users' : ''">
                   <span class="toggle-slider"></span>
                 </label>
                 <span class="status-text" [class.active]="user.active" [class.inactive]="!user.active">
@@ -179,20 +178,20 @@
             <td class="user-actions">
               <div class="action-buttons">
                 <button class="action-btn edit-btn" 
-                        [disabled]="user.deletedAt"
-                        [class.disabled]="user.deletedAt"
+                        [disabled]="user.deletedAt || !canEditUser(user)"
+                        [class.disabled]="user.deletedAt || !canEditUser(user)"
                         (click)="editUser(user)" 
-                        title="Edit User">
+                        [title]="isAdminUser(user) ? 'Cannot edit admin users' : 'Edit User'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                   </svg>
                 </button>
                 <button class="action-btn delete-btn" 
-                        [disabled]="user.deletedAt"
-                        [class.disabled]="user.deletedAt"
+                        [disabled]="user.deletedAt || !canDeleteUser(user)"
+                        [class.disabled]="user.deletedAt || !canDeleteUser(user)"
                         (click)="deleteUser(user)" 
-                        title="Delete User">
+                        [title]="isAdminUser(user) ? 'Cannot delete admin users' : 'Delete User'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3,6 5,6 21,6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -273,24 +272,80 @@
         <form [formGroup]="editForm" class="edit-form">
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Full Name *</label>
-              <input type="text" formControlName="name" class="form-input" placeholder="Enter full name">
-              <div class="form-error" *ngIf="editForm.get('name')?.invalid && editForm.get('name')?.touched">
-                Name is required and must be at least 2 characters
+              <label class="form-label">First Name *</label>
+              <input type="text" formControlName="firstname" class="form-input" 
+                     [class.error]="editForm.get('firstname')?.invalid && editForm.get('firstname')?.touched"
+                     placeholder="Enter first name" 
+                     (input)="onTextInput($event, 'firstname')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('firstname')?.invalid && editForm.get('firstname')?.touched">
+                <div *ngIf="editForm.get('firstname')?.errors?.['required']">First name is required</div>
+                <div *ngIf="editForm.get('firstname')?.errors?.['invalidText']">First name should contain only letters and spaces</div>
+                <div *ngIf="editForm.get('firstname')?.errors?.['minlength']">First name must be at least 2 characters</div>
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">Email *</label>
-              <input type="email" formControlName="email" class="form-input" placeholder="Enter email address">
-              <div class="form-error" *ngIf="editForm.get('email')?.invalid && editForm.get('email')?.touched">
-                Please enter a valid email address
+              <label class="form-label">Last Name *</label>
+              <input type="text" formControlName="lastname" class="form-input" 
+                     [class.error]="editForm.get('lastname')?.invalid && editForm.get('lastname')?.touched"
+                     placeholder="Enter last name" 
+                     (input)="onTextInput($event, 'lastname')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('lastname')?.invalid && editForm.get('lastname')?.touched">
+                <div *ngIf="editForm.get('lastname')?.errors?.['required']">Last name is required</div>
+                <div *ngIf="editForm.get('lastname')?.errors?.['invalidText']">Last name should contain only letters and spaces</div>
+                <div *ngIf="editForm.get('lastname')?.errors?.['minlength']">Last name must be at least 2 characters</div>
               </div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input type="email" formControlName="email" class="form-input readonly-input" 
+                     placeholder="Enter email address" readonly>
+              <small class="form-help">Email cannot be changed after creation</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select formControlName="gender" class="form-select">
+                <option value="">Select gender...</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Birth Date *</label>
+              <input type="date" formControlName="birthdate" class="form-input" 
+                     [class.error]="editForm.get('birthdate')?.invalid && editForm.get('birthdate')?.touched"
+                     [max]="getMaxDate()">
+              <div class="form-error" *ngIf="editForm.get('birthdate')?.invalid && editForm.get('birthdate')?.touched">
+                <div *ngIf="editForm.get('birthdate')?.errors?.['required']">Birth date is required</div>
+                <div *ngIf="editForm.get('birthdate')?.errors?.['futureDate']">Birth date cannot be in the future</div>
+                <div *ngIf="editForm.get('birthdate')?.errors?.['tooOld']">Please enter a valid birth date</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Country Code</label>
+              <select formControlName="countryCode" class="form-select">
+                <option *ngFor="let code of countryCodes" [value]="code.value">{{ code.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="form-label">Contact Number</label>
-              <input type="tel" formControlName="contact" class="form-input" placeholder="Enter contact number">
+              <input type="tel" formControlName="contact" class="form-input" 
+                     [class.error]="editForm.get('contact')?.invalid && editForm.get('contact')?.touched"
+                     placeholder="Enter contact number (10 digits, start with 6-9)" 
+                     (input)="onContactInput($event)" 
+                     (keypress)="onNumberKeyPress($event)" 
+                     maxlength="10">
+              <div class="form-error" *ngIf="editForm.get('contact')?.invalid && editForm.get('contact')?.touched">
+                <div *ngIf="editForm.get('contact')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Blood Group</label>
@@ -314,25 +369,62 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">City</label>
-              <input type="text" formControlName="city" class="form-input" placeholder="Enter city">
+              <input type="text" formControlName="city" class="form-input" 
+                     [class.error]="editForm.get('city')?.invalid && editForm.get('city')?.touched"
+                     placeholder="Enter city" 
+                     (input)="onTextInput($event, 'city')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('city')?.invalid && editForm.get('city')?.touched">
+                <div *ngIf="editForm.get('city')?.errors?.['invalidText']">City should contain only letters and spaces</div>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">State</label>
-              <input type="text" formControlName="state" class="form-input" placeholder="Enter state">
+              <input type="text" formControlName="state" class="form-input" 
+                     [class.error]="editForm.get('state')?.invalid && editForm.get('state')?.touched"
+                     placeholder="Enter state" 
+                     (input)="onTextInput($event, 'state')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('state')?.invalid && editForm.get('state')?.touched">
+                <div *ngIf="editForm.get('state')?.errors?.['invalidText']">State should contain only letters and spaces</div>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Postal Code</label>
-              <input type="text" formControlName="postalCode" class="form-input" placeholder="Enter postal code">
+              <input type="text" formControlName="postalCode" class="form-input" 
+                     [class.error]="editForm.get('postalCode')?.invalid && editForm.get('postalCode')?.touched"
+                     placeholder="Enter postal code (6 digits)" 
+                     (input)="onPostalCodeInput($event)" 
+                     (keypress)="onNumberKeyPress($event)" 
+                     maxlength="6">
+              <div class="form-error" *ngIf="editForm.get('postalCode')?.invalid && editForm.get('postalCode')?.touched">
+                <div *ngIf="editForm.get('postalCode')?.errors?.['invalidPostalCode']">Postal code must be exactly 6 digits</div>
+              </div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Emergency Contact Name</label>
-              <input type="text" formControlName="emergencyContactName" class="form-input" placeholder="Enter emergency contact name">
+              <input type="text" formControlName="emergencyContactName" class="form-input" 
+                     [class.error]="editForm.get('emergencyContactName')?.invalid && editForm.get('emergencyContactName')?.touched"
+                     placeholder="Enter emergency contact name" 
+                     (input)="onTextInput($event, 'emergencyContactName')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('emergencyContactName')?.invalid && editForm.get('emergencyContactName')?.touched">
+                <div *ngIf="editForm.get('emergencyContactName')?.errors?.['invalidText']">Name should contain only letters and spaces</div>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Emergency Contact Number</label>
-              <input type="tel" formControlName="emergencyContactNum" class="form-input" placeholder="Enter emergency contact number">
+              <input type="tel" formControlName="emergencyContactNum" class="form-input" 
+                     [class.error]="editForm.get('emergencyContactNum')?.invalid && editForm.get('emergencyContactNum')?.touched"
+                     placeholder="Enter emergency contact number (10 digits, start with 6-9)" 
+                     (input)="onEmergencyContactInput($event)" 
+                     (keypress)="onNumberKeyPress($event)" 
+                     maxlength="10">
+              <div class="form-error" *ngIf="editForm.get('emergencyContactNum')?.invalid && editForm.get('emergencyContactNum')?.touched">
+                <div *ngIf="editForm.get('emergencyContactNum')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
+              </div>
             </div>
           </div>
         </form>
@@ -399,109 +491,153 @@
       <form [formGroup]="addForm" class="add-form">
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" formControlName="name" class="form-input" placeholder="Enter full name">
-            <div class="form-error" *ngIf="addForm.get('name')?.invalid && addForm.get('name')?.touched">
-              Name is required and must be at least 2 characters
-            </div>
-          </div>
-          <div class="form-group">
             <label class="form-label">Email *</label>
-            <input type="email" formControlName="email" class="form-input" placeholder="Enter email address">
+            <input type="email" formControlName="email" class="form-input" placeholder="Enter email address" 
+                   (input)="onEmailInput($event)" (keypress)="onEmailKeyPress($event)">
             <div class="form-error" *ngIf="addForm.get('email')?.invalid && addForm.get('email')?.touched">
-              Please enter a valid email address
+              <div *ngIf="addForm.get('email')?.errors?.['required']">Email is required</div>
+              <div *ngIf="addForm.get('email')?.errors?.['invalidEmail']">Please enter a valid email address</div>
             </div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Username *</label>
-            <input type="text" formControlName="username" class="form-input" placeholder="Enter username">
+            <input type="text" formControlName="username" class="form-input" placeholder="Enter username" 
+                   (input)="onUsernameInput($event)">
             <div class="form-error" *ngIf="addForm.get('username')?.invalid && addForm.get('username')?.touched">
-              Username is required and must be at least 3 characters
+              <div *ngIf="addForm.get('username')?.errors?.['required']">Username is required</div>
+              <div *ngIf="addForm.get('username')?.errors?.['invalidUsername']">Username must be 3-20 characters, letters, numbers, dots, underscores, or hyphens only</div>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Password *</label>
             <input type="password" formControlName="password" class="form-input" placeholder="Enter password">
             <div class="form-error" *ngIf="addForm.get('password')?.invalid && addForm.get('password')?.touched">
-              Password must be at least 6 characters
+              <div *ngIf="addForm.get('password')?.errors?.['required']">Password is required</div>
+              <div *ngIf="addForm.get('password')?.errors?.['minLength']">Password must be at least 8 characters</div>
+              <div *ngIf="addForm.get('password')?.errors?.['noUppercase']">Password must contain at least one uppercase letter</div>
+              <div *ngIf="addForm.get('password')?.errors?.['noLowercase']">Password must contain at least one lowercase letter</div>
+              <div *ngIf="addForm.get('password')?.errors?.['noDigit']">Password must contain at least one number</div>
+              <div *ngIf="addForm.get('password')?.errors?.['noSpecialChar']">Password must contain at least one special character</div>
             </div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">First Name *</label>
-            <input type="text" formControlName="firstname" class="form-input" placeholder="Enter first name">
+            <input type="text" formControlName="firstname" class="form-input" placeholder="Enter first name" 
+                   (input)="onTextInput($event, 'firstname')" (keypress)="onNameKeyPress($event)">
             <div class="form-error" *ngIf="addForm.get('firstname')?.invalid && addForm.get('firstname')?.touched">
-              First name is required
+              <div *ngIf="addForm.get('firstname')?.errors?.['required']">First name is required</div>
+              <div *ngIf="addForm.get('firstname')?.errors?.['minlength']">First name must be at least 2 characters</div>
+              <div *ngIf="addForm.get('firstname')?.errors?.['invalidText']">First name should contain only letters and spaces</div>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Last Name *</label>
-            <input type="text" formControlName="lastname" class="form-input" placeholder="Enter last name">
+            <input type="text" formControlName="lastname" class="form-input" placeholder="Enter last name" 
+                   (input)="onTextInput($event, 'lastname')" (keypress)="onNameKeyPress($event)">
             <div class="form-error" *ngIf="addForm.get('lastname')?.invalid && addForm.get('lastname')?.touched">
-              Last name is required
+              <div *ngIf="addForm.get('lastname')?.errors?.['required']">Last name is required</div>
+              <div *ngIf="addForm.get('lastname')?.errors?.['minlength']">Last name must be at least 2 characters</div>
+              <div *ngIf="addForm.get('lastname')?.errors?.['invalidText']">Last name should contain only letters and spaces</div>
             </div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Role *</label>
-            <select formControlName="role" class="form-select">
-              <option value="">Select Role</option>
-              <option *ngFor="let role of availableRoles" [value]="role.value">{{ role.label }}</option>
-            </select>
-            <div class="form-error" *ngIf="addForm.get('role')?.invalid && addForm.get('role')?.touched">
-              Please select a role
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Gender</label>
+            <label class="form-label">Gender *</label>
             <select formControlName="gender" class="form-select">
               <option value="">Select Gender</option>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
               <option value="OTHER">Other</option>
             </select>
+            <div class="form-error" *ngIf="addForm.get('gender')?.invalid && addForm.get('gender')?.touched">
+              Please select a gender
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Birth Date *</label>
+            <input type="date" formControlName="birthdate" class="form-input" [max]="getMaxDate()">
+            <div class="form-error" *ngIf="addForm.get('birthdate')?.invalid && addForm.get('birthdate')?.touched">
+              <div *ngIf="addForm.get('birthdate')?.errors?.['required']">Birth date is required</div>
+              <div *ngIf="addForm.get('birthdate')?.errors?.['futureDate']">Birth date cannot be in the future</div>
+              <div *ngIf="addForm.get('birthdate')?.errors?.['tooOld']">Please enter a valid birth date</div>
+            </div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Contact Number</label>
-            <input type="tel" formControlName="contact" class="form-input" placeholder="Enter contact number">
+            <label class="form-label">Country Code *</label>
+            <select formControlName="countryCode" class="form-select">
+              <option *ngFor="let code of countryCodes" [value]="code.value">{{ code.label }}</option>
+            </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Birth Date</label>
-            <input type="date" formControlName="birthdate" class="form-input">
+            <label class="form-label">Contact Number *</label>
+            <input type="tel" formControlName="contact" class="form-input" placeholder="Enter contact number" 
+                   (input)="onContactInput($event)" (keypress)="onNumberKeyPress($event)" maxlength="10">
+            <div class="form-error" *ngIf="addForm.get('contact')?.invalid && addForm.get('contact')?.touched">
+              <div *ngIf="addForm.get('contact')?.errors?.['required']">Contact number is required</div>
+              <div *ngIf="addForm.get('contact')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
+            </div>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Address</label>
+          <label class="form-label">Address *</label>
           <textarea formControlName="address" class="form-textarea" placeholder="Enter address" rows="3"></textarea>
+          <div class="form-error" *ngIf="addForm.get('address')?.invalid && addForm.get('address')?.touched">
+            <div *ngIf="addForm.get('address')?.errors?.['required']">Address is required</div>
+            <div *ngIf="addForm.get('address')?.errors?.['minlength']">Address must be at least 10 characters</div>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">City</label>
-            <input type="text" formControlName="city" class="form-input" placeholder="Enter city">
+            <label class="form-label">City *</label>
+            <input type="text" formControlName="city" class="form-input" placeholder="Enter city" 
+                   (input)="onTextInput($event, 'city')" (keypress)="onNameKeyPress($event)">
+            <div class="form-error" *ngIf="addForm.get('city')?.invalid && addForm.get('city')?.touched">
+              <div *ngIf="addForm.get('city')?.errors?.['required']">City is required</div>
+              <div *ngIf="addForm.get('city')?.errors?.['invalidText']">City should contain only letters and spaces</div>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">State</label>
-            <input type="text" formControlName="state" class="form-input" placeholder="Enter state">
+            <label class="form-label">State *</label>
+            <input type="text" formControlName="state" class="form-input" placeholder="Enter state" 
+                   (input)="onTextInput($event, 'state')" (keypress)="onNameKeyPress($event)">
+            <div class="form-error" *ngIf="addForm.get('state')?.invalid && addForm.get('state')?.touched">
+              <div *ngIf="addForm.get('state')?.errors?.['required']">State is required</div>
+              <div *ngIf="addForm.get('state')?.errors?.['invalidText']">State should contain only letters and spaces</div>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Postal Code</label>
-            <input type="text" formControlName="postalCode" class="form-input" placeholder="Enter postal code">
+            <label class="form-label">Postal Code *</label>
+            <input type="text" formControlName="postalCode" class="form-input" placeholder="Enter postal code" 
+                   (input)="onPostalCodeInput($event)" (keypress)="onNumberKeyPress($event)" maxlength="6">
+            <div class="form-error" *ngIf="addForm.get('postalCode')?.invalid && addForm.get('postalCode')?.touched">
+              <div *ngIf="addForm.get('postalCode')?.errors?.['required']">Postal code is required</div>
+              <div *ngIf="addForm.get('postalCode')?.errors?.['invalidPostalCode']">Postal code must be exactly 6 digits</div>
+            </div>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Emergency Contact Name</label>
-            <input type="text" formControlName="emergencyContactName" class="form-input" placeholder="Enter emergency contact name">
+            <input type="text" formControlName="emergencyContactName" class="form-input" placeholder="Enter emergency contact name" 
+                   (input)="onTextInput($event, 'emergencyContactName')" (keypress)="onNameKeyPress($event)">
+            <div class="form-error" *ngIf="addForm.get('emergencyContactName')?.invalid && addForm.get('emergencyContactName')?.touched">
+              <div *ngIf="addForm.get('emergencyContactName')?.errors?.['invalidText']">Name should contain only letters and spaces</div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Emergency Contact Number</label>
-            <input type="tel" formControlName="emergencyContactNum" class="form-input" placeholder="Enter emergency contact number">
+            <input type="tel" formControlName="emergencyContactNum" class="form-input" placeholder="Enter emergency contact number" 
+                   (input)="onEmergencyContactInput($event)" (keypress)="onNumberKeyPress($event)" maxlength="10">
+            <div class="form-error" *ngIf="addForm.get('emergencyContactNum')?.invalid && addForm.get('emergencyContactNum')?.touched">
+              <div *ngIf="addForm.get('emergencyContactNum')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
+            </div>
           </div>
         </div>
         <div class="form-row">
@@ -518,10 +654,18 @@
               <option value="O+">O+</option>
               <option value="O-">O-</option>
             </select>
+            <div class="form-error" *ngIf="addForm.get('bloodGroup')?.invalid && addForm.get('bloodGroup')?.touched">
+              <div *ngIf="addForm.get('bloodGroup')?.errors?.['invalidBloodGroup']">Please select a valid blood group</div>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Country</label>
-            <input type="text" formControlName="country" class="form-input" placeholder="Enter country">
+            <label class="form-label">Country *</label>
+            <input type="text" formControlName="country" class="form-input" placeholder="Enter country" 
+                   (input)="onTextInput($event, 'country')" (keypress)="onNameKeyPress($event)">
+            <div class="form-error" *ngIf="addForm.get('country')?.invalid && addForm.get('country')?.touched">
+              <div *ngIf="addForm.get('country')?.errors?.['required']">Country is required</div>
+              <div *ngIf="addForm.get('country')?.errors?.['invalidText']">Country should contain only letters and spaces</div>
+            </div>
           </div>
         </div>
       </form>

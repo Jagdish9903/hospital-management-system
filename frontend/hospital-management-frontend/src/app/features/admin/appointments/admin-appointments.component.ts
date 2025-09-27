@@ -45,6 +45,10 @@ export class AdminAppointmentsComponent implements OnInit {
   selectedDateFrom = '';
   selectedDateTo = '';
   
+  // Date validation properties
+  minToDate = '';
+  maxFromDate = '';
+  
   // Edit/Delete
   selectedAppointment: Appointment | null = null;
   showEditModal = false;
@@ -96,6 +100,9 @@ export class AdminAppointmentsComponent implements OnInit {
       dateFrom: [''],
       dateTo: ['']
     });
+
+    // Setup date validation
+    this.setupDateValidation();
 
     this.editForm = this.fb.group({
       appointmentDate: ['', [Validators.required]],
@@ -339,9 +346,9 @@ export class AdminAppointmentsComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   }
 
@@ -398,5 +405,68 @@ export class AdminAppointmentsComponent implements OnInit {
         alert('Failed to cancel appointment. Please try again.');
       }
     });
+  }
+
+  // Date validation methods
+  setupDateValidation(): void {
+    // Listen to dateFrom changes
+    this.filterForm.get('dateFrom')?.valueChanges.subscribe(dateFrom => {
+      if (dateFrom) {
+        this.minToDate = dateFrom;
+        // If toDate is before fromDate, clear it
+        const toDate = this.filterForm.get('dateTo')?.value;
+        if (toDate && toDate < dateFrom) {
+          this.filterForm.get('dateTo')?.setValue('');
+        }
+      } else {
+        this.minToDate = '';
+      }
+    });
+
+    // Listen to dateTo changes
+    this.filterForm.get('dateTo')?.valueChanges.subscribe(dateTo => {
+      if (dateTo) {
+        this.maxFromDate = dateTo;
+        // If fromDate is after toDate, clear it
+        const fromDate = this.filterForm.get('dateFrom')?.value;
+        if (fromDate && fromDate > dateTo) {
+          this.filterForm.get('dateFrom')?.setValue('');
+        }
+      } else {
+        this.maxFromDate = '';
+      }
+    });
+  }
+
+  onFromDateChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const fromDate = target.value;
+    
+    if (fromDate) {
+      this.minToDate = fromDate;
+      // Clear toDate if it's before fromDate
+      const toDate = this.filterForm.get('dateTo')?.value;
+      if (toDate && toDate < fromDate) {
+        this.filterForm.get('dateTo')?.setValue('');
+      }
+    } else {
+      this.minToDate = '';
+    }
+  }
+
+  onToDateChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const toDate = target.value;
+    
+    if (toDate) {
+      this.maxFromDate = toDate;
+      // Clear fromDate if it's after toDate
+      const fromDate = this.filterForm.get('dateFrom')?.value;
+      if (fromDate && fromDate > toDate) {
+        this.filterForm.get('dateFrom')?.setValue('');
+      }
+    } else {
+      this.maxFromDate = '';
+    }
   }
 }

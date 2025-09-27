@@ -114,4 +114,23 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
                                                             @Param("patientId") Long patientId,
                                                             @Param("assignedToId") Long assignedToId,
                                                             Pageable pageable);
+    
+    // Method to get available complaints (unassigned or assigned to specific admin)
+    @Query("SELECT c FROM Complaint c WHERE " +
+           "(:title IS NULL OR LOWER(c.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
+           "(:description IS NULL OR LOWER(c.description) LIKE LOWER(CONCAT('%', :description, '%'))) AND " +
+           "(:category IS NULL OR c.category = :category) AND " +
+           "(:status IS NULL OR c.status = :status) AND " +
+           "(:priority IS NULL OR c.priority = :priority) AND " +
+           "(:patientId IS NULL OR c.patient.id = :patientId) AND " +
+           "c.deletedAt IS NULL AND " +
+           "(c.assignedTo IS NULL OR c.assignedTo.id = :assignedToId)")
+    Page<Complaint> findAvailableComplaints(@Param("title") String title,
+                                           @Param("description") String description,
+                                           @Param("category") String category,
+                                           @Param("status") String status,
+                                           @Param("priority") String priority,
+                                           @Param("patientId") Long patientId,
+                                           @Param("assignedToId") Long assignedToId,
+                                           Pageable pageable);
 }

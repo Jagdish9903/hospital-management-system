@@ -100,7 +100,7 @@ interface ComplaintCategories {
                       {{ formatAppointmentOption(appointment) }}
                     </option>
                   </select>
-                  <small class="form-hint">Select a past appointment if this complaint is related to a specific visit</small>
+                  <small class="form-hint">Select an appointment if this complaint is related to a specific visit</small>
                 </div>
               </div>
 
@@ -298,14 +298,15 @@ export class ComplaintsComponent implements OnInit {
       return;
     }
 
-    this.http.get<any>(`${environment.apiUrl}/api/simple-complaints/patient/${currentUser.id}/past-appointments`).subscribe({
+    // Using all appointments endpoint for better demonstration visibility
+    this.http.get<any>(`${environment.apiUrl}/api/simple-complaints/patient/${currentUser.id}/all-appointments`).subscribe({
       next: (response) => {
         this.pastAppointments = response.data;
-        console.log('Past appointments loaded:', this.pastAppointments);
+        console.log('All appointments loaded for complaints dropdown:', this.pastAppointments);
       },
       error: (error) => {
-        console.error('Error loading past appointments:', error);
-        this.toastService.showError('Failed to load past appointments');
+        console.error('Error loading appointments:', error);
+        this.toastService.showError('Failed to load appointments');
       }
     });
   }
@@ -407,7 +408,12 @@ export class ComplaintsComponent implements OnInit {
       `Dr. ${appointment.doctor.firstName} ${appointment.doctor.lastName}` : 
       'Unknown Doctor';
     const specialization = appointment.doctor?.specialization?.name || 'General';
-    return `Appointment #${appointment.id} - ${formattedDate} at ${appointment.appointmentTime} (Dr. ${doctorName} - ${specialization})`;
+    const status = appointment.status || 'UNKNOWN';
+    const statusText = status === 'SCHEDULED' ? '[UPCOMING]' : 
+                      status === 'COMPLETED' ? '[COMPLETED]' : 
+                      status === 'CANCELLED' ? '[CANCELLED]' : 
+                      `[${status}]`;
+    return `${statusText} Appointment #${appointment.id} - ${formattedDate} at ${appointment.appointmentTime} (Dr. ${doctorName} - ${specialization})`;
   }
 
   formatDate(dateString: string): string {

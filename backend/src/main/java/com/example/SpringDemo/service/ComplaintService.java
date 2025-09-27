@@ -208,6 +208,12 @@ public class ComplaintService {
         return complaintRepository.findComplaintsWithFiltersIncludingDeleted(title, null, category, status, priority, null, null, pageable);
     }
     
+    public Page<Complaint> getAvailableComplaints(String title, String category, String status, String priority, Long assignedTo, Pageable pageable) {
+        // Get complaints that are either unassigned or assigned to the specific admin
+        // This is for the "Available to Me" filter in admin dashboard
+        return complaintRepository.findAvailableComplaints(title, null, category, status, priority, null, assignedTo, pageable);
+    }
+    
     
     public Complaint updateComplaintStatus(Long id, String status) {
         Complaint complaint = complaintRepository.findByIdAndDeletedAtIsNull(id)

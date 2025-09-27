@@ -1,7 +1,8 @@
 // frontend/hospital-management-frontend/src/app/core/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { LoginRequest, LoginResponse, PatientRegistrationRequest, User } from '../models/user.model';
 import { ApiResponse } from '../models/api-response.model';
@@ -39,7 +40,28 @@ export class AuthService {
     return this.http.post<ApiResponse<User>>(`${this.API_URL}/register`, patientData);
   }
 
-  logout(): void {
+  logout(): Observable<any> {
+    const token = this.getToken();
+    if (token) {
+      return this.http.post(`${this.API_URL}/logout`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).pipe(
+        tap(() => {
+          this.clearUserData();
+        }),
+        catchError(() => {
+          // Even if logout fails on server, clear local data
+          this.clearUserData();
+          return of(null);
+        })
+      );
+    } else {
+      this.clearUserData();
+      return of(null);
+    }
+  }
+
+  private clearUserData(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
