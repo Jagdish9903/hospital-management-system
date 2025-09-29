@@ -60,8 +60,7 @@ export class AdminDoctorsComponent implements OnInit {
   // Table columns
   columns = [
     { key: 'doctorId', label: 'ID', sortable: true },
-    { key: 'name', label: 'Doctor Name', sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
+    { key: 'name', label: 'Doctor Name/Email', sortable: true },
     { key: 'specialization', label: 'Specialization', sortable: true },
     { key: 'licenseNumber', label: 'License', sortable: true },
     { key: 'qualification', label: 'Qualification', sortable: true },
@@ -120,7 +119,7 @@ export class AdminDoctorsComponent implements OnInit {
       licenseNumber: ['', [Validators.required, CustomValidators.licenseNumber]],
       qualification: ['', [Validators.required, CustomValidators.textOnly]],
       bio: [''],
-      consultationFee: [0, [Validators.required, CustomValidators.consultationFee]],
+      consultationFee: [100, [Validators.required, Validators.min(100), Validators.max(50000)]],
       yearsOfExp: [0, [Validators.required, Validators.min(0), Validators.max(50), CustomValidators.experienceValidForJoiningDate('joiningDate')]],
       active: [true, [Validators.required]],
       joiningDate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.minDate(1960)]],
@@ -152,7 +151,7 @@ export class AdminDoctorsComponent implements OnInit {
       licenseNumber: ['', [Validators.required, CustomValidators.licenseNumber]],
       qualification: ['', [Validators.required, CustomValidators.textOnly]],
       bio: [''],
-      consultationFee: [0, [Validators.required, CustomValidators.consultationFee]],
+      consultationFee: [100, [Validators.required, Validators.min(100), Validators.max(50000)]],
       yearsOfExp: [0, [Validators.required, Validators.min(0), Validators.max(50), CustomValidators.experienceValidForJoiningDate('joiningDate')]],
       joiningDate: ['', [Validators.required, CustomValidators.pastDate, CustomValidators.minDate(1960)]],
       active: [true],
@@ -183,7 +182,32 @@ export class AdminDoctorsComponent implements OnInit {
     this.setDateRestrictions();
     this.loadDoctors();
     this.loadSpecializations();
+    
+    // Add change listeners for cross-field validation
+    this.setupCrossFieldValidation();
   }
+
+  // Setup cross-field validation between joining date and years of experience
+  setupCrossFieldValidation(): void {
+    // For edit form
+    this.editForm.get('joiningDate')?.valueChanges.subscribe(() => {
+      this.editForm.get('yearsOfExp')?.updateValueAndValidity();
+      this.editForm.get('yearsOfExp')?.markAsTouched();
+    });
+
+    // For add form
+    this.addForm.get('joiningDate')?.valueChanges.subscribe(() => {
+      this.addForm.get('yearsOfExp')?.updateValueAndValidity();
+      this.addForm.get('yearsOfExp')?.markAsTouched();
+    });
+  }
+
+  // Handle joining date change to trigger validation
+  onJoiningDateChange(): void {
+    // This method is called from the template when joining date changes
+    // The valueChanges subscription in setupCrossFieldValidation will handle the rest
+  }
+
 
 
   // Working days helper methods
@@ -372,6 +396,11 @@ export class AdminDoctorsComponent implements OnInit {
       delete updateData.email;
       delete updateData.licenseNumber;
       
+      // Convert consultation fee to number if it's a string
+      if (updateData.consultationFee && typeof updateData.consultationFee === 'string') {
+        updateData.consultationFee = parseFloat(updateData.consultationFee);
+      }
+      
       this.adminService.updateDoctor(this.selectedDoctor.doctorId, updateData).subscribe({
         next: (response) => {
           if (response.success) {
@@ -407,6 +436,18 @@ export class AdminDoctorsComponent implements OnInit {
           if (response.success) {
             this.loadDoctors();
             this.closeDeleteModal();
+            
+            // Show success message with cancellation info
+            const cancelledAppointments = response.data?.cancelledAppointments || 0;
+            const doctorName = response.data?.doctorName || this.getDoctorName(this.selectedDoctor!);
+            
+            if (cancelledAppointments > 0) {
+              this.toastService.showSuccess(
+                `Doctor ${doctorName} deleted successfully and ${cancelledAppointments} appointment${cancelledAppointments === 1 ? '' : 's'} cancelled`
+              );
+            } else {
+              this.toastService.showSuccess(`Doctor ${doctorName} deleted successfully`);
+            }
           }
           this.isSubmitting = false;
         },
@@ -451,7 +492,21 @@ export class AdminDoctorsComponent implements OnInit {
 
   addDoctor(): void {
     this.showAddModal = true;
-    this.addForm.reset();
+    
+    // Use setTimeout to ensure the form is properly initialized
+    setTimeout(() => {
+      // Reset form and immediately set default values
+      this.addForm.reset({
+        consultationFee: 100,
+        active: true,
+        slotStartTime: '09:00',
+        slotEndTime: '17:00',
+        appointmentDuration: 30,
+        workingDays: 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY'
+      });
+      console.log('Add form consultation fee after reset:', this.addForm.get('consultationFee')?.value);
+    }, 0);
+    
     console.log('Add doctor modal opened');
     
     // Load specializations when opening the modal
@@ -517,7 +572,12 @@ export class AdminDoctorsComponent implements OnInit {
     
     if (this.addForm.valid) {
       this.isSubmitting = true;
-      const doctorData = this.addForm.value;
+      const doctorData = { ...this.addForm.value };
+      
+      // Convert consultation fee to number if it's a string
+      if (doctorData.consultationFee && typeof doctorData.consultationFee === 'string') {
+        doctorData.consultationFee = parseFloat(doctorData.consultationFee);
+      }
       
       console.log('Sending doctor data:', doctorData);
       
@@ -527,7 +587,6 @@ export class AdminDoctorsComponent implements OnInit {
           if (response.success) {
             this.loadDoctors();
             this.closeAddModal();
-            this.addForm.reset();
           }
           this.isSubmitting = false;
         },
@@ -772,17 +831,6 @@ export class AdminDoctorsComponent implements OnInit {
     }
   }
 
-  onConsultationFeeInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const value = target.value;
-    const numberOnlyValue = value.replace(/[^0-9.]/g, '');
-    const limitedValue = numberOnlyValue.substring(0, 6);
-    if (target.value !== limitedValue) {
-      target.value = limitedValue;
-      this.addForm.get('consultationFee')?.setValue(limitedValue);
-      this.editForm.get('consultationFee')?.setValue(limitedValue);
-    }
-  }
 
 
   // Prevent non-text characters in name fields
@@ -833,7 +881,7 @@ export class AdminDoctorsComponent implements OnInit {
       licenseNumber: this.selectedDoctor.licenseNumber,
       qualification: this.selectedDoctor.qualification,
       bio: this.selectedDoctor.bio || '',
-      consultationFee: this.selectedDoctor.consultationFee,
+      consultationFee: this.selectedDoctor.consultationFee?.toString() || '',
       yearsOfExp: this.selectedDoctor.yearsOfExp,
       active: this.selectedDoctor.active,
       joiningDate: this.selectedDoctor.joiningDate,
@@ -876,6 +924,18 @@ export class AdminDoctorsComponent implements OnInit {
 
   closeAddModal(): void {
     this.showAddModal = false;
-    this.addForm.reset();
+    
+    // Use setTimeout to ensure the form is properly reset
+    setTimeout(() => {
+      // Reset form and immediately set default values
+      this.addForm.reset({
+        consultationFee: 100,
+        active: true,
+        slotStartTime: '09:00',
+        slotEndTime: '17:00',
+        appointmentDuration: 30,
+        workingDays: 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY'
+      });
+    }, 0);
   }
 }

@@ -144,10 +144,6 @@ export class MyAppointmentsComponent implements OnInit {
     this.loadAppointments();
   }
 
-  bookNewAppointment(): void {
-    this.router.navigate(['/appointments/schedule']);
-  }
-
   viewAppointment(appointment: Appointment): void {
     this.selectedAppointmentId = appointment.id;
     this.showAppointmentDetailsModal = true;
@@ -358,5 +354,9 @@ export class MyAppointmentsComponent implements OnInit {
 
   getDoctorName(doctor: any): string {
     return `Dr. ${doctor.firstName} ${doctor.lastName}`;
+  }
+
+  bookNewAppointment(): void {
+    this.router.navigate(['/appointments/schedule']);
   }
 }

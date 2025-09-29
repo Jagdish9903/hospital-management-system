@@ -1,6 +1,7 @@
 package com.example.SpringDemo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,7 @@ public class Complaint {
     @Column(name = "complaint_id")
     private Long complaintId;
     
+    @NotNull(message = "Patient is required")
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
     private User patient;
@@ -31,20 +33,27 @@ public class Complaint {
     @JoinColumn(name = "appointment_id")
     private Appointment appointment;
     
+    @NotNull(message = "Category is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Category category;
     
+    @NotBlank(message = "Title is required")
+    @Size(min = 5, max = 100, message = "Title must be between 5 and 100 characters")
     @Column(nullable = false)
     private String title;
     
+    @NotBlank(message = "Description is required")
+    @Size(min = 10, max = 1000, message = "Description must be between 10 and 1000 characters")
     @Column(nullable = false, length = 1000)
     private String description;
     
+    @NotNull(message = "Contact preference is required")
     @Enumerated(EnumType.STRING)
     @Column(name = "contact_preference", nullable = false)
     private ContactPreference contactPreference;
     
+    @NotNull(message = "Priority is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Priority priority = Priority.MEDIUM;

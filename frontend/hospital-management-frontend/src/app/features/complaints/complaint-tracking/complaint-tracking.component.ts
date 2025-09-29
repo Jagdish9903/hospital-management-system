@@ -291,13 +291,13 @@ interface Complaint {
             </div>
 
             <!-- Assignment Info -->
-            <div *ngIf="selectedComplaint.assignedTo" class="complaint-detail-section">
-              <h3>Assignment</h3>
-              <div class="assignment-info">
-                <strong>Assigned to:</strong> {{ selectedComplaint.assignedTo.name }}
-                <div class="assignment-contact">Email: {{ selectedComplaint.assignedTo.email }}</div>
-              </div>
-            </div>
+            // <div *ngIf="selectedComplaint.assignedTo" class="complaint-detail-section">
+            //   <h3>Assignment</h3>
+            //   <div class="assignment-info">
+            //     <strong>Assigned to:</strong> {{ selectedComplaint.assignedTo.name }}
+            //     <div class="assignment-contact">Email: {{ selectedComplaint.assignedTo.email }}</div>
+            //   </div>
+            // </div>
 
             <!-- Resolution -->
             <div *ngIf="selectedComplaint.resolution" class="complaint-detail-section">

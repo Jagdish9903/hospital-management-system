@@ -59,7 +59,7 @@ export class AdminComplaintsComponent implements OnInit {
     { key: 'category', label: 'Category', sortable: true },
     { key: 'priority', label: 'Priority', sortable: true },
     { key: 'status', label: 'Status', sortable: true },
-    { key: 'assignedTo', label: 'Assigned To', sortable: true },
+    // { key: 'assignedTo', label: 'Assigned To', sortable: true },
     { key: 'createdAt', label: 'Created', sortable: true },
     { key: 'actions', label: 'Actions', sortable: false }
   ];

@@ -325,6 +325,83 @@ select.form-input {
   margin-top: 5px;
 }
 
+.error-message div {
+  margin-bottom: 3px;
+}
+
+.error-message div:last-child {
+  margin-bottom: 0;
+}
+
+/* Password Requirements Styles */
+.password-requirements {
+  margin-top: 10px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.password-requirements h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.requirements-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #718096;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li.valid {
+  color: #38a169;
+}
+
+.requirements-list li.invalid {
+  color: #e53e3e;
+}
+
+.requirement-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.requirements-list li.valid .requirement-icon {
+  background: #38a169;
+  color: white;
+}
+
+.requirements-list li.invalid .requirement-icon {
+  background: #e53e3e;
+  color: white;
+}
+
+.requirements-list li:not(.valid):not(.invalid) .requirement-icon {
+  background: #e2e8f0;
+  color: #a0aec0;
+}
+
 .terms-section {
   margin: 10px 0;
 }

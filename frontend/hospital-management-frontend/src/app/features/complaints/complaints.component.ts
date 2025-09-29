@@ -298,15 +298,15 @@ export class ComplaintsComponent implements OnInit {
       return;
     }
 
-    // Using all appointments endpoint for better demonstration visibility
-    this.http.get<any>(`${environment.apiUrl}/api/simple-complaints/patient/${currentUser.id}/all-appointments`).subscribe({
+    // Using the paginated past appointments endpoint that filters by date and time
+    this.http.get<any>(`${environment.apiUrl}/api/appointments/patient/${currentUser.id}/paginated?page=0&size=100&sortBy=appointmentDate&sortDir=desc&type=past`).subscribe({
       next: (response) => {
-        this.pastAppointments = response.data;
-        console.log('All appointments loaded for complaints dropdown:', this.pastAppointments);
+        this.pastAppointments = response.appointments || [];
+        console.log('Past appointments loaded for complaints dropdown:', this.pastAppointments);
       },
       error: (error) => {
-        console.error('Error loading appointments:', error);
-        this.toastService.showError('Failed to load appointments');
+        console.error('Error loading past appointments:', error);
+        this.toastService.showError('Failed to load past appointments');
       }
     });
   }

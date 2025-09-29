@@ -94,6 +94,32 @@
   background: var(--gray-50);
 }
 
+/* Book Appointment Button Styling */
+.book-appointment-nav {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white !important;
+  border-radius: 8px;
+  margin: 0 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  transition: all 0.3s ease;
+}
+
+.book-appointment-nav:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.book-appointment-nav.active {
+  background: linear-gradient(135deg, #4c51bf 0%, #553c9a 100%);
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+}
+
+.book-appointment-nav .nav-icon {
+  color: white;
+}
+
 .nav-link.active {
   color: var(--primary-600);
   background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);

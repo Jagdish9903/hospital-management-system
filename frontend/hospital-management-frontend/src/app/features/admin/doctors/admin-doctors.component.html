@@ -151,11 +151,11 @@
             <td class="doctor-license" [class.deleted-text]="doctor.deletedAt">{{ doctor.licenseNumber }}</td>
             <td class="doctor-qualification" [class.deleted-text]="doctor.deletedAt">{{ doctor.qualification }}</td>
             <td class="doctor-fee" [class.deleted-text]="doctor.deletedAt">{{ formatCurrency(doctor.consultationFee) }}</td>
-            <td class="doctor-status">
+            <!-- <td class="doctor-status">
               <span class="badge" [class]="getStatusBadgeClass(doctor.active)" [class.deleted-badge]="doctor.deletedAt">
                 {{ doctor.active ? 'Active' : 'Inactive' }}
               </span>
-            </td>
+            </td> -->
             <td class="doctor-active">
               <div class="status-toggle" *ngIf="!doctor.deletedAt">
                 <label class="toggle-switch">
@@ -166,7 +166,7 @@
                   <span class="toggle-slider"></span>
                 </label>
                 <span class="status-text" [class.active]="doctor.active" [class.inactive]="!doctor.active">
-                  {{ doctor.active ? 'Active' : 'Inactive' }}
+                  Active
                 </span>
               </div>
               <span *ngIf="doctor.deletedAt" class="deleted-status">Deleted</span>
@@ -498,13 +498,13 @@
               <label class="form-label">Years of Experience *</label>
               <input type="number" formControlName="yearsOfExp" class="form-input" 
                      placeholder="Enter years of experience" min="0"
-                     [class.error]="editForm.get('yearsOfExp')?.invalid && editForm.get('yearsOfExp')?.touched">
-              <div class="form-error" *ngIf="editForm.get('yearsOfExp')?.invalid && editForm.get('yearsOfExp')?.touched">
+                     [class.error]="editForm.get('yearsOfExp')?.invalid && (editForm.get('yearsOfExp')?.touched || editForm.get('joiningDate')?.touched)">
+              <div class="form-error" *ngIf="editForm.get('yearsOfExp')?.invalid && (editForm.get('yearsOfExp')?.touched || editForm.get('joiningDate')?.touched)">
                 <div *ngIf="editForm.get('yearsOfExp')?.errors?.['required']">Years of experience is required</div>
                 <div *ngIf="editForm.get('yearsOfExp')?.errors?.['min']">Years of experience must be at least 0</div>
                 <div *ngIf="editForm.get('yearsOfExp')?.errors?.['max']">Years of experience cannot exceed 50</div>
                 <div *ngIf="editForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']">
-                  Years of experience cannot be less than years since joining date
+                  Years of experience must be at least {{ editForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']?.yearsSinceJoining }} years (based on joining date: {{ editForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']?.joiningDate }})
                 </div>
               </div>
             </div>
@@ -513,18 +513,20 @@
             <div class="form-group">
               <label class="form-label">Consultation Fee *</label>
               <input type="number" formControlName="consultationFee" class="form-input" 
-                     placeholder="Enter consultation fee" min="0" step="0.01"
+                     placeholder="Enter consultation fee (e.g., 500)"
+                     min="100" max="50000" step="1"
                      [class.error]="editForm.get('consultationFee')?.invalid && editForm.get('consultationFee')?.touched">
               <div class="form-error" *ngIf="editForm.get('consultationFee')?.invalid && editForm.get('consultationFee')?.touched">
                 <div *ngIf="editForm.get('consultationFee')?.errors?.['required']">Consultation fee is required</div>
-                <div *ngIf="editForm.get('consultationFee')?.errors?.['min']">Consultation fee must be at least 0</div>
-                <div *ngIf="editForm.get('consultationFee')?.errors?.['invalidConsultationFee']">Please enter a valid consultation fee</div>
+                <div *ngIf="editForm.get('consultationFee')?.errors?.['min']">Consultation fee must be at least ₹100</div>
+                <div *ngIf="editForm.get('consultationFee')?.errors?.['max']">Consultation fee cannot exceed ₹50,000</div>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Joining Date *</label>
               <input type="date" formControlName="joiningDate" class="form-input"
-                     [class.error]="editForm.get('joiningDate')?.invalid && editForm.get('joiningDate')?.touched">
+                     [class.error]="editForm.get('joiningDate')?.invalid && editForm.get('joiningDate')?.touched"
+                     (change)="onJoiningDateChange()">
               <div class="form-error" *ngIf="editForm.get('joiningDate')?.invalid && editForm.get('joiningDate')?.touched">
                 <div *ngIf="editForm.get('joiningDate')?.errors?.['required']">Joining date is required</div>
                 <div *ngIf="editForm.get('joiningDate')?.errors?.['pastDate']">Joining date cannot be in the future</div>
@@ -963,13 +965,13 @@
               <label class="form-label">Years of Experience *</label>
               <input type="number" formControlName="yearsOfExp" class="form-input" 
                      placeholder="Enter years of experience" min="0"
-                     [class.error]="addForm.get('yearsOfExp')?.invalid && addForm.get('yearsOfExp')?.touched">
-              <div class="form-error" *ngIf="addForm.get('yearsOfExp')?.invalid && addForm.get('yearsOfExp')?.touched">
+                     [class.error]="addForm.get('yearsOfExp')?.invalid && (addForm.get('yearsOfExp')?.touched || addForm.get('joiningDate')?.touched)">
+              <div class="form-error" *ngIf="addForm.get('yearsOfExp')?.invalid && (addForm.get('yearsOfExp')?.touched || addForm.get('joiningDate')?.touched)">
                 <div *ngIf="addForm.get('yearsOfExp')?.errors?.['required']">Years of experience is required</div>
                 <div *ngIf="addForm.get('yearsOfExp')?.errors?.['min']">Years of experience must be at least 0</div>
                 <div *ngIf="addForm.get('yearsOfExp')?.errors?.['max']">Years of experience cannot exceed 50</div>
                 <div *ngIf="addForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']">
-                  Years of experience cannot be less than years since joining date
+                  Years of experience must be at least {{ addForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']?.yearsSinceJoining }} years (based on joining date: {{ addForm.get('yearsOfExp')?.errors?.['experienceLessThanJoining']?.joiningDate }})
                 </div>
               </div>
             </div>
@@ -978,18 +980,20 @@
             <div class="form-group">
               <label class="form-label">Consultation Fee *</label>
               <input type="number" formControlName="consultationFee" class="form-input" 
-                     placeholder="Enter consultation fee" min="0" step="0.01"
+                     placeholder="Enter consultation fee (e.g., 500)"
+                     min="100" max="50000" step="1"
                      [class.error]="addForm.get('consultationFee')?.invalid && addForm.get('consultationFee')?.touched">
               <div class="form-error" *ngIf="addForm.get('consultationFee')?.invalid && addForm.get('consultationFee')?.touched">
                 <div *ngIf="addForm.get('consultationFee')?.errors?.['required']">Consultation fee is required</div>
-                <div *ngIf="addForm.get('consultationFee')?.errors?.['min']">Consultation fee must be at least 0</div>
-                <div *ngIf="addForm.get('consultationFee')?.errors?.['invalidConsultationFee']">Please enter a valid consultation fee</div>
+                <div *ngIf="addForm.get('consultationFee')?.errors?.['min']">Consultation fee must be at least ₹100</div>
+                <div *ngIf="addForm.get('consultationFee')?.errors?.['max']">Consultation fee cannot exceed ₹50,000</div>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Joining Date *</label>
               <input type="date" formControlName="joiningDate" class="form-input"
-                     [class.error]="addForm.get('joiningDate')?.invalid && addForm.get('joiningDate')?.touched">
+                     [class.error]="addForm.get('joiningDate')?.invalid && addForm.get('joiningDate')?.touched"
+                     (change)="onJoiningDateChange()">
               <div class="form-error" *ngIf="addForm.get('joiningDate')?.invalid && addForm.get('joiningDate')?.touched">
                 <div *ngIf="addForm.get('joiningDate')?.errors?.['required']">Joining date is required</div>
                 <div *ngIf="addForm.get('joiningDate')?.errors?.['pastDate']">Joining date cannot be in the future</div>

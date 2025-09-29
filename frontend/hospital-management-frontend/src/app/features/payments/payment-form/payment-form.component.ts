@@ -54,6 +54,9 @@ import { User } from '../../../core/models/user.model';
           <!-- UPI Payment Form -->
           <div *ngIf="selectedMethod === 'UPI'" class="payment-form upi-form">
             <h3>UPI Payment Details</h3>
+            
+            <!-- OLD UPI Input (Commented out for reference) -->
+            <!--
             <div class="form-group">
               <label class="form-label">UPI ID <span class="required">*</span></label>
               <input type="text" 
@@ -71,6 +74,43 @@ import { User } from '../../../core/models/user.model';
                   Please enter a valid UPI ID (e.g., name&#64;bank or mobile&#64;bank)
                 </div>
               </div>
+            </div>
+            -->
+            
+            <!-- NEW Improved UPI Input with Better UX -->
+            <div class="form-group">
+              <label class="form-label">UPI ID <span class="required">*</span></label>
+              <div class="upi-input-container">
+                <input type="text" 
+                       formControlName="upiUsername" 
+                       class="upi-username-input" 
+                       [class.error]="paymentForm.get('upiUsername')?.invalid && paymentForm.get('upiUsername')?.touched"
+                       placeholder="yourname"
+                       (input)="onUpiUsernameInput($event)"
+                       maxlength="20">
+                <span class="upi-at-symbol">&#64;</span>
+                <select formControlName="upiBank" 
+                        class="upi-bank-select"
+                        [class.error]="paymentForm.get('upiBank')?.invalid && paymentForm.get('upiBank')?.touched">
+                  <option value="">Select Bank</option>
+                  <option *ngFor="let bank of upiBanks" [value]="bank.value">
+                    {{ bank.label }}
+                  </option>
+                </select>
+              </div>
+              <div *ngIf="(paymentForm.get('upiUsername')?.invalid || paymentForm.get('upiBank')?.invalid) && (paymentForm.get('upiUsername')?.touched || paymentForm.get('upiBank')?.touched)" 
+                   class="form-error">
+                <div *ngIf="paymentForm.get('upiUsername')?.errors?.['required']">
+                  UPI username is required
+                </div>
+                <div *ngIf="paymentForm.get('upiUsername')?.errors?.['invalidUpiUsername']">
+                  Username should contain only letters, numbers, dots, and underscores
+                </div>
+                <div *ngIf="paymentForm.get('upiBank')?.errors?.['required']">
+                  Please select a bank
+                </div>
+              </div>
+              <small class="form-hint">Complete UPI ID: {{ getCompleteUpiId() }}</small>
             </div>
             
             <div class="form-group">
@@ -301,6 +341,30 @@ export class PaymentFormComponent implements OnInit {
   isProcessing = false;
   currentDate = new Date();
 
+  // UPI Banks list
+  upiBanks = [
+    { value: 'paytm', label: 'Paytm' },
+    { value: 'phonepe', label: 'PhonePe' },
+    { value: 'gpay', label: 'Google Pay' },
+    { value: 'bhim', label: 'BHIM' },
+    { value: 'amazonpay', label: 'Amazon Pay' },
+    { value: 'mobikwik', label: 'MobiKwik' },
+    { value: 'freecharge', label: 'FreeCharge' },
+    { value: 'jupiter', label: 'Jupiter' },
+    { value: 'cred', label: 'CRED' },
+    { value: 'whatsapp', label: 'WhatsApp Pay' },
+    { value: 'yono', label: 'YONO (SBI)' },
+    { value: 'icici', label: 'iMobile (ICICI)' },
+    { value: 'hdfc', label: 'HDFC PayZapp' },
+    { value: 'axis', label: 'Axis Pay' },
+    { value: 'kotak', label: 'Kotak 811' },
+    { value: 'pnb', label: 'PNB One' },
+    { value: 'bob', label: 'BOB UPI' },
+    { value: 'canara', label: 'Canara Bank' },
+    { value: 'union', label: 'Union Bank' },
+    { value: 'indian', label: 'Indian Bank' }
+  ];
+
   // To manage auto-focus of the 4 expiry boxes
   @ViewChildren('expiryInput') expiryInputs!: QueryList<ElementRef>;
 
@@ -380,7 +444,12 @@ export class PaymentFormComponent implements OnInit {
   initializeForm(): void {
     if (this.selectedMethod === 'UPI') {
       this.paymentForm = this.fb.group({
-        upiId: ['', [Validators.required, this.upiValidator]],
+        // OLD UPI field (commented out for reference)
+        // upiId: ['', [Validators.required, this.upiValidator]],
+        
+        // NEW UPI fields
+        upiUsername: ['', [Validators.required, this.upiUsernameValidator]],
+        upiBank: ['', [Validators.required]],
         mobileNumber: ['', [
           Validators.required,
           Validators.minLength(10),
@@ -431,6 +500,20 @@ export class PaymentFormComponent implements OnInit {
 
     if (!upiPattern.test(control.value)) {
       return { invalidUpiFormat: true };
+    }
+
+    return null;
+  }
+
+  // NEW UPI Username Validator
+  upiUsernameValidator = (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+
+    // UPI username format: letters, numbers, dots, underscores only
+    const usernamePattern = /^[a-zA-Z0-9._-]+$/;
+
+    if (!usernamePattern.test(control.value)) {
+      return { invalidUpiUsername: true };
     }
 
     return null;
@@ -508,6 +591,32 @@ export class PaymentFormComponent implements OnInit {
     value = value.replace(/\s/g, '').toLowerCase();
     target.value = value;
     this.paymentForm.get('upiId')?.setValue(value);
+  }
+
+  // NEW UPI Username Input Handler
+  onUpiUsernameInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    let value = target.value;
+    // Remove spaces and convert to lowercase
+    value = value.replace(/\s/g, '').toLowerCase();
+    // Remove any invalid characters
+    value = value.replace(/[^a-zA-Z0-9._-]/g, '');
+    target.value = value;
+    this.paymentForm.get('upiUsername')?.setValue(value);
+  }
+
+  // Helper method to get complete UPI ID
+  getCompleteUpiId(): string {
+    const username = this.paymentForm.get('upiUsername')?.value || '';
+    const bank = this.paymentForm.get('upiBank')?.value || '';
+    
+    if (username && bank) {
+      return `${username}@${bank}`;
+    } else if (username) {
+      return `${username}@`;
+    } else {
+      return '';
+    }
   }
 
   onMobileInput(event: Event): void {
@@ -648,6 +757,16 @@ export class PaymentFormComponent implements OnInit {
         slotId: this.appointmentData.slotId,
         ...this.paymentForm.value
       };
+
+      // For UPI payments, combine username and bank into upiId
+      if (this.selectedMethod === 'UPI') {
+        const username = this.paymentForm.get('upiUsername')?.value || '';
+        const bank = this.paymentForm.get('upiBank')?.value || '';
+        paymentData.upiId = `${username}@${bank}`;
+        // Remove the separate fields from payload
+        delete paymentData.upiUsername;
+        delete paymentData.upiBank;
+      }
 
       // For card payments, combine expiry digits into expiryDate MM/YY
       if (this.selectedMethod === 'CARD') {

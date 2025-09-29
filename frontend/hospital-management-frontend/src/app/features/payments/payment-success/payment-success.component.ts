@@ -286,7 +286,7 @@ export class PaymentSuccessComponent implements OnInit {
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(successColor);
-      pdf.text(`Total Amount: ₹${this.appointmentData?.consultationFee || '0'}`, 15, 215);
+      pdf.text(`Total Amount: Rs. ${this.appointmentData?.consultationFee || '0'}`, 15, 215);
       
       // Footer
       pdf.setTextColor(0, 0, 0);

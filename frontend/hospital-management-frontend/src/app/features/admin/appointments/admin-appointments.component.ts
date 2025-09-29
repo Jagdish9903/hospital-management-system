@@ -86,7 +86,7 @@ export class AdminAppointmentsComponent implements OnInit {
     { value: '', label: 'All Types' },
     { value: 'CONSULTATION', label: 'Consultation' },
     { value: 'FOLLOW_UP', label: 'Follow Up' },
-    { value: 'EMERGENCY', label: 'Emergency' }
+    // { value: 'EMERGENCY', label: 'Emergency' }
   ];
 
   constructor(

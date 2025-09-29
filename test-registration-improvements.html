@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Registration Improvements</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .response { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 3px; }
+        pre { white-space: pre-wrap; }
+        .form-test { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 3px; }
+        .error-message { color: red; font-size: 0.9em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Test Registration Improvements</h1>
+    <p>This test verifies the new registration form features:</p>
+    <ul>
+        <li>✅ Gender as required field with dropdown (Male, Female, Other)</li>
+        <li>✅ Blood group as optional field</li>
+        <li>✅ Fixed birthday storage (using correct field name 'birthdate')</li>
+        <li>✅ Improved password validation UX with requirements display</li>
+        <li>✅ Line-by-line error message styling</li>
+    </ul>
+
+    <div class="test-section">
+        <h2>Test Registration with New Fields</h2>
+        <button onclick="testRegistration()">Test Complete Registration</button>
+        <div id="registrationResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Form Validation</h2>
+        <button onclick="testValidation()">Test Form Validation</button>
+        <div id="validationResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Password Requirements Display</h2>
+        <div class="form-test">
+            <h3>Password Field with Requirements</h3>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="testPassword" placeholder="Enter password to see requirements" oninput="updatePasswordRequirements()">
+            </div>
+            <div id="passwordRequirements" class="password-requirements" style="display: none;">
+                <h4>Password Requirements:</h4>
+                <ul id="requirementsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                const data = await response.json();
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testRegistration() {
+            const registrationData = {
+                name: "Test User",
+                firstname: "Test",
+                lastname: "User",
+                email: "testuser@example.com",
+                contact: "9876543210",
+                countryCode: "+91",
+                address: "123 Test Street, Test City",
+                username: "testuser",
+                password: "Password123!",
+                confirmPassword: "Password123!",
+                gender: "MALE",
+                bloodGroup: "A+",
+                birthdate: "1990-01-01",
+                role: "PATIENT"
+            };
+
+            const result = await makeRequest(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify(registrationData)
+            });
+
+            document.getElementById('registrationResponse').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            if (result.success) {
+                document.getElementById('registrationResponse').className = 'response success';
+                document.getElementById('registrationResponse').innerHTML += 
+                    '<div class="success">✅ Registration successful with all new fields!</div>';
+            } else {
+                document.getElementById('registrationResponse').className = 'response error';
+                document.getElementById('registrationResponse').innerHTML += 
+                    '<div class="error">❌ Registration failed</div>';
+            }
+        }
+
+        async function testValidation() {
+            // Test with missing required fields
+            const invalidData = {
+                name: "Test User",
+                firstname: "Test",
+                lastname: "User",
+                email: "invalid-email", // Invalid email
+                contact: "123", // Invalid phone
+                countryCode: "+91",
+                address: "123 Test Street",
+                username: "testuser",
+                password: "weak", // Weak password
+                confirmPassword: "different", // Mismatched password
+                gender: "", // Missing gender
+                bloodGroup: "A+",
+                birthdate: "2030-01-01", // Future date
+                role: "PATIENT"
+            };
+
+            const result = await makeRequest(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify(invalidData)
+            });
+
+            document.getElementById('validationResponse').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            if (!result.success) {
+                document.getElementById('validationResponse').className = 'response success';
+                document.getElementById('validationResponse').innerHTML += 
+                    '<div class="success">✅ Validation working correctly - rejected invalid data</div>';
+            } else {
+                document.getElementById('validationResponse').className = 'response error';
+                document.getElementById('validationResponse').innerHTML += 
+                    '<div class="error">❌ Validation failed - should have rejected invalid data</div>';
+            }
+        }
+
+        function updatePasswordRequirements() {
+            const password = document.getElementById('testPassword').value;
+            const requirementsDiv = document.getElementById('passwordRequirements');
+            const requirementsList = document.getElementById('requirementsList');
+
+            if (password.length > 0) {
+                requirementsDiv.style.display = 'block';
+                
+                const requirements = [
+                    { text: 'At least 8 characters', valid: password.length >= 8 },
+                    { text: 'At least one uppercase letter', valid: /[A-Z]/.test(password) },
+                    { text: 'At least one lowercase letter', valid: /[a-z]/.test(password) },
+                    { text: 'At least one digit', valid: /[0-9]/.test(password) },
+                    { text: 'At least one special character', valid: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) }
+                ];
+
+                requirementsList.innerHTML = requirements.map(req => 
+                    `<li class="${req.valid ? 'valid' : 'invalid'}">
+                        <span class="requirement-icon">✓</span>
+                        ${req.text}
+                    </li>`
+                ).join('');
+            } else {
+                requirementsDiv.style.display = 'none';
+            }
+        }
+
+        // Add CSS for password requirements
+        const style = document.createElement('style');
+        style.textContent = `
+            .password-requirements {
+                margin-top: 10px;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            .password-requirements h4 {
+                margin: 0 0 10px 0;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #4a5568;
+            }
+            .password-requirements ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .password-requirements li {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.85rem;
+                color: #718096;
+                transition: all 0.3s ease;
+            }
+            .password-requirements li.valid {
+                color: #38a169;
+            }
+            .password-requirements li.invalid {
+                color: #e53e3e;
+            }
+            .requirement-icon {
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            }
+            .password-requirements li.valid .requirement-icon {
+                background: #38a169;
+                color: white;
+            }
+            .password-requirements li.invalid .requirement-icon {
+                background: #e53e3e;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

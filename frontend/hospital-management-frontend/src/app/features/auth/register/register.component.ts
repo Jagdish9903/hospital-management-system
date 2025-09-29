@@ -57,6 +57,24 @@ export class RegisterComponent implements OnInit {
     { value: '+7', label: '+7 (Russia)' }
   ];
 
+  genders = [
+    { value: 'MALE', label: 'Male' },
+    { value: 'FEMALE', label: 'Female' },
+    { value: 'OTHER', label: 'Other' }
+  ];
+
+  bloodGroups = [
+    { value: '', label: 'Select Blood Group (Optional)' },
+    { value: 'A+', label: 'A+' },
+    { value: 'A-', label: 'A-' },
+    { value: 'B+', label: 'B+' },
+    { value: 'B-', label: 'B-' },
+    { value: 'AB+', label: 'AB+' },
+    { value: 'AB-', label: 'AB-' },
+    { value: 'O+', label: 'O+' },
+    { value: 'O-', label: 'O-' }
+  ];
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -71,6 +89,8 @@ export class RegisterComponent implements OnInit {
       phoneNumber: ['', [Validators.required, this.phoneNumberValidator]],
       countryCode: ['+91', [Validators.required]],
       dateOfBirth: ['', [Validators.required, this.dateRangeValidator]],
+      gender: ['', [Validators.required]],
+      bloodGroup: [''], // Optional field
       password: ['', [Validators.required, Validators.minLength(8), this.passwordStrengthValidator]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
@@ -97,11 +117,14 @@ export class RegisterComponent implements OnInit {
         lastname: formData.lastName,
         email: formData.email,
         contact: formData.phoneNumber,
-        countryCode: '+91',
-        address: 'Default Address',
+        countryCode: formData.countryCode,
+        address: 'Default Address', // Will be updated when we add address field
         username: formData.email.split('@')[0],
         password: formData.password,
         confirmPassword: formData.confirmPassword,
+        gender: formData.gender,
+        bloodGroup: formData.bloodGroup || null,
+        birthdate: formData.dateOfBirth, // Fixed: using correct field name
         role: 'PATIENT' // Always set to PATIENT
       };
       
@@ -337,5 +360,31 @@ export class RegisterComponent implements OnInit {
     }
     
     return null;
+  }
+
+  // Helper methods for password validation display
+  hasMinLength(password: string): boolean {
+    if (!password) return false;
+    return password.length >= 8;
+  }
+
+  hasUppercase(password: string): boolean {
+    if (!password) return false;
+    return /[A-Z]/.test(password);
+  }
+
+  hasLowercase(password: string): boolean {
+    if (!password) return false;
+    return /[a-z]/.test(password);
+  }
+
+  hasDigit(password: string): boolean {
+    if (!password) return false;
+    return /[0-9]/.test(password);
+  }
+
+  hasSpecialChar(password: string): boolean {
+    if (!password) return false;
+    return /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
   }
 }

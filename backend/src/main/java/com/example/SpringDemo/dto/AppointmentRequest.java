@@ -29,13 +29,18 @@ public class AppointmentRequest {
     @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime endTime;
     
-    @NotNull(message = "Appointment type is required")
+    @NotBlank(message = "Appointment type is required")
+    @Pattern(regexp = "^(CONSULTATION|FOLLOW_UP)$", message = "Appointment type must be either CONSULTATION or FOLLOW_UP")
     private String appointmentType;
     
     @NotNull(message = "Consultation fee is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Consultation fee must be greater than 0")
+    @DecimalMin(value = "100.0", inclusive = true, message = "Consultation fee must be at least ₹100")
+    @DecimalMax(value = "50000.0", message = "Consultation fee cannot exceed ₹50,000")
     private BigDecimal consultationFee;
     
+    @Size(max = 1000, message = "Symptoms must not exceed 1000 characters")
     private String symptoms;
+    
+    @Size(max = 1000, message = "Notes must not exceed 1000 characters")
     private String notes;
 }

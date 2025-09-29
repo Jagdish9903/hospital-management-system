@@ -308,6 +308,78 @@
   line-height: 1.5;
 }
 
+/* NEW UPI Input Styles */
+.upi-input-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.upi-input-container:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.upi-input-container.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.upi-username-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background: transparent;
+  min-width: 0;
+}
+
+.upi-username-input::placeholder {
+  color: #9ca3af;
+}
+
+.upi-at-symbol {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #4b5563;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.upi-bank-select {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background: transparent;
+  color: #374151;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.upi-bank-select:focus {
+  outline: none;
+}
+
+.upi-bank-select option {
+  padding: 0.5rem;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .payment-form-container {
     padding: 1rem;

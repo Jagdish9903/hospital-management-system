@@ -55,10 +55,10 @@
             <label>Patient:</label>
             <span>{{ complaint.patient?.firstname }} {{ complaint.patient?.lastname }} ({{ complaint.patient?.email }})</span>
           </div>
-          <div class="info-item">
+          <!-- <div class="info-item">
             <label>Assigned To:</label>
             <span>{{ complaint.assignedTo?.firstname }} {{ complaint.assignedTo?.lastname || 'Unassigned' }}</span>
-          </div>
+          </div> -->
           <div class="info-item">
             <label>Created:</label>
             <span>{{ formatDate(complaint.createdAt) }}</span>
@@ -134,7 +134,7 @@
     </div>
 
     <!-- Assignment Status -->
-    <div class="assignment-status-card" *ngIf="!canEdit && !isComplaintClosed()">
+    <!-- <div class="assignment-status-card" *ngIf="!canEdit && !isComplaintClosed()">
       <div class="assignment-warning">
         <div class="warning-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -148,7 +148,7 @@
           <p>This complaint is assigned to <strong>{{ complaint.assignedTo?.firstname }} {{ complaint.assignedTo?.lastname }}</strong>. Only the assigned admin can make changes.</p>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- Admin Actions Form -->
     <div class="admin-actions-card" *ngIf="canEdit && !isComplaintClosed()">
@@ -195,7 +195,7 @@
            </div>
          </div>
         
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label class="form-label">Assign to Admin</label>
           <select formControlName="assignedTo" class="form-select">
             <option value="">Select an admin...</option>
@@ -203,7 +203,7 @@
               {{ admin.firstname }} {{ admin.lastname }} ({{ admin.email }})
             </option>
           </select>
-        </div>
+        </div> -->
         
         <div class="form-group">
           <label class="form-label">Resolution Statement *</label>

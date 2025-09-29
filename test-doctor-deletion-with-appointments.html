@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Doctor Deletion with Appointments</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .response { margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 3px; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Test Doctor Deletion with Appointments</h1>
+    <p>This test verifies that when a doctor is deleted, all their scheduled appointments are automatically cancelled.</p>
+
+    <div class="test-section">
+        <h2>Test Steps:</h2>
+        <ol>
+            <li>First, create a doctor with some appointments</li>
+            <li>Verify the doctor and appointments exist</li>
+            <li>Delete the doctor</li>
+            <li>Verify all appointments are cancelled with reason "Doctor is no longer available"</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>1. Create Test Doctor</h3>
+        <button onclick="createTestDoctor()">Create Test Doctor</button>
+        <div id="createDoctorResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Create Test Appointments</h3>
+        <button onclick="createTestAppointments()">Create Test Appointments</button>
+        <div id="createAppointmentsResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Verify Doctor and Appointments</h3>
+        <button onclick="verifyDoctorAndAppointments()">Check Doctor & Appointments</button>
+        <div id="verifyResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Delete Doctor (This should cancel all appointments)</h3>
+        <button onclick="deleteDoctor()">Delete Doctor</button>
+        <div id="deleteDoctorResponse" class="response"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Verify Appointments are Cancelled</h3>
+        <button onclick="verifyCancelledAppointments()">Check Cancelled Appointments</button>
+        <div id="verifyCancelledResponse" class="response"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        let testDoctorId = null;
+        let testAppointmentIds = [];
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                const data = await response.json();
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function createTestDoctor() {
+            const doctorData = {
+                firstName: "Test",
+                lastName: "Doctor",
+                email: "testdoctor@doctor.com",
+                password: "Password123!",
+                contact: "9876543210",
+                gender: "MALE",
+                state: "Test State",
+                city: "Test City",
+                address: "123 Test Street, Test City",
+                country: "India",
+                countryCode: "+91",
+                postalCode: "123456",
+                specializationId: 1,
+                licenseNumber: "TEST001",
+                qualification: "MBBS",
+                consultationFee: 500,
+                yearsOfExp: 5,
+                joiningDate: "2020-01-01",
+                active: true,
+                slotStartTime: "09:00",
+                slotEndTime: "17:00",
+                appointmentDuration: 30,
+                workingDays: "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY"
+            };
+
+            const result = await makeRequest(`${API_BASE}/admin/doctors`, {
+                method: 'POST',
+                body: JSON.stringify(doctorData)
+            });
+
+            document.getElementById('createDoctorResponse').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            if (result.success && result.data?.data?.doctorId) {
+                testDoctorId = result.data.data.doctorId;
+                document.getElementById('createDoctorResponse').className = 'response success';
+            } else {
+                document.getElementById('createDoctorResponse').className = 'response error';
+            }
+        }
+
+        async function createTestAppointments() {
+            if (!testDoctorId) {
+                document.getElementById('createAppointmentsResponse').innerHTML = 
+                    '<div class="error">Please create a doctor first</div>';
+                return;
+            }
+
+            // First, get a patient ID
+            const patientsResult = await makeRequest(`${API_BASE}/admin/users?role=USER&page=0&size=1`);
+            if (!patientsResult.success || !patientsResult.data?.data?.content?.length) {
+                document.getElementById('createAppointmentsResponse').innerHTML = 
+                    '<div class="error">No patients found. Please create a patient first.</div>';
+                return;
+            }
+
+            const patientId = patientsResult.data.data.content[0].id;
+            
+            // Create 3 test appointments
+            const appointments = [
+                {
+                    patientId: patientId,
+                    doctorId: testDoctorId,
+                    appointmentDate: "2025-02-01",
+                    appointmentTime: "10:00",
+                    endTime: "10:30",
+                    appointmentType: "CONSULTATION",
+                    consultationFee: 500,
+                    symptoms: "Test symptoms 1",
+                    notes: "Test notes 1"
+                },
+                {
+                    patientId: patientId,
+                    doctorId: testDoctorId,
+                    appointmentDate: "2025-02-02",
+                    appointmentTime: "11:00",
+                    endTime: "11:30",
+                    appointmentType: "CONSULTATION",
+                    consultationFee: 500,
+                    symptoms: "Test symptoms 2",
+                    notes: "Test notes 2"
+                },
+                {
+                    patientId: patientId,
+                    doctorId: testDoctorId,
+                    appointmentDate: "2025-02-03",
+                    appointmentTime: "14:00",
+                    endTime: "14:30",
+                    appointmentType: "CONSULTATION",
+                    consultationFee: 500,
+                    symptoms: "Test symptoms 3",
+                    notes: "Test notes 3"
+                }
+            ];
+
+            let successCount = 0;
+            let results = [];
+
+            for (const appointment of appointments) {
+                const result = await makeRequest(`${API_BASE}/appointments`, {
+                    method: 'POST',
+                    body: JSON.stringify(appointment)
+                });
+                
+                results.push(result);
+                if (result.success && result.data?.data?.id) {
+                    testAppointmentIds.push(result.data.data.id);
+                    successCount++;
+                }
+            }
+
+            document.getElementById('createAppointmentsResponse').innerHTML = 
+                `<div>Created ${successCount} appointments</div><pre>${JSON.stringify(results, null, 2)}</pre>`;
+            
+            if (successCount > 0) {
+                document.getElementById('createAppointmentsResponse').className = 'response success';
+            } else {
+                document.getElementById('createAppointmentsResponse').className = 'response error';
+            }
+        }
+
+        async function verifyDoctorAndAppointments() {
+            if (!testDoctorId) {
+                document.getElementById('verifyResponse').innerHTML = 
+                    '<div class="error">No test doctor ID available</div>';
+                return;
+            }
+
+            // Get doctor details
+            const doctorResult = await makeRequest(`${API_BASE}/admin/doctors/${testDoctorId}`);
+            
+            // Get doctor's appointments
+            const appointmentsResult = await makeRequest(`${API_BASE}/appointments/doctor/${testDoctorId}?page=0&size=10`);
+
+            document.getElementById('verifyResponse').innerHTML = 
+                `<h4>Doctor Details:</h4><pre>${JSON.stringify(doctorResult, null, 2)}</pre>
+                 <h4>Doctor's Appointments:</h4><pre>${JSON.stringify(appointmentsResult, null, 2)}</pre>`;
+            
+            if (doctorResult.success && appointmentsResult.success) {
+                document.getElementById('verifyResponse').className = 'response success';
+            } else {
+                document.getElementById('verifyResponse').className = 'response error';
+            }
+        }
+
+        async function deleteDoctor() {
+            if (!testDoctorId) {
+                document.getElementById('deleteDoctorResponse').innerHTML = 
+                    '<div class="error">No test doctor ID available</div>';
+                return;
+            }
+
+            const result = await makeRequest(`${API_BASE}/admin/doctors/${testDoctorId}`, {
+                method: 'DELETE'
+            });
+
+            document.getElementById('deleteDoctorResponse').innerHTML = 
+                `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            if (result.success) {
+                document.getElementById('deleteDoctorResponse').className = 'response success';
+            } else {
+                document.getElementById('deleteDoctorResponse').className = 'response error';
+            }
+        }
+
+        async function verifyCancelledAppointments() {
+            if (!testDoctorId) {
+                document.getElementById('verifyCancelledResponse').innerHTML = 
+                    '<div class="error">No test doctor ID available</div>';
+                return;
+            }
+
+            // Get doctor's appointments to check if they're cancelled
+            const appointmentsResult = await makeRequest(`${API_BASE}/appointments/doctor/${testDoctorId}?page=0&size=10`);
+
+            document.getElementById('verifyCancelledResponse').innerHTML = 
+                `<h4>Doctor's Appointments After Deletion:</h4><pre>${JSON.stringify(appointmentsResult, null, 2)}</pre>`;
+            
+            if (appointmentsResult.success) {
+                const appointments = appointmentsResult.data?.data?.content || [];
+                const cancelledAppointments = appointments.filter(apt => apt.status === 'CANCELLED');
+                const withCorrectReason = cancelledAppointments.filter(apt => apt.cancellationReason === 'Doctor is no longer available');
+                
+                if (cancelledAppointments.length > 0 && withCorrectReason.length === cancelledAppointments.length) {
+                    document.getElementById('verifyCancelledResponse').className = 'response success';
+                    document.getElementById('verifyCancelledResponse').innerHTML += 
+                        `<div class="success">✅ SUCCESS: ${cancelledAppointments.length} appointments cancelled with correct reason!</div>`;
+                } else {
+                    document.getElementById('verifyCancelledResponse').className = 'response error';
+                    document.getElementById('verifyCancelledResponse').innerHTML += 
+                        `<div class="error">❌ FAILED: Expected all appointments to be cancelled with reason "Doctor is no longer available"</div>`;
+                }
+            } else {
+                document.getElementById('verifyCancelledResponse').className = 'response error';
+            }
+        }
+    </script>
+</body>
+</html>

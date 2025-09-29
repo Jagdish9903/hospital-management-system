@@ -32,6 +32,9 @@ public class DoctorService {
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     
+    @Autowired
+    private AppointmentService appointmentService;
+    
     public Doctor createDoctor(DoctorRequest request) {
         Specialization specialization = specializationRepository.findById(request.getSpecializationId())
                 .orElseThrow(() -> new RuntimeException("Specialization not found"));
@@ -173,14 +176,27 @@ public class DoctorService {
         return savedDoctor;
     }
     
-    public void deleteDoctor(Long id) {
+    public Map<String, Object> deleteDoctor(Long id) {
         Doctor doctor = doctorRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
         
+        // Cancel all scheduled appointments for this doctor
+        int cancelledAppointments = appointmentService.cancelAllAppointmentsForDoctor(id, "Doctor is no longer available");
+        
+        // Mark doctor as deleted
         doctor.setDeletedAt(java.time.LocalDateTime.now());
         doctor.setDeletedBy(doctor.getDoctorId());
         doctor.setActive(false);
         doctorRepository.save(doctor);
+        
+        // Return result with cancellation info
+        Map<String, Object> result = new HashMap<>();
+        result.put("doctorId", id);
+        result.put("doctorName", doctor.getFirstName() + " " + doctor.getLastName());
+        result.put("cancelledAppointments", cancelledAppointments);
+        result.put("message", "Doctor deleted successfully and " + cancelledAppointments + " appointments cancelled");
+        
+        return result;
     }
     
     

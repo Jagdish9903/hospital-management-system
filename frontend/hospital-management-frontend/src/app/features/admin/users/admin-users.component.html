@@ -169,7 +169,7 @@
                   <span class="toggle-slider"></span>
                 </label>
                 <span class="status-text" [class.active]="user.active" [class.inactive]="!user.active">
-                  {{ user.active ? 'Active' : 'Inactive' }}
+                  Active
                 </span>
               </div>
               <span *ngIf="user.deletedAt" class="deleted-status">Deleted</span>
@@ -306,13 +306,17 @@
               <small class="form-help">Email cannot be changed after creation</small>
             </div>
             <div class="form-group">
-              <label class="form-label">Gender</label>
-              <select formControlName="gender" class="form-select">
+              <label class="form-label">Gender *</label>
+              <select formControlName="gender" class="form-select"
+                     [class.error]="editForm.get('gender')?.invalid && editForm.get('gender')?.touched">
                 <option value="">Select gender...</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
               </select>
+              <div class="form-error" *ngIf="editForm.get('gender')?.invalid && editForm.get('gender')?.touched">
+                <div *ngIf="editForm.get('gender')?.errors?.['required']">Gender is required</div>
+              </div>
             </div>
           </div>
           <div class="form-row">
@@ -323,7 +327,7 @@
                      [max]="getMaxDate()">
               <div class="form-error" *ngIf="editForm.get('birthdate')?.invalid && editForm.get('birthdate')?.touched">
                 <div *ngIf="editForm.get('birthdate')?.errors?.['required']">Birth date is required</div>
-                <div *ngIf="editForm.get('birthdate')?.errors?.['futureDate']">Birth date cannot be in the future</div>
+                <div *ngIf="editForm.get('birthdate')?.errors?.['pastDate']">Birth date cannot be in the future</div>
                 <div *ngIf="editForm.get('birthdate')?.errors?.['tooOld']">Please enter a valid birth date</div>
               </div>
             </div>
@@ -344,6 +348,7 @@
                      (keypress)="onNumberKeyPress($event)" 
                      maxlength="10">
               <div class="form-error" *ngIf="editForm.get('contact')?.invalid && editForm.get('contact')?.touched">
+                <div *ngIf="editForm.get('contact')?.errors?.['required']">Contact number is required</div>
                 <div *ngIf="editForm.get('contact')?.errors?.['invalidPhone']">Please enter a valid 10-digit mobile number starting with 6-9</div>
               </div>
             </div>
@@ -363,34 +368,41 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Address</label>
-            <textarea formControlName="address" class="form-textarea" placeholder="Enter address" rows="3"></textarea>
+            <label class="form-label">Address *</label>
+            <textarea formControlName="address" class="form-textarea" placeholder="Enter address" rows="3"
+                     [class.error]="editForm.get('address')?.invalid && editForm.get('address')?.touched"></textarea>
+            <div class="form-error" *ngIf="editForm.get('address')?.invalid && editForm.get('address')?.touched">
+              <div *ngIf="editForm.get('address')?.errors?.['required']">Address is required</div>
+              <div *ngIf="editForm.get('address')?.errors?.['minlength']">Address must be at least 10 characters</div>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">City</label>
+              <label class="form-label">City *</label>
               <input type="text" formControlName="city" class="form-input" 
                      [class.error]="editForm.get('city')?.invalid && editForm.get('city')?.touched"
                      placeholder="Enter city" 
                      (input)="onTextInput($event, 'city')" 
                      (keypress)="onNameKeyPress($event)">
               <div class="form-error" *ngIf="editForm.get('city')?.invalid && editForm.get('city')?.touched">
+                <div *ngIf="editForm.get('city')?.errors?.['required']">City is required</div>
                 <div *ngIf="editForm.get('city')?.errors?.['invalidText']">City should contain only letters and spaces</div>
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">State</label>
+              <label class="form-label">State *</label>
               <input type="text" formControlName="state" class="form-input" 
                      [class.error]="editForm.get('state')?.invalid && editForm.get('state')?.touched"
                      placeholder="Enter state" 
                      (input)="onTextInput($event, 'state')" 
                      (keypress)="onNameKeyPress($event)">
               <div class="form-error" *ngIf="editForm.get('state')?.invalid && editForm.get('state')?.touched">
+                <div *ngIf="editForm.get('state')?.errors?.['required']">State is required</div>
                 <div *ngIf="editForm.get('state')?.errors?.['invalidText']">State should contain only letters and spaces</div>
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">Postal Code</label>
+              <label class="form-label">Postal Code *</label>
               <input type="text" formControlName="postalCode" class="form-input" 
                      [class.error]="editForm.get('postalCode')?.invalid && editForm.get('postalCode')?.touched"
                      placeholder="Enter postal code (6 digits)" 
@@ -398,11 +410,24 @@
                      (keypress)="onNumberKeyPress($event)" 
                      maxlength="6">
               <div class="form-error" *ngIf="editForm.get('postalCode')?.invalid && editForm.get('postalCode')?.touched">
+                <div *ngIf="editForm.get('postalCode')?.errors?.['required']">Postal code is required</div>
                 <div *ngIf="editForm.get('postalCode')?.errors?.['invalidPostalCode']">Postal code must be exactly 6 digits</div>
               </div>
             </div>
           </div>
           <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Country *</label>
+              <input type="text" formControlName="country" class="form-input" 
+                     [class.error]="editForm.get('country')?.invalid && editForm.get('country')?.touched"
+                     placeholder="Enter country" 
+                     (input)="onTextInput($event, 'country')" 
+                     (keypress)="onNameKeyPress($event)">
+              <div class="form-error" *ngIf="editForm.get('country')?.invalid && editForm.get('country')?.touched">
+                <div *ngIf="editForm.get('country')?.errors?.['required']">Country is required</div>
+                <div *ngIf="editForm.get('country')?.errors?.['invalidText']">Country should contain only letters and spaces</div>
+              </div>
+            </div>
             <div class="form-group">
               <label class="form-label">Emergency Contact Name</label>
               <input type="text" formControlName="emergencyContactName" class="form-input" 
@@ -563,7 +588,7 @@
             <input type="date" formControlName="birthdate" class="form-input" [max]="getMaxDate()">
             <div class="form-error" *ngIf="addForm.get('birthdate')?.invalid && addForm.get('birthdate')?.touched">
               <div *ngIf="addForm.get('birthdate')?.errors?.['required']">Birth date is required</div>
-              <div *ngIf="addForm.get('birthdate')?.errors?.['futureDate']">Birth date cannot be in the future</div>
+              <div *ngIf="addForm.get('birthdate')?.errors?.['pastDate']">Birth date cannot be in the future</div>
               <div *ngIf="addForm.get('birthdate')?.errors?.['tooOld']">Please enter a valid birth date</div>
             </div>
           </div>

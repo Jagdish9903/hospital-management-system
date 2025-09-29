@@ -534,14 +534,15 @@ public class AppointmentService {
             }
             
             java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalTime currentTime = java.time.LocalTime.now();
             org.springframework.data.domain.Page<Appointment> appointmentPage;
             
             if ("upcoming".equalsIgnoreCase(type)) {
                 appointmentPage = appointmentRepository.findUpcomingAppointmentsByPatient(
-                    patientId, status, statusEnum, today, pageable);
+                    patientId, status, statusEnum, today, currentTime, pageable);
             } else if ("past".equalsIgnoreCase(type)) {
                 appointmentPage = appointmentRepository.findPastAppointmentsByPatient(
-                    patientId, status, statusEnum, today, pageable);
+                    patientId, status, statusEnum, today, currentTime, pageable);
             } else {
                 // Fallback to all appointments
                 appointmentPage = appointmentRepository.findByPatientIdAndStatusAndDeletedAtIsNull(
@@ -788,5 +789,39 @@ public class AppointmentService {
         result.put("status", savedAppointment.getStatus());
         
         return result;
+    }
+    
+    public int cancelAllAppointmentsForDoctor(Long doctorId, String reason) {
+        List<Appointment> scheduledAppointments = appointmentRepository.findScheduledAppointmentsByDoctorId(doctorId);
+        int cancelledCount = 0;
+        
+        for (Appointment appointment : scheduledAppointments) {
+            try {
+                // Free up the slot
+                if (appointment.getDoctorSlot() != null) {
+                    DoctorSlot slot = appointment.getDoctorSlot();
+                    slot.setStatus(DoctorSlot.SlotStatus.AVAILABLE);
+                    doctorSlotRepository.save(slot);
+                    appointment.setDoctorSlot(null);
+                }
+                
+                // Cancel the appointment
+                appointment.setStatus(Appointment.Status.CANCELLED);
+                appointment.setCancellationReason(reason);
+                appointment.setCancelledAt(LocalDateTime.now());
+                appointment.setCancelledByDoctor(doctorId); // Admin is cancelling on behalf of doctor
+                
+                appointmentRepository.save(appointment);
+                cancelledCount++;
+                
+                System.out.println("Cancelled appointment ID: " + appointment.getId() + " for doctor ID: " + doctorId);
+            } catch (Exception e) {
+                System.err.println("Error cancelling appointment ID: " + appointment.getId() + " - " + e.getMessage());
+                // Continue with other appointments even if one fails
+            }
+        }
+        
+        System.out.println("Successfully cancelled " + cancelledCount + " appointments for doctor ID: " + doctorId);
+        return cancelledCount;
     }
 }

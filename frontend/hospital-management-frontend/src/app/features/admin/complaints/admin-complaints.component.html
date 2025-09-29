@@ -5,13 +5,13 @@
       <h1 class="page-title">Complaint Management</h1>
       <p class="page-subtitle">Manage patient complaints and feedback</p>
     </div>
-    <button class="add-complaint-btn">
+    <!-- <button class="add-complaint-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
       Add Complaint
-    </button>
+    </button> -->
   </div>
 
   <!-- Search and Filters -->
@@ -64,14 +64,11 @@
           <button type="button" class="apply-filters-btn" (click)="applyFilters()">
             Apply Filters
           </button>
-          <button type="button" class="available-to-me-btn" (click)="filterAvailableToMe()">
+          <!-- <button type="button" class="available-to-me-btn" (click)="filterAvailableToMe()">
             Complaints Available to Me
-          </button>
+          </button> -->
           <button type="button" class="clear-filters-btn" (click)="clearFilters()">
             Clear All
-          </button>
-          <button type="button" class="debug-btn" (click)="debugFormState()" style="background: #f0f0f0; color: #333; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; margin-left: 10px;">
-            Debug Form
           </button>
         </div>
       </form>
@@ -177,14 +174,14 @@
                 {{ complaint.status.replace('_', ' ') }}
               </span>
             </td>
-            <td class="assigned-to">
+            <!-- <td class="assigned-to">
               <span *ngIf="complaint.assignedTo; else notAssigned" [class.deleted-text]="complaint.deletedAt">
                 {{ complaint.assignedTo.name }}
               </span>
               <ng-template #notAssigned>
                 <span class="not-assigned" [class.deleted-text]="complaint.deletedAt">Not Assigned</span>
               </ng-template>
-            </td>
+            </td> -->
             <td class="complaint-created" [class.deleted-text]="complaint.deletedAt">{{ formatDate(complaint.createdAt) }}</td>
             <td class="complaint-actions">
               <div class="action-buttons">

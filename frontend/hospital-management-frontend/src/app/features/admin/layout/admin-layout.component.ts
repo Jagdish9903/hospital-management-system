@@ -28,7 +28,7 @@ export class AdminLayoutComponent implements OnInit {
     { label: 'Doctors', icon: 'doctor', route: '/admin/doctors', active: false },
     { label: 'Appointments', icon: 'calendar', route: '/admin/appointments', active: false },
     { label: 'Complaints', icon: 'complaint', route: '/admin/complaints', active: false },
-    { label: 'Audit Logs', icon: 'audit', route: '/admin/audit-logs', active: false }
+    // { label: 'Audit Logs', icon: 'audit', route: '/admin/audit-logs', active: false }
   ];
 
   constructor(

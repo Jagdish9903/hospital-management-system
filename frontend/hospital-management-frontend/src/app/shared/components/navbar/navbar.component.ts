@@ -57,7 +57,7 @@ import { filter } from 'rxjs/operators';
             </svg>
             <span class="nav-text">Appointments</span>
           </a>
-          
+
           <a 
             routerLink="/complaints" 
             routerLinkActive="active"
@@ -68,6 +68,17 @@ import { filter } from 'rxjs/operators';
               <circle cx="12" cy="13" r="3"/>
             </svg>
             <span class="nav-text">Complaints</span>
+          </a>
+
+          <a 
+            routerLink="/appointments/schedule" 
+            routerLinkActive="active"
+            class="nav-link"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span class="nav-text">Book Appointment</span>
           </a>
         </div>
 
@@ -120,7 +131,7 @@ export class NavbarComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.router.events
@@ -133,9 +144,9 @@ export class NavbarComponent implements OnInit {
 
   shouldHideNavbar(): boolean {
     // Hide navbar on login, register, and admin pages
-    return this.currentRoute.includes('/login') || 
-           this.currentRoute.includes('/register') || 
-           this.currentRoute.includes('/admin');
+    return this.currentRoute.includes('/login') ||
+      this.currentRoute.includes('/register') ||
+      this.currentRoute.includes('/admin');
   }
 
   isLoggedIn(): boolean {

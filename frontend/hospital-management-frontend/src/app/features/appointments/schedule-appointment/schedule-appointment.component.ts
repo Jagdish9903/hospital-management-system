@@ -45,8 +45,7 @@ export class ScheduleAppointmentComponent implements OnInit {
   // Appointment types
   appointmentTypes = [
     { value: 'CONSULTATION', label: 'Consultation' },
-    { value: 'FOLLOW_UP', label: 'Follow-up' },
-    { value: 'EMERGENCY', label: 'Emergency' }
+    { value: 'FOLLOW_UP', label: 'Follow-up' }
   ];
   
   // Get appointment type description
@@ -56,17 +55,11 @@ export class ScheduleAppointmentComponent implements OnInit {
         return 'Initial consultation with the doctor';
       case 'FOLLOW_UP':
         return 'Follow-up appointment for ongoing treatment';
-      case 'EMERGENCY':
-        return 'Urgent medical attention required';
       default:
         return '';
     }
   }
   
-  // Check if appointment type requires special handling
-  isEmergencyAppointment(): boolean {
-    return this.bookingForm.value.appointmentType === 'EMERGENCY';
-  }
   
 
   constructor(

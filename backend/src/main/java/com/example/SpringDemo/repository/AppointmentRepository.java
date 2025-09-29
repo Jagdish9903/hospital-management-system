@@ -30,26 +30,31 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     
     @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND " +
            "(:status IS NULL OR a.status = :statusEnum) AND " +
-           "a.appointmentDate >= :today AND " +
+           "(a.appointmentDate > :today OR (a.appointmentDate = :today AND a.appointmentTime > :currentTime)) AND " +
            "a.deletedAt IS NULL")
     Page<Appointment> findUpcomingAppointmentsByPatient(@Param("patientId") Long patientId, 
                                                         @Param("status") String status,
                                                         @Param("statusEnum") Appointment.Status statusEnum,
                                                         @Param("today") java.time.LocalDate today,
+                                                        @Param("currentTime") java.time.LocalTime currentTime,
                                                         Pageable pageable);
     
     @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND " +
            "(:status IS NULL OR a.status = :statusEnum) AND " +
-           "a.appointmentDate < :today AND " +
+           "(a.appointmentDate < :today OR (a.appointmentDate = :today AND a.appointmentTime <= :currentTime)) AND " +
            "a.deletedAt IS NULL")
     Page<Appointment> findPastAppointmentsByPatient(@Param("patientId") Long patientId, 
                                                     @Param("status") String status,
                                                     @Param("statusEnum") Appointment.Status statusEnum,
                                                     @Param("today") java.time.LocalDate today,
+                                                    @Param("currentTime") java.time.LocalTime currentTime,
                                                     Pageable pageable);
     
     @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND a.deletedAt IS NULL")
     Page<Appointment> findByDoctorId(@Param("doctorId") Long doctorId, Pageable pageable);
+    
+    @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND a.status = 'SCHEDULED' AND a.deletedAt IS NULL")
+    List<Appointment> findScheduledAppointmentsByDoctorId(@Param("doctorId") Long doctorId);
     
     @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND " +
            "(:status IS NULL OR a.status = :status) AND " +

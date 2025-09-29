@@ -21,10 +21,12 @@ export class CustomValidators {
     
     const selectedDate = new Date(control.value);
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    // Set to start of today for more accurate comparison
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
     
     if (selectedDate > today) {
-      return { futureDate: true };
+      return { pastDate: true };
     }
     return null;
   }
@@ -103,11 +105,6 @@ export class CustomValidators {
   // Reverse validator for experience field (corrected logic)
   static experienceValidForJoiningDate(joiningDateControlName: string = 'joiningDate'): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.value) return null;
-      
-      const yearsOfExp = parseInt(control.value);
-      if (isNaN(yearsOfExp)) return null;
-      
       // Get the joining date control from the parent form
       const parent = control.parent;
       if (!parent) return null;
@@ -118,6 +115,21 @@ export class CustomValidators {
       const joiningDate = new Date(joiningDateControl.value);
       const today = new Date();
       const yearsSinceJoining = Math.floor((today.getTime() - joiningDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      
+      // If no experience value provided, but we have a joining date, show validation
+      if (control.value === null || control.value === undefined || control.value === '') {
+        if (yearsSinceJoining > 0) {
+          return { experienceLessThanJoining: { 
+            yearsOfExp: 0, 
+            yearsSinceJoining,
+            joiningDate: joiningDate.toISOString().split('T')[0]
+          } };
+        }
+        return null;
+      }
+      
+      const yearsOfExp = parseInt(control.value);
+      if (isNaN(yearsOfExp)) return null;
       
       // CORRECTED LOGIC: Experience should be >= years since joining
       // Debug logging
@@ -256,7 +268,7 @@ export class CustomValidators {
 
   // Blood group validator
   static bloodGroup(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
+    if (!control.value || control.value === '') return null;
     
     const validBloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
     if (!validBloodGroups.includes(control.value)) {
@@ -279,12 +291,24 @@ export class CustomValidators {
 
   // Consultation fee validator
   static consultationFee(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
+    if (!control.value || control.value === '') return null;
     
+    // Check if it's a valid number
     const fee = parseFloat(control.value);
-    if (isNaN(fee) || fee < 0 || fee > 10000) {
+    if (isNaN(fee)) {
       return { invalidConsultationFee: true };
     }
+    
+    // Check if it's a positive number
+    if (fee <= 0) {
+      return { invalidConsultationFee: true };
+    }
+    
+    // Check if it's within reasonable range (₹1 to ₹50,000)
+    if (fee > 50000) {
+      return { invalidConsultationFee: true };
+    }
+    
     return null;
   }
 }

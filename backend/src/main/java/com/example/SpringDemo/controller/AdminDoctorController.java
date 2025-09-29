@@ -77,10 +77,10 @@ public class AdminDoctorController {
     
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteDoctor(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deleteDoctor(@PathVariable Long id) {
         try {
-            doctorService.deleteDoctor(id);
-            return ResponseEntity.ok(ApiResponse.success("Doctor deleted successfully", null));
+            Map<String, Object> result = doctorService.deleteDoctor(id);
+            return ResponseEntity.ok(ApiResponse.success(result.get("message").toString(), result));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

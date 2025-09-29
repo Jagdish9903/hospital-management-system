@@ -174,6 +174,24 @@ public class AuthService {
         user.setEmergencyContactName(request.getEmergencyContactName());
         user.setEmergencyContactNum(request.getEmergencyContactNum());
         
+        // Handle gender
+        if (request.getGender() != null && !request.getGender().isEmpty()) {
+            try {
+                user.setGender(User.Gender.valueOf(request.getGender().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid gender: " + request.getGender());
+            }
+        }
+        
+        // Handle birthdate
+        if (request.getBirthdate() != null && !request.getBirthdate().isEmpty()) {
+            try {
+                user.setBirthdate(java.time.LocalDate.parse(request.getBirthdate()));
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid birthdate format: " + request.getBirthdate());
+            }
+        }
+        
         return userRepository.save(user);
     }
     

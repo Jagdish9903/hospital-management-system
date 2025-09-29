@@ -358,3 +358,18 @@
     width: 100%;
   }
 }
+
+/* Refund Status Styling */
+.refund-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669 !important;
+  font-weight: 500;
+}
+
+.refund-icon {
+  width: 16px;
+  height: 16px;
+  color: #059669;
+}
